@@ -1,0 +1,27 @@
+DATA:
+  name: "LSFB"
+  poses: [["right_hand","all"],["left_hand","all"],["pose","all"], ["face",[57,61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146,287,
+         78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95,33,246,161,160,159,158,157,173,133,155,154,153,145,144,163,7,124,46,53,
+         52,65,55,113,225,224,223,222,221,263,466,388,387,386,385,384,398,362,382,381,380,374,373,390,249,353,276,283,282,295,285,342,445,444,443,442,441]]]
+  num_classes: 999
+MODEL:
+  backbone: "conv1d"
+  apply_attn: True
+  conv_dim: 256
+  act_fn: "ReLU"
+  feature_norm: "batchnorm"
+  nheads: 6
+  expand_ratio: 2
+  depth: 4
+  dropout: 0.2
+  init: "ortho"
+LOSS:
+  loss_type: "CCE"
+OPTIMIZATION:
+  type_: "RAdam"
+  batch_size: 128
+  lr: 0.0002
+  weight_decay: 0.0
+  beta1: 0.001
+  beta2: 0.999
+  total_steps: 50
