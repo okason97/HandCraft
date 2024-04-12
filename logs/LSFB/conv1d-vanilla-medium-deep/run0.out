@@ -1,0 +1,495 @@
+You have chosen a specific GPU. This will completely disable data parallelism.
+[INFO] 2024-03-26 23:12:47 > Run name : LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-26 23:12:47 > cfgs.DATA =
+[INFO] 2024-03-26 23:12:47 > {
+  "name": "LSFB",
+  "input_size": [
+    16,
+    99,
+    3
+  ],
+  "num_classes": 637,
+  "min_samples": 20,
+  "max_len": 16,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      "all"
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        39,
+        0,
+        269,
+        291,
+        405,
+        17,
+        181,
+        33,
+        159,
+        133,
+        145,
+        46,
+        52,
+        65,
+        55,
+        263,
+        386,
+        362,
+        374,
+        276,
+        282,
+        295,
+        285
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0
+}
+[INFO] 2024-03-26 23:12:47 > cfgs.MODEL =
+[INFO] 2024-03-26 23:12:47 > {
+  "backbone": "conv1d",
+  "apply_sn": false,
+  "act_fn": "GELU",
+  "feature_norm": "batchnorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 32,
+  "conv_dim": 64,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.2,
+  "drop_path": 0.0,
+  "late_dropout": 0.0,
+  "late_drop_path": 0.0,
+  "late_dropout_step": 0,
+  "late_drop_path_step": 0,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": true,
+  "apply_dw_conv": true
+}
+[INFO] 2024-03-26 23:12:47 > cfgs.LOSS =
+[INFO] 2024-03-26 23:12:47 > {
+  "loss_type": "CCE",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "use_relative_loss": true
+}
+[INFO] 2024-03-26 23:12:47 > cfgs.OPTIMIZATION =
+[INFO] 2024-03-26 23:12:47 > {
+  "type_": "RAdam",
+  "lrscheduler": "OneCycle",
+  "batch_size": 1024,
+  "lr": 0.0001,
+  "weight_decay": 0.01,
+  "momentum": "N/A",
+  "nesterov": "N/A",
+  "alpha": "N/A",
+  "beta1": 0.001,
+  "beta2": 0.999,
+  "total_steps": 200,
+  "world_size": 1
+}
+[INFO] 2024-03-26 23:12:47 > cfgs.PRE =
+[INFO] 2024-03-26 23:12:47 > {
+  "apply_rflip": true
+}
+[INFO] 2024-03-26 23:12:47 > cfgs.AUG =
+[INFO] 2024-03-26 23:12:47 > {}
+[INFO] 2024-03-26 23:12:47 > cfgs.RUN =
+[INFO] 2024-03-26 23:12:47 > {
+  "mixed_precision": true,
+  "entity": null,
+  "project": "handcraft",
+  "cfg_file": "./src/configs/LSFB/conv1d/vanilla-medium-deep.yaml",
+  "data_dir": "/mnt/sda2/datasets/isolated-cont-sl/LSFB/",
+  "save_dir": "/mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep/",
+  "ckpt_dir": null,
+  "load_best": false,
+  "seed": 3883,
+  "distributed_data_parallel": false,
+  "backend": "nccl",
+  "total_nodes": 1,
+  "current_node": 0,
+  "num_workers": 4,
+  "prefetch_factor": 20,
+  "synchronized_bn": false,
+  "train": true,
+  "empty_cache": false,
+  "load_data_in_memory": false,
+  "print_every": 5,
+  "save_every": 5,
+  "dset_used": 1.0,
+  "fix_seed": false
+}
+[INFO] 2024-03-26 23:12:47 > Load LSFB train dataset.
+[INFO] 2024-03-26 23:12:48 > Train dataset size: 1003305
+[INFO] 2024-03-26 23:12:48 > Valid dataset size: 5392
+[INFO] 2024-03-26 23:12:48 > Load LSFB test dataset.
+[INFO] 2024-03-26 23:12:48 > Test dataset size: 41255
+[INFO] 2024-03-26 23:12:48 > Build the model.
+[INFO] 2024-03-26 23:12:48 > Modules are located on './src/models.conv1d'.
+[INFO] 2024-03-26 23:12:48 > Number of parameters: 338189
+[INFO] 2024-03-26 23:12:48 > Classifier(
+  (blocks): ModuleList(
+    (0): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=64, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(64, 64, kernel_size=(17,), stride=(1,), padding=valid, groups=64)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(64, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=64, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=64, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(64, 64, kernel_size=(17,), stride=(1,), padding=valid, groups=64)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(64, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=64, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
+        )
+        (linear1): Linear(in_features=64, out_features=64, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=64, out_features=64, bias=True)
+        (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+    (2): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(64, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (3): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
+        )
+        (linear1): Linear(in_features=64, out_features=64, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=64, out_features=64, bias=True)
+        (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+    (4): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(64, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (5): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
+        )
+        (linear1): Linear(in_features=64, out_features=64, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=64, out_features=64, bias=True)
+        (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+    (6): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=64, out_features=128, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(128, 128, kernel_size=(17,), stride=(1,), padding=valid, groups=128)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(128, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=128, out_features=64, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(64, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (7): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
+        )
+        (linear1): Linear(in_features=64, out_features=64, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=64, out_features=64, bias=True)
+        (norm1): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+  )
+  (inlinear): Linear(in_features=297, out_features=32, bias=False)
+  (inlineart): Linear(in_features=16, out_features=32, bias=False)
+  (emblinear): Linear(in_features=297, out_features=32, bias=False)
+  (bn): BatchNorm1d(16, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+  (top_linear): Linear(in_features=64, out_features=128, bias=True)
+  (outlinear): Linear(in_features=16, out_features=633, bias=True)
+  (dropout): Dropout(p=0.2, inplace=False)
+)
+[INFO] 2024-03-26 23:12:51 > Start training!
+[INFO] 2024-03-26 23:21:01 > Train Top 1-acc 2.0968	Train Top 10-acc 12.4815	Train Loss 5.8318
+[INFO] 2024-03-26 23:28:37 > Train Top 1-acc 13.3972	Train Top 10-acc 46.1847	Train Loss 4.3506
+[INFO] 2024-03-26 23:36:12 > Train Top 1-acc 23.8073	Train Top 10-acc 62.6222	Train Loss 3.6166
+[INFO] 2024-03-26 23:43:50 > Train Top 1-acc 28.2797	Train Top 10-acc 67.3568	Train Loss 3.3551
+[INFO] 2024-03-26 23:51:27 > Train Top 1-acc 30.6476	Train Top 10-acc 69.7681	Train Loss 3.2164
+[INFO] 2024-03-26 23:51:27 > Step:      5 Progress: 2.5% Elapsed: 0:38:35 Loss: 3.216 Top1: 30.65 Top10: 69.77 
+[INFO] 2024-03-26 23:51:27 > Start Validation (5 Step): LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-26 23:51:30 > Test Top 1-acc 20.0668	Test Top 10-acc 60.3301	Test Loss 3.764106546735905
+[INFO] 2024-03-26 23:51:30 > Best Loss (Step: 5): 3.764106546735905	Best Top 1-acc 20.0668	Best Top 10-acc 60.3301
+[INFO] 2024-03-26 23:51:30 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep/checkpoints/LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-26 23:59:06 > Train Top 1-acc 31.2276	Train Top 10-acc 70.4780	Train Loss 3.1734
+[INFO] 2024-03-27 00:06:43 > Train Top 1-acc 31.1083	Train Top 10-acc 70.5352	Train Loss 3.1676
+[INFO] 2024-03-27 00:14:20 > Train Top 1-acc 30.7952	Train Top 10-acc 70.3454	Train Loss 3.1788
+[INFO] 2024-03-27 00:21:56 > Train Top 1-acc 30.3084	Train Top 10-acc 69.8575	Train Loss 3.2053
+[INFO] 2024-03-27 00:29:33 > Train Top 1-acc 29.8211	Train Top 10-acc 69.3802	Train Loss 3.2319
+[INFO] 2024-03-27 00:29:33 > Step:     10 Progress: 5.0% Elapsed: 1:16:41 Loss: 3.232 Top1: 29.82 Top10: 69.38 
+[INFO] 2024-03-27 00:29:33 > Start Validation (10 Step): LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 00:29:36 > Test Top 1-acc 17.0994	Test Top 10-acc 56.2685	Test Loss 3.9895562870919883
+[INFO] 2024-03-27 00:29:36 > Best Loss (Step: 5): 3.764106546735905	Best Top 1-acc 17.0994	Best Top 10-acc 56.2685
+[INFO] 2024-03-27 00:29:36 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep/checkpoints/LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 00:37:12 > Train Top 1-acc 29.1105	Train Top 10-acc 68.8307	Train Loss 3.2676
+[INFO] 2024-03-27 00:44:48 > Train Top 1-acc 28.4050	Train Top 10-acc 68.0950	Train Loss 3.3113
+[INFO] 2024-03-27 00:52:24 > Train Top 1-acc 27.6579	Train Top 10-acc 67.1987	Train Loss 3.3595
+[INFO] 2024-03-27 00:59:59 > Train Top 1-acc 26.8408	Train Top 10-acc 66.4321	Train Loss 3.4043
+[INFO] 2024-03-27 01:07:34 > Train Top 1-acc 25.1730	Train Top 10-acc 64.0203	Train Loss 3.5289
+[INFO] 2024-03-27 01:07:34 > Step:     15 Progress: 7.5% Elapsed: 1:54:43 Loss: 3.529 Top1: 25.17 Top10: 64.02 
+[INFO] 2024-03-27 01:07:34 > Start Validation (15 Step): LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 01:07:38 > Test Top 1-acc 13.2604	Test Top 10-acc 49.9444	Test Loss 4.293165801186944
+[INFO] 2024-03-27 01:07:38 > Best Loss (Step: 5): 3.764106546735905	Best Top 1-acc 13.2604	Best Top 10-acc 49.9444
+[INFO] 2024-03-27 01:07:38 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep/checkpoints/LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 01:15:13 > Train Top 1-acc 24.2700	Train Top 10-acc 63.5318	Train Loss 3.5653
+[INFO] 2024-03-27 01:22:48 > Train Top 1-acc 23.9011	Train Top 10-acc 63.1127	Train Loss 3.5864
+[INFO] 2024-03-27 01:30:24 > Train Top 1-acc 22.3901	Train Top 10-acc 61.0095	Train Loss 3.6945
+[INFO] 2024-03-27 01:38:09 > Train Top 1-acc 22.0681	Train Top 10-acc 60.8030	Train Loss 3.7050
+[INFO] 2024-03-27 01:45:44 > Train Top 1-acc 4.2057	Train Top 10-acc 14.4512	Train Loss nan
+[INFO] 2024-03-27 01:45:44 > Step:     20 Progress: 10.0% Elapsed: 2:32:53 Loss: nan Top1: 4.206 Top10: 14.45 
+[INFO] 2024-03-27 01:45:44 > Start Validation (20 Step): LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 01:45:48 > Test Top 1-acc 0.5193	Test Top 10-acc 2.3368	Test Loss nan
+[INFO] 2024-03-27 01:45:48 > Best Loss (Step: 5): 3.764106546735905	Best Top 1-acc 0.5193	Best Top 10-acc 2.3368
+[INFO] 2024-03-27 01:45:48 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep/checkpoints/LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 01:53:23 > Train Top 1-acc 0.1527	Train Top 10-acc 1.5757	Train Loss 6.4506
+[INFO] 2024-03-27 02:00:59 > Train Top 1-acc 0.1482	Train Top 10-acc 1.5690	Train Loss 6.4507
+[INFO] 2024-03-27 02:08:40 > Train Top 1-acc 0.1542	Train Top 10-acc 1.5684	Train Loss 6.4507
+[INFO] 2024-03-27 02:16:15 > Train Top 1-acc 0.1602	Train Top 10-acc 1.5727	Train Loss 6.4508
+[INFO] 2024-03-27 02:23:51 > Train Top 1-acc 0.1571	Train Top 10-acc 1.5703	Train Loss 6.4508
+[INFO] 2024-03-27 02:23:51 > Step:     25 Progress: 12.5% Elapsed: 3:11:00 Loss: 6.451 Top1: 0.1571 Top10: 1.57 
+[INFO] 2024-03-27 02:23:51 > Start Validation (25 Step): LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 02:23:55 > Test Top 1-acc 0.5193	Test Top 10-acc 2.3368	Test Loss nan
+[INFO] 2024-03-27 02:23:55 > Best Loss (Step: 5): 3.764106546735905	Best Top 1-acc 0.5193	Best Top 10-acc 2.3368
+[INFO] 2024-03-27 02:23:55 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep/checkpoints/LSFB-vanilla-medium-deep-train-2024_03_26_23_12_47
+[INFO] 2024-03-27 02:31:32 > Train Top 1-acc 0.1564	Train Top 10-acc 1.5798	Train Loss 6.4509

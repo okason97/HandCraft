@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 88, in <module>
+    cfgs, gpus_per_node, run_name, rank = load_configs_initialize_training()
+  File "/home/grios/HandCraft/src/main.py", line 64, in load_configs_initialize_training
+    cfgs = config.Configurations(args.cfg_file)
+  File "/home/grios/HandCraft/src/configs/config.py", line 31, in __init__
+    self._overwrite_cfgs(self.cfg_file)
+  File "/home/grios/HandCraft/src/configs/config.py", line 210, in _overwrite_cfgs
+    with open(cfg_file, 'r') as f:
+FileNotFoundError: [Errno 2] No such file or directory: './src/configs/LSFB/conv1d/vanilla-medium-deep-daug-ldrop.yaml'

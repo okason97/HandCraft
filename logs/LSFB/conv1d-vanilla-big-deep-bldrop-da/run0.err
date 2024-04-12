@@ -1,0 +1,36 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.16.5 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-big-deep-bldrop-da/wandb/run-20240328_045245-zcpnfarl
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-vanilla-big-deep-bldrop-da-train-2024_03_28_04_52_42
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/zcpnfarl
+/home/grios/HandCraft/src/utils/optimizers.py:90: UserWarning: This overload of add_ is deprecated:
+	add_(Number alpha, Tensor other)
+Consider using one of the following signatures instead:
+	add_(Tensor other, *, Number alpha) (Triggered internally at  ../torch/csrc/utils/python_arg_parser.cpp:1174.)
+  p.data.mul_(self.alpha).add_(1.0 - self.alpha, param_state['cached_params'])  # crucial line
+wandb: Waiting for W&B process to finish... (success).
+wandb: - 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: \ 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: | 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: / 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: - 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: \ 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: | 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: / 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: - 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: \ 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb: | 0.076 MB of 0.076 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:   test_loss █▄▂▂▃▃▃▅▄▂▃▂▂▁▂▂▁▁▁▁▁▁▂▂▁▂▂▁▁▂▂▁▃▂▁▂▁▂▁▂
+wandb:   test_top1 ▁▄▆▅▆▇▇▆▇▆▅▇▇▇▇▇█▇▇▇█▇▇▇▇▆▇▇█▇▇▇▇▇▇▇▇▇█▇
+wandb:  test_top10 ▁▅▇▇▇▇▇▇▇▇▇▇▇██▇██████▇▇█▇▇███▇█████████
+wandb:  train_loss █▅▄▃▂▂▁▁▁▄▄▄▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃
+wandb:  train_top1 ▁▂▄▅▆▇▇██▃▄▄▄▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅
+wandb: train_top10 ▁▄▆▇▇▇███▆▆▆▆▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+wandb: 
+wandb: Run summary:
+wandb:   test_loss 4.00436
+wandb:   test_top1 18.08234
+wandb:  test_top10 60.97923
+wandb:  train_loss 2.53805
+wandb:  train_top1 41.61224
+wandb: train_top10 78.89837
+wandb: 
+wandb: Synced LSFB-vanilla-big-deep-bldrop-da-train-2024_03_28_04_52_42: https://wandb.ai/gaston-g-rios/handcraft/runs/zcpnfarl
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-big-deep-bldrop-da/wandb/run-20240328_045245-zcpnfarl/logs

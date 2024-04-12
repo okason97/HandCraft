@@ -1,0 +1,39 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.16.6 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-bwindow/wandb/run-20240405_131252-qugwb0cz
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-vanilla-medium-deep-bwindow-train-2024_04_05_13_12_50
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/qugwb0cz
+/home/grios/myphyton/lib/python3.10/site-packages/torch/optim/lr_scheduler.py:143: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn("Detected call of `lr_scheduler.step()` before `optimizer.step()`. "
+/home/grios/HandCraft/src/utils/optimizers.py:90: UserWarning: This overload of add_ is deprecated:
+	add_(Number alpha, Tensor other)
+Consider using one of the following signatures instead:
+	add_(Tensor other, *, Number alpha) (Triggered internally at ../torch/csrc/utils/python_arg_parser.cpp:1630.)
+  p.data.mul_(self.alpha).add_(1.0 - self.alpha, param_state['cached_params'])  # crucial line
+wandb: Network error (ConnectionError), entering retry loop.
+wandb: Waiting for W&B process to finish... (success).
+wandb: - 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.038 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: | 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: / 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: - 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: | 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: / 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: - 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:   test_loss ▇▄▃▃▂▃▃▃▂▃▃▂▁▃█▃▂▂▁▂▂▁▂▂▂▂▁▁▂▂▃▁▂▂▂▂▂▂▂▂
+wandb:   test_top1 ▁▃▄▅▆▅▆▆▆▆▅▆▇▆▁▅▆▇▇▆▇▇▇▇▇▇▇▇██▇██▇██████
+wandb:  test_top10 ▂▄▆▇▇▇▇▇▇▇▇▇█▇▁▆▇██▇████████████████████
+wandb:  train_loss █▆▅▃▂▂▂▂▂▃▂▂▂▂▄▅▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  train_top1 ▁▂▃▅▆▆▆▆▆▆▆▆▆▇▅▃▆▆▆▆▆▇▇▇▇▇▇▇▇▇▇▇████████
+wandb: train_top10 ▁▃▆▇▇████▇████▆▅▇▇██████████████████████
+wandb: 
+wandb: Run summary:
+wandb:   test_loss 3.51492
+wandb:   test_top1 42.69288
+wandb:  test_top10 81.89911
+wandb:  train_loss 0.38706
+wandb:  train_top1 89.73572
+wandb: train_top10 98.9967
+wandb: 
+wandb: Synced LSFB-vanilla-medium-deep-bwindow-train-2024_04_05_13_12_50: https://wandb.ai/gaston-g-rios/handcraft/runs/qugwb0cz
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-bwindow/wandb/run-20240405_131252-qugwb0cz/logs

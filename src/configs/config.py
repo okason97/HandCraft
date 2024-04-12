@@ -17,7 +17,8 @@ import torch.nn as nn
 import utils.misc as misc
 import utils.losses as losses
 import utils.ops as ops
-import optimizers
+import utils.optimizers as optimizers
+from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup
 
 class make_empty_object(object):
     pass
@@ -39,9 +40,30 @@ class Configurations(object):
         # dataset name \in ["MY_DATASET"]
         self.DATA.name = "LSFB"
         # input size for training
-        self.DATA.input_size = 32
+        self.DATA.input_size = [15, 32, 3]
         # number of classes in training dataset
         self.DATA.num_classes = 10
+        # minimum number of samples per class in training dataset
+        self.DATA.min_samples = 10
+        # maximum number of frames
+        self.DATA.max_len = 15
+        # oversample dataset to current maximum number of samples per class
+        self.DATA.oversample = False
+        # data poses and keypoints used
+        self.DATA.poses = []
+        # count of the subset of keypoints chosen
+        self.DATA.num_keypoints = 91
+        # data augmentation
+        self.DATA.flip_p = 0.0
+        self.DATA.scale = 0.0
+        self.DATA.random_crop = False
+        self.DATA.drop_frame = 0.0
+        self.DATA.drop_keypoint = 0.0
+        self.DATA.block_size = 5
+        self.DATA.flip_p = 0.0
+        self.DATA.scale = 0.0
+        self.DATA.rot = 0.0
+
 
         # -----------------------------------------------------------------------------
         # Model settings
@@ -55,12 +77,21 @@ class Configurations(object):
         self.MODEL.apply_sn = False
         # type of activation function \in ["ReLU", "Leaky_ReLU", "ELU", "GELU"]
         self.MODEL.act_fn = "ReLU"
-        # feature normalization method \in ["batchnorm", "layernorm"]
-        self.MODEL.feature_norm == "batchnorm"
+        # feature normalization method \in ["batchnorm", "layernorm", "slayernorm", "tlayernorm", None]
+        self.MODEL.feature_norm = "batchnorm"
         # whether to apply transformer layers
         self.MODEL.apply_attn = True
+        # use exponential moving average
+        self.MODEL.apply_ema = False
+        # ema parameters
+        self.MODEL.ema_beta = 0.9999
+        self.MODEL.ema_update_after_step = 10
+        self.MODEL.ema_update_every = 1
+        self.MODEL.ema_power = 0.9
         # transformer layer number of heads
-        self.MODEL.nheads = 6
+        self.MODEL.nheads = 4
+        # embeding size
+        self.MODEL.embed_size = 64
         # base channel for the classifier architecture
         self.MODEL.conv_dim = 64
         # expand ratio of channels for conv1d block
@@ -68,21 +99,37 @@ class Configurations(object):
         # classifier's depth
         self.MODEL.depth = 4
         # dropout ratio of the model layers
-        self.MODEL.dropout = 0.2
+        self.MODEL.dropout = 0.8
+        # drop path ratio of the model convolutional blocks
+        self.MODEL.drop_path = 0.2
+        # apply dropout when the training reaches the indicated epoch https://arxiv.org/abs/2303.01500
+        self.MODEL.late_dropout = None
+        self.MODEL.late_drop_path = None
+        self.MODEL.late_dropout_step = None
+        self.MODEL.late_drop_path_step = None
         # weight initialization method \in ["ortho", "N02", "glorot", "xavier"]
         self.MODEL.init = "ortho"
+        # use temporal dimension for the input fully conected layer
+        self.MODEL.temporal_fc_in = False
+        # use temporal dimension for the output fully conected layer
+        self.MODEL.temporal_fc_out = False
+        self.MODEL.use_spatial_fc = True
+        # use depthwise convolution
+        self.MODEL.apply_dw_conv = False
 
         # -----------------------------------------------------------------------------
         # loss settings
         # -----------------------------------------------------------------------------
         self.LOSS = misc.make_empty_object()
 
-        # type of loss \in ["CCE"]
+        # type of loss \in ["CCE", "siMLPe"]
         self.LOSS.loss_type = "CCE"
         # start iteration for EMALosses in src/utils/EMALosses
         self.LOSS.lecam_ema_start_iter = "N/A"
         # decay rate for the EMALosses
         self.LOSS.lecam_ema_decay = "N/A"
+        # use relative loss for siMLPe
+        self.LOSS.use_relative_loss = True
 
         # -----------------------------------------------------------------------------
         # optimizer settings
@@ -91,6 +138,8 @@ class Configurations(object):
 
         # type of the optimizer for training \in ["SGD", "RMSprop", "Adam", "RAdam"]
         self.OPTIMIZATION.type_ = "RAdam"
+        # lr scheduler \in ["OneCycle"]
+        self.OPTIMIZATION.lrscheduler = None
         # number of batch size for training,
         self.OPTIMIZATION.batch_size = 128
         # learning rate
@@ -103,11 +152,8 @@ class Configurations(object):
         self.OPTIMIZATION.nesterov = "N/A"
         # alpha value for RMSprop optimizer
         self.OPTIMIZATION.alpha = "N/A"
-        # beta values for Adam optimizer
-        self.OPTIMIZATION.beta1 = 0.5
-        self.OPTIMIZATION.beta2 = 0.999
         # beta values for RAdam optimizer
-        self.OPTIMIZATION.beta1 = 0.001
+        self.OPTIMIZATION.beta1 = 0.9
         self.OPTIMIZATION.beta2 = 0.999
         # the total number of steps for training
         self.OPTIMIZATION.total_steps = 10
@@ -129,6 +175,7 @@ class Configurations(object):
         # run settings
         # -----------------------------------------------------------------------------
         self.RUN = misc.make_empty_object()
+        self.RUN.mixed_precision = False
 
         # -----------------------------------------------------------------------------
         # run settings
@@ -170,16 +217,28 @@ class Configurations(object):
     def define_losses(self):
         losses_dic = {
             "CCE": losses.cce,
+            "siMLPe": losses.siMLPe
         }
 
         self.LOSS.loss = losses_dic[self.LOSS.loss_type]
 
     def define_modules(self):
-        if self.MODEL.apply_sn:
-            self.MODULES.conv1d = ops.snconv1d
-            self.MODULES.linear = ops.snlinear
+        if not self.MODEL.use_spatial_fc:
+            self.MODULES.glinear = ops.Temporal_FC
         else:
-            self.MODULES.conv1d = ops.conv1d
+            self.MODULES.glinear = ops.Spatial_FC
+
+        if self.MODEL.apply_sn:
+            self.MODULES.linear = ops.snlinear
+            if self.MODEL.apply_dw_conv:
+                self.MODULES.conv1d = ops.sndwconv1d
+            else:
+                self.MODULES.conv1d = ops.snconv1d
+        else:
+            if self.MODEL.apply_dw_conv:
+                self.MODULES.conv1d = ops.dwconv1d
+            else:
+                self.MODULES.conv1d = ops.conv1d
             self.MODULES.linear = ops.linear
 
         if self.MODEL.act_fn == "ReLU":
@@ -200,13 +259,25 @@ class Configurations(object):
 
         if self.MODEL.feature_norm == "batchnorm":
             self.MODULES.feature_norm = ops.batchnorm
-
         elif self.MODEL.feature_norm == "layernorm":
             self.MODULES.feature_norm = ops.layernorm
+        elif self.MODEL.feature_norm == "slayernorm":
+            self.MODULES.feature_norm = ops.SLayerNorm
+        elif self.MODEL.feature_norm == "tlayernorm":
+            self.MODULES.feature_norm = ops.TLayerNorm
+        else:
+            self.MODULES.feature_norm = nn.Identity
+
+        self.MODULES.dropout = ops.dropout
+        self.MODULES.drop_path = ops.drop_path
+
+        self.MODULES.eca = ops.eca
+
+        self.MODULES.pooling = nn.AvgPool1d
 
         return self.MODULES
 
-    def define_optimizer(self, model):
+    def define_optimizer(self, model, len_dataloader):
         params = []
         for _, param in model.named_parameters():
             params.append(param)
@@ -217,12 +288,14 @@ class Configurations(object):
                                                             weight_decay=self.OPTIMIZATION.weight_decay,
                                                             momentum=self.OPTIMIZATION.momentum,
                                                             nesterov=self.OPTIMIZATION.nesterov)
+            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         elif self.OPTIMIZATION.type_ == "RMSprop":
             self.OPTIMIZATION.optimizer = torch.optim.RMSprop(params=params,
                                                                 lr=self.OPTIMIZATION.lr,
                                                                 weight_decay=self.OPTIMIZATION.weight_decay,
                                                                 momentum=self.OPTIMIZATION.momentum,
                                                                 alpha=self.OPTIMIZATION.alpha)
+            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         elif self.OPTIMIZATION.type_ == "Adam":
             betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
             eps_ = 1e-6
@@ -232,6 +305,7 @@ class Configurations(object):
                                                            betas=betas,
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
+            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         elif self.OPTIMIZATION.type_ == "RAdam":
             betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
             eps_ = 1e-6
@@ -244,6 +318,11 @@ class Configurations(object):
             self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         else:
             raise NotImplementedError
+        
+        if self.OPTIMIZATION.lrscheduler == "OneCycle":
+            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.OPTIMIZATION.optimizer.optimizer, max_lr=0.01, pct_start=0.3, three_phase=False, steps_per_epoch=len_dataloader, epochs=self.OPTIMIZATION.total_steps)
+        else:
+            self.OPTIMIZATION.scheduler = None
     
     """
     def define_augments(self, device):

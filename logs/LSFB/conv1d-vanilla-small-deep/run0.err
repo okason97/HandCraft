@@ -1,0 +1,50 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.16.4 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/wandb/run-20240310_213244-27o2tjid
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/27o2tjid
+/home/grios/myphyton/lib/python3.10/site-packages/torch/optim/lr_scheduler.py:131: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn("Detected call of `lr_scheduler.step()` before `optimizer.step()`. "
+/home/grios/HandCraft/src/utils/optimizers.py:90: UserWarning: This overload of add_ is deprecated:
+	add_(Number alpha, Tensor other)
+Consider using one of the following signatures instead:
+	add_(Tensor other, *, Number alpha) (Triggered internally at  ../torch/csrc/utils/python_arg_parser.cpp:1174.)
+  p.data.mul_(self.alpha).add_(1.0 - self.alpha, param_state['cached_params'])  # crucial line
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 102, in <module>
+    loader.load_worker(local_rank=rank,
+  File "/home/grios/HandCraft/src/loader.py", line 279, in load_worker
+    top1, top10, loss = worker.train_step(step)
+  File "/home/grios/HandCraft/src/worker.py", line 117, in train_step
+    self.OPTIMIZATION.scheduler.step()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/optim/lr_scheduler.py", line 154, in step
+    values = self.get_lr()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/optim/lr_scheduler.py", line 1593, in get_lr
+    raise ValueError("Tried to step {} times. The specified number of total steps is {}"
+ValueError: Tried to step 97902 times. The specified number of total steps is 97900
+wandb: Waiting for W&B process to finish... (failed 1). Press Control-C to abort syncing.
+wandb: - 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.071 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: - 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: \ 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: | 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: / 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: - 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: \ 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: | 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: / 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: - 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb: \ 0.074 MB of 0.074 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:   test_loss █▄▂▂▂▁▁▁▂▁▁▂▂▁▁▁▁▂▁▁▂▁▁▁▂▁▁▁▂▂▂▂▂▂▂▂▂▂▂▂
+wandb:   test_top1 ▁▃▅▆▆▇▇▇▇▇▇▇▇▇▇▇▇▇██▇███▇███▇███████████
+wandb:  test_top10 ▁▅▇▇▇███▇███████████████████████████████
+wandb:  train_loss █▆▄▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  train_top1 ▁▂▄▅▅▆▆▆▆▆▆▆▆▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇████████████
+wandb: train_top10 ▁▄▆▇▇▇▇▇▇▇██████████████████████████████
+wandb: 
+wandb: Run summary:
+wandb:   test_loss 3.44714
+wandb:   test_top1 34.14318
+wandb:  test_top10 77.2997
+wandb:  train_loss 1.10527
+wandb:  train_top1 71.71839
+wandb: train_top10 94.8705
+wandb: 
+wandb: Synced LSFB-vanilla-small-deep-train-2024_03_10_21_32_41: https://wandb.ai/gaston-g-rios/handcraft/runs/27o2tjid
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/wandb/run-20240310_213244-27o2tjid/logs

@@ -4,40 +4,20 @@
 
 # src/utils/misc.py
 
-from os.path import dirname, exists, join, isfile
+from os.path import exists, join, isfile
 from datetime import datetime
-from collections import defaultdict
 import random
-import math
 import os
 import sys
 import glob
-import warnings
-import itertools
 
 from torch.nn import DataParallel
 from torch.nn.parallel import DistributedDataParallel
-from torchvision.utils import save_image
-from torch.utils.data import Subset
-from itertools import chain
-from tqdm import tqdm
-from scipy import linalg
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
-import torch.multiprocessing as mp
-import torchvision.transforms as transforms
-import shutil
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-#import pyopenpose as op
-from torch.utils.data import Sampler, BatchSampler
-import polars as pl
 
-import utils.sample as sample
-import utils.losses as losses
 import utils.ckpt as ckpt
 
 
@@ -338,10 +318,6 @@ def mixup_data(x_a, x_b, alpha=5, beta=5):
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
-def train_val_dataset(dataset, val_split=0.25, train_size=None, random_state=42, stratify=None):
-    train_idx, val_idx = train_test_split(list(range(len(dataset))), test_size=val_split, train_size=train_size, random_state=random_state, stratify=stratify)
-    return Subset(dataset, train_idx), Subset(dataset, val_idx)
-
 def dataset_with_indices(cls):
     def __getitem__(self, index):
         data, target = cls.__getitem__(self, index)
@@ -350,29 +326,3 @@ def dataset_with_indices(cls):
     return type(cls.__name__, (cls,), {
         '__getitem__': __getitem__,
     })
-
-class OversamplingWrapper(torch.utils.data.Dataset):
-    def __init__(self, dataset, oversampling_size=None):
-        self.dataset = dataset
-        label_dict = {key: [] for key in self.dataset.classes}
-        for i, sign in enumerate(dataset.data['sign']):
-            label_dict[sign].append(i)
-        if oversampling_size:
-            self.oversampling_size = oversampling_size
-        else:
-            self.oversampling_size = max([len(v) for v in label_dict.values()])
-        self.num_classes = len(self.dataset.classes)
-        self.indices = [item for v in label_dict.values() for item in self.multiply(v, self.oversampling_size)]
-
-    def multiply(self, a, n):
-        length = len(a)
-        new_list = [0] * n
-        for i in range(n):
-            new_list[i] = a[i % length]
-        return new_list
-
-    def __len__(self):
-        return self.num_classes * self.oversampling_size
-
-    def __getitem__(self, index):
-        return self.dataset[self.indices[index]]

@@ -1,0 +1,63 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.16.6 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-ldrop/wandb/run-20240408_171143-33gc6ki3
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-vanilla-medium-deep-ldrop-train-2024_04_08_17_11_39
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/33gc6ki3
+/home/grios/myphyton/lib/python3.10/site-packages/torch/optim/lr_scheduler.py:143: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn("Detected call of `lr_scheduler.step()` before `optimizer.step()`. "
+/home/grios/HandCraft/src/utils/optimizers.py:90: UserWarning: This overload of add_ is deprecated:
+	add_(Number alpha, Tensor other)
+Consider using one of the following signatures instead:
+	add_(Tensor other, *, Number alpha) (Triggered internally at ../torch/csrc/utils/python_arg_parser.cpp:1630.)
+  p.data.mul_(self.alpha).add_(1.0 - self.alpha, param_state['cached_params'])  # crucial line
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 102, in <module>
+    loader.load_worker(local_rank=rank,
+  File "/home/grios/HandCraft/src/loader.py", line 283, in load_worker
+    top1, top10, loss = worker.train_step(step)
+  File "/home/grios/HandCraft/src/worker.py", line 112, in train_step
+    self.scaler.step(self.OPTIMIZATION.optimizer)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/cuda/amp/grad_scaler.py", line 452, in step
+    retval = self._maybe_opt_step(optimizer, optimizer_state, *args, **kwargs)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/cuda/amp/grad_scaler.py", line 349, in _maybe_opt_step
+    if not sum(v.item() for v in optimizer_state["found_inf_per_device"].values()):
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/cuda/amp/grad_scaler.py", line 349, in <genexpr>
+    if not sum(v.item() for v in optimizer_state["found_inf_per_device"].values()):
+KeyboardInterrupt
+wandb: Waiting for W&B process to finish... (failed 255). Press Control-C to abort syncing.
+wandb: - 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)Exception ignored in atexit callback: <function _Manager._atexit_setup.<locals>.<lambda> at 0x7ff4e41f49d0>
+Traceback (most recent call last):
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 126, in <lambda>
+    self._atexit_lambda = lambda: self._atexit_teardown()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 135, in _atexit_teardown
+    self._teardown(exit_code)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 145, in _teardown
+    result = self._service.join()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/service/service.py", line 123, in join
+    ret = self._internal_proc.wait()
+  File "/usr/lib/python3.10/subprocess.py", line 1222, in wait
+    self._wait(timeout=sigint_timeout)
+  File "/usr/lib/python3.10/subprocess.py", line 1953, in _wait
+    time.sleep(delay)
+KeyboardInterrupt: 
+wandb: \ 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.003 MB uploaded (0.000 MB deduped)Exception in thread MsgRouterThr:
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.10/threading.py", line 953, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router.py", line 69, in message_loop
+    msg = self._read_message()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router_queue.py", line 32, in _read_message
+    msg = self._response_queue.get(timeout=1)
+  File "/usr/lib/python3.10/multiprocessing/queues.py", line 117, in get
+    res = self._recv_bytes()
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 212, in recv_bytes
+    self._check_closed()
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 136, in _check_closed
+    raise OSError("handle is closed")
+OSError: handle is closed

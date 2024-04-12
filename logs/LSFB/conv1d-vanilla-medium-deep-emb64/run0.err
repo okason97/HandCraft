@@ -1,0 +1,47 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.16.6 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-emb64/wandb/run-20240408_172520-2lznmm2p
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-vanilla-medium-deep-emb64-train-2024_04_08_17_25_01
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/2lznmm2p
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 102, in <module>
+    loader.load_worker(local_rank=rank,
+  File "/home/grios/HandCraft/src/loader.py", line 283, in load_worker
+    top1, top10, loss = worker.train_step(step)
+  File "/home/grios/HandCraft/src/worker.py", line 91, in train_step
+    for values, labels in self.train_dataloader:
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 436, in __iter__
+    self._iterator._reset(self)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1112, in _reset
+    return_idx, return_data = self._get_data()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1285, in _get_data
+    success, data = self._try_get_data()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1133, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/usr/lib/python3.10/queue.py", line 180, in get
+    self.not_empty.wait(remaining)
+  File "/usr/lib/python3.10/threading.py", line 324, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt
+Exception ignored in atexit callback: <function _MultiProcessingDataLoaderIter._clean_up_worker at 0x7f17aedabb50>
+Traceback (most recent call last):
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1473, in _clean_up_worker
+    w.join(timeout=_utils.MP_STATUS_CHECK_INTERVAL)
+  File "/usr/lib/python3.10/multiprocessing/process.py", line 149, in join
+    res = self._popen.wait(timeout)
+  File "/usr/lib/python3.10/multiprocessing/popen_fork.py", line 40, in wait
+    if not wait([self.sentinel], timeout):
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 931, in wait
+    ready = selector.select(timeout)
+  File "/usr/lib/python3.10/selectors.py", line 416, in select
+    fd_event_list = self._selector.poll(timeout)
+KeyboardInterrupt: 
+wandb: Waiting for W&B process to finish... (failed 255). Press Control-C to abort syncing.
+wandb: - 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: / 0.002 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: - 0.004 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: \ 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: | 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: / 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: - 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: \ 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: | 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: / 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb: - 0.008 MB of 0.008 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: Synced LSFB-vanilla-medium-deep-emb64-train-2024_04_08_17_25_01: https://wandb.ai/gaston-g-rios/handcraft/runs/2lznmm2p
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-emb64/wandb/run-20240408_172520-2lznmm2p/logs

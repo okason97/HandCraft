@@ -1,0 +1,1042 @@
+You have chosen a specific GPU. This will completely disable data parallelism.
+[INFO] 2024-03-10 21:32:41 > Run name : LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 21:32:41 > cfgs.DATA =
+[INFO] 2024-03-10 21:32:41 > {
+  "name": "LSFB",
+  "input_size": [
+    15,
+    99,
+    3
+  ],
+  "num_classes": 637,
+  "min_samples": 20,
+  "max_len": 15,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      "all"
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        39,
+        0,
+        269,
+        291,
+        405,
+        17,
+        181,
+        33,
+        159,
+        133,
+        145,
+        46,
+        52,
+        65,
+        55,
+        263,
+        386,
+        362,
+        374,
+        276,
+        282,
+        295,
+        285
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0
+}
+[INFO] 2024-03-10 21:32:41 > cfgs.MODEL =
+[INFO] 2024-03-10 21:32:41 > {
+  "backbone": "conv1d",
+  "apply_sn": false,
+  "act_fn": "GELU",
+  "feature_norm": "batchnorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 32,
+  "conv_dim": 32,
+  "expand_ratio": 1,
+  "depth": 4,
+  "dropout": 0.2,
+  "drop_path": 0.0,
+  "late_dropout": 0.0,
+  "late_drop_path": 0.0,
+  "late_dropout_step": 0,
+  "late_drop_path_step": 0,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": true,
+  "apply_dw_conv": true
+}
+[INFO] 2024-03-10 21:32:41 > cfgs.LOSS =
+[INFO] 2024-03-10 21:32:41 > {
+  "loss_type": "CCE",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "use_relative_loss": true
+}
+[INFO] 2024-03-10 21:32:41 > cfgs.OPTIMIZATION =
+[INFO] 2024-03-10 21:32:41 > {
+  "type_": "RAdam",
+  "lrscheduler": "OneCycle",
+  "batch_size": 1024,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "momentum": "N/A",
+  "nesterov": "N/A",
+  "alpha": "N/A",
+  "beta1": 0.001,
+  "beta2": 0.999,
+  "total_steps": 100,
+  "world_size": 1
+}
+[INFO] 2024-03-10 21:32:41 > cfgs.PRE =
+[INFO] 2024-03-10 21:32:41 > {
+  "apply_rflip": true
+}
+[INFO] 2024-03-10 21:32:41 > cfgs.AUG =
+[INFO] 2024-03-10 21:32:41 > {}
+[INFO] 2024-03-10 21:32:41 > cfgs.RUN =
+[INFO] 2024-03-10 21:32:41 > {
+  "mixed_precision": true,
+  "entity": null,
+  "project": "handcraft",
+  "cfg_file": "./src/configs/LSFB/conv1d/vanilla-small-deep.yaml",
+  "data_dir": "/mnt/sda2/datasets/isolated-cont-sl/LSFB/",
+  "save_dir": "/mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/",
+  "ckpt_dir": null,
+  "load_best": false,
+  "seed": 3796,
+  "distributed_data_parallel": false,
+  "backend": "nccl",
+  "total_nodes": 1,
+  "current_node": 0,
+  "num_workers": 4,
+  "prefetch_factor": 20,
+  "synchronized_bn": false,
+  "train": true,
+  "empty_cache": false,
+  "load_data_in_memory": false,
+  "print_every": 1,
+  "save_every": 1,
+  "dset_used": 1.0,
+  "fix_seed": false
+}
+[INFO] 2024-03-10 21:32:41 > Load LSFB train dataset.
+[INFO] 2024-03-10 21:32:41 > Train dataset size: 1003305
+[INFO] 2024-03-10 21:32:41 > Valid dataset size: 5392
+[INFO] 2024-03-10 21:32:41 > Load LSFB test dataset.
+[INFO] 2024-03-10 21:32:41 > Test dataset size: 41255
+[INFO] 2024-03-10 21:32:41 > Build the model.
+[INFO] 2024-03-10 21:32:41 > Modules are located on './src/models.conv1d'.
+[INFO] 2024-03-10 21:32:41 > Number of parameters: 80946
+[INFO] 2024-03-10 21:32:41 > Classifier(
+  (blocks): ModuleList(
+    (0): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+        )
+        (linear1): Linear(in_features=32, out_features=32, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=32, out_features=32, bias=True)
+        (norm1): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+    (2): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (3): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+        )
+        (linear1): Linear(in_features=32, out_features=32, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=32, out_features=32, bias=True)
+        (norm1): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+    (4): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (5): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+        )
+        (linear1): Linear(in_features=32, out_features=32, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=32, out_features=32, bias=True)
+        (norm1): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+    (6): ModuleList(
+      (0): Block(
+        (conv1d0): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d1): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (conv1d2): Conv1DBlock(
+          (in_linear): Linear(in_features=32, out_features=32, bias=True)
+          (conv1d): dwconv1d(
+            (pad): ConstantPad1d(padding=(16, 0), value=0)
+            (conv): Conv1d(32, 32, kernel_size=(17,), stride=(1,), padding=valid, groups=32)
+          )
+          (eca): eca(
+            (avg_pool): AdaptiveAvgPool2d(output_size=1)
+            (conv): Conv1d(1, 1, kernel_size=(3,), stride=(1,), padding=(1,), bias=False)
+            (sigmoid): Sigmoid()
+          )
+          (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+          (out_linear): Linear(in_features=32, out_features=32, bias=True)
+          (dropout): Dropout(p=0.2, inplace=False)
+          (drop_path): StochasticDepth(p=0.0, mode=batch)
+          (activation): GELU(approximate=none)
+        )
+        (bn): BatchNorm1d(32, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (7): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+        )
+        (linear1): Linear(in_features=32, out_features=32, bias=True)
+        (dropout): Dropout(p=0.2, inplace=False)
+        (linear2): Linear(in_features=32, out_features=32, bias=True)
+        (norm1): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        (dropout1): Dropout(p=0.2, inplace=False)
+        (dropout2): Dropout(p=0.2, inplace=False)
+      )
+    )
+  )
+  (inlinear): Linear(in_features=297, out_features=32, bias=False)
+  (bn): BatchNorm1d(15, eps=0.0001, momentum=0.1, affine=True, track_running_stats=True)
+  (top_linear): Linear(in_features=32, out_features=64, bias=True)
+  (outlinear): Linear(in_features=15, out_features=633, bias=True)
+  (dropout): Dropout(p=0.2, inplace=False)
+)
+[INFO] 2024-03-10 21:32:45 > Start training!
+[INFO] 2024-03-10 21:40:35 > Train Top 1-acc 0.2150	Train Top 10-acc 1.9610	Train Loss 6.4406
+[INFO] 2024-03-10 21:40:35 > Step:      1 Progress: 1.0% Elapsed: 0:07:49 Loss: 6.441 Top1: 0.215 Top10: 1.961 
+[INFO] 2024-03-10 21:40:35 > Start Validation (1 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 21:40:38 > Test Top 1-acc 0.1298	Test Top 10-acc 2.6521	Test Loss 6.3602675259643915
+[INFO] 2024-03-10 21:40:38 > Best Loss (Step: 1): 6.3602675259643915	Best Top 1-acc 0.1298	Best Top 10-acc 2.6521
+[INFO] 2024-03-10 21:40:38 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 21:47:57 > Train Top 1-acc 3.3403	Train Top 10-acc 18.3199	Train Loss 5.5956
+[INFO] 2024-03-10 21:47:57 > Step:      2 Progress: 2.0% Elapsed: 0:15:12 Loss: 5.596 Top1: 3.34 Top10: 18.32 
+[INFO] 2024-03-10 21:47:57 > Start Validation (2 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 21:48:00 > Test Top 1-acc 4.6736	Test Top 10-acc 26.7248	Test Loss 5.098351724777448
+[INFO] 2024-03-10 21:48:00 > Best Loss (Step: 2): 5.098351724777448	Best Top 1-acc 4.6736	Best Top 10-acc 26.7248
+[INFO] 2024-03-10 21:48:00 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 21:55:16 > Train Top 1-acc 11.1892	Train Top 10-acc 42.0636	Train Loss 4.5448
+[INFO] 2024-03-10 21:55:16 > Step:      3 Progress: 3.0% Elapsed: 0:22:31 Loss: 4.545 Top1: 11.19 Top10: 42.06 
+[INFO] 2024-03-10 21:55:16 > Start Validation (3 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 21:55:19 > Test Top 1-acc 11.3131	Test Top 10-acc 44.9555	Test Loss 4.408359606824926
+[INFO] 2024-03-10 21:55:19 > Best Loss (Step: 3): 4.408359606824926	Best Top 1-acc 11.3131	Best Top 10-acc 44.9555
+[INFO] 2024-03-10 21:55:19 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:02:35 > Train Top 1-acc 19.0560	Train Top 10-acc 56.1980	Train Loss 3.9049
+[INFO] 2024-03-10 22:02:35 > Step:      4 Progress: 4.0% Elapsed: 0:29:50 Loss: 3.905 Top1: 19.06 Top10: 56.2 
+[INFO] 2024-03-10 22:02:35 > Start Validation (4 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:02:38 > Test Top 1-acc 15.4117	Test Top 10-acc 50.8902	Test Loss 4.1231106268546
+[INFO] 2024-03-10 22:02:38 > Best Loss (Step: 4): 4.1231106268546	Best Top 1-acc 15.4117	Best Top 10-acc 50.8902
+[INFO] 2024-03-10 22:02:38 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:09:55 > Train Top 1-acc 24.8207	Train Top 10-acc 63.8806	Train Loss 3.5103
+[INFO] 2024-03-10 22:09:55 > Step:      5 Progress: 5.0% Elapsed: 0:37:10 Loss: 3.51 Top1: 24.82 Top10: 63.88 
+[INFO] 2024-03-10 22:09:55 > Start Validation (5 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:09:58 > Test Top 1-acc 18.8427	Test Top 10-acc 60.2188	Test Loss 3.80555684347181
+[INFO] 2024-03-10 22:09:58 > Best Loss (Step: 5): 3.80555684347181	Best Top 1-acc 18.8427	Best Top 10-acc 60.2188
+[INFO] 2024-03-10 22:09:59 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:17:15 > Train Top 1-acc 30.3470	Train Top 10-acc 69.7090	Train Loss 3.1812
+[INFO] 2024-03-10 22:17:15 > Step:      6 Progress: 6.0% Elapsed: 0:44:30 Loss: 3.181 Top1: 30.35 Top10: 69.71 
+[INFO] 2024-03-10 22:17:15 > Start Validation (6 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:17:19 > Test Top 1-acc 21.2166	Test Top 10-acc 62.2404	Test Loss 3.6918351261127595
+[INFO] 2024-03-10 22:17:19 > Best Loss (Step: 6): 3.6918351261127595	Best Top 1-acc 21.2166	Best Top 10-acc 62.2404
+[INFO] 2024-03-10 22:17:19 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:24:35 > Train Top 1-acc 34.7196	Train Top 10-acc 73.9697	Train Loss 2.9219
+[INFO] 2024-03-10 22:24:35 > Step:      7 Progress: 7.0% Elapsed: 0:51:49 Loss: 2.922 Top1: 34.72 Top10: 73.97 
+[INFO] 2024-03-10 22:24:35 > Start Validation (7 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:24:38 > Test Top 1-acc 23.1269	Test Top 10-acc 65.6714	Test Loss 3.614625834569733
+[INFO] 2024-03-10 22:24:38 > Best Loss (Step: 7): 3.614625834569733	Best Top 1-acc 23.1269	Best Top 10-acc 65.6714
+[INFO] 2024-03-10 22:24:38 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:31:53 > Train Top 1-acc 38.1697	Train Top 10-acc 76.9135	Train Loss 2.7252
+[INFO] 2024-03-10 22:31:53 > Step:      8 Progress: 8.0% Elapsed: 0:59:07 Loss: 2.725 Top1: 38.17 Top10: 76.91 
+[INFO] 2024-03-10 22:31:53 > Start Validation (8 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:31:56 > Test Top 1-acc 23.8501	Test Top 10-acc 67.6001	Test Loss 3.519067600148368
+[INFO] 2024-03-10 22:31:56 > Best Loss (Step: 8): 3.519067600148368	Best Top 1-acc 23.8501	Best Top 10-acc 67.6001
+[INFO] 2024-03-10 22:31:56 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:39:13 > Train Top 1-acc 41.2590	Train Top 10-acc 79.3719	Train Loss 2.5572
+[INFO] 2024-03-10 22:39:13 > Step:      9 Progress: 9.0% Elapsed: 1:06:27 Loss: 2.557 Top1: 41.26 Top10: 79.37 
+[INFO] 2024-03-10 22:39:13 > Start Validation (9 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:39:16 > Test Top 1-acc 26.7062	Test Top 10-acc 69.4733	Test Loss 3.3855886034866467
+[INFO] 2024-03-10 22:39:16 > Best Loss (Step: 9): 3.3855886034866467	Best Top 1-acc 26.7062	Best Top 10-acc 69.4733
+[INFO] 2024-03-10 22:39:16 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:46:32 > Train Top 1-acc 43.8307	Train Top 10-acc 81.2501	Train Loss 2.4175
+[INFO] 2024-03-10 22:46:32 > Step:     10 Progress: 10.0% Elapsed: 1:13:46 Loss: 2.418 Top1: 43.83 Top10: 81.25 
+[INFO] 2024-03-10 22:46:32 > Start Validation (10 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:46:35 > Test Top 1-acc 28.5794	Test Top 10-acc 71.0868	Test Loss 3.272886915801187
+[INFO] 2024-03-10 22:46:35 > Best Loss (Step: 10): 3.272886915801187	Best Top 1-acc 28.5794	Best Top 10-acc 71.0868
+[INFO] 2024-03-10 22:46:35 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:53:51 > Train Top 1-acc 45.7526	Train Top 10-acc 82.6532	Train Loss 2.3088
+[INFO] 2024-03-10 22:53:51 > Step:     11 Progress: 11.0% Elapsed: 1:21:06 Loss: 2.309 Top1: 45.75 Top10: 82.65 
+[INFO] 2024-03-10 22:53:51 > Start Validation (11 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 22:53:55 > Test Top 1-acc 26.5950	Test Top 10-acc 70.0668	Test Loss 3.4518499629080117
+[INFO] 2024-03-10 22:53:55 > Best Loss (Step: 10): 3.272886915801187	Best Top 1-acc 26.5950	Best Top 10-acc 70.0668
+[INFO] 2024-03-10 22:53:55 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:01:11 > Train Top 1-acc 47.5017	Train Top 10-acc 83.7804	Train Loss 2.2197
+[INFO] 2024-03-10 23:01:11 > Step:     12 Progress: 12.0% Elapsed: 1:28:25 Loss: 2.22 Top1: 47.5 Top10: 83.78 
+[INFO] 2024-03-10 23:01:11 > Start Validation (12 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:01:14 > Test Top 1-acc 27.1142	Test Top 10-acc 71.3464	Test Loss 3.392740402448071
+[INFO] 2024-03-10 23:01:14 > Best Loss (Step: 10): 3.272886915801187	Best Top 1-acc 27.1142	Best Top 10-acc 71.3464
+[INFO] 2024-03-10 23:01:14 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:08:29 > Train Top 1-acc 48.7961	Train Top 10-acc 84.6859	Train Loss 2.1471
+[INFO] 2024-03-10 23:08:29 > Step:     13 Progress: 13.0% Elapsed: 1:35:44 Loss: 2.147 Top1: 48.8 Top10: 84.69 
+[INFO] 2024-03-10 23:08:29 > Start Validation (13 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:08:32 > Test Top 1-acc 31.4726	Test Top 10-acc 74.1098	Test Loss 3.160608308605341
+[INFO] 2024-03-10 23:08:32 > Best Loss (Step: 13): 3.160608308605341	Best Top 1-acc 31.4726	Best Top 10-acc 74.1098
+[INFO] 2024-03-10 23:08:33 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:15:48 > Train Top 1-acc 49.8532	Train Top 10-acc 85.3805	Train Loss 2.0937
+[INFO] 2024-03-10 23:15:48 > Step:     14 Progress: 14.0% Elapsed: 1:43:02 Loss: 2.094 Top1: 49.85 Top10: 85.38 
+[INFO] 2024-03-10 23:15:48 > Start Validation (14 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:15:51 > Test Top 1-acc 26.5950	Test Top 10-acc 70.2337	Test Loss 3.571523785237389
+[INFO] 2024-03-10 23:15:51 > Best Loss (Step: 13): 3.160608308605341	Best Top 1-acc 26.5950	Best Top 10-acc 70.2337
+[INFO] 2024-03-10 23:15:51 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:23:07 > Train Top 1-acc 50.7880	Train Top 10-acc 85.8732	Train Loss 2.0496
+[INFO] 2024-03-10 23:23:07 > Step:     15 Progress: 15.0% Elapsed: 1:50:22 Loss: 2.05 Top1: 50.79 Top10: 85.87 
+[INFO] 2024-03-10 23:23:07 > Start Validation (15 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:23:11 > Test Top 1-acc 29.7663	Test Top 10-acc 72.7745	Test Loss 3.2911373330860534
+[INFO] 2024-03-10 23:23:11 > Best Loss (Step: 13): 3.160608308605341	Best Top 1-acc 29.7663	Best Top 10-acc 72.7745
+[INFO] 2024-03-10 23:23:11 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:30:27 > Train Top 1-acc 51.4780	Train Top 10-acc 86.3350	Train Loss 2.0131
+[INFO] 2024-03-10 23:30:27 > Step:     16 Progress: 16.0% Elapsed: 1:57:41 Loss: 2.013 Top1: 51.48 Top10: 86.34 
+[INFO] 2024-03-10 23:30:27 > Start Validation (16 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:30:30 > Test Top 1-acc 29.4881	Test Top 10-acc 73.1454	Test Loss 3.330095511869436
+[INFO] 2024-03-10 23:30:30 > Best Loss (Step: 13): 3.160608308605341	Best Top 1-acc 29.4881	Best Top 10-acc 73.1454
+[INFO] 2024-03-10 23:30:30 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:37:46 > Train Top 1-acc 52.0996	Train Top 10-acc 86.7316	Train Loss 1.9789
+[INFO] 2024-03-10 23:37:46 > Step:     17 Progress: 17.0% Elapsed: 2:05:00 Loss: 1.979 Top1: 52.1 Top10: 86.73 
+[INFO] 2024-03-10 23:37:46 > Start Validation (17 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:37:49 > Test Top 1-acc 28.3568	Test Top 10-acc 71.9399	Test Loss 3.3950760385756675
+[INFO] 2024-03-10 23:37:49 > Best Loss (Step: 13): 3.160608308605341	Best Top 1-acc 28.3568	Best Top 10-acc 71.9399
+[INFO] 2024-03-10 23:37:49 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:45:04 > Train Top 1-acc 52.5707	Train Top 10-acc 87.0680	Train Loss 1.9530
+[INFO] 2024-03-10 23:45:04 > Step:     18 Progress: 18.0% Elapsed: 2:12:18 Loss: 1.953 Top1: 52.57 Top10: 87.07 
+[INFO] 2024-03-10 23:45:04 > Start Validation (18 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:45:07 > Test Top 1-acc 29.1914	Test Top 10-acc 72.3665	Test Loss 3.330512796735905
+[INFO] 2024-03-10 23:45:07 > Best Loss (Step: 13): 3.160608308605341	Best Top 1-acc 29.1914	Best Top 10-acc 72.3665
+[INFO] 2024-03-10 23:45:07 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:52:24 > Train Top 1-acc 53.0130	Train Top 10-acc 87.2317	Train Loss 1.9344
+[INFO] 2024-03-10 23:52:24 > Step:     19 Progress: 19.0% Elapsed: 2:19:38 Loss: 1.934 Top1: 53.01 Top10: 87.23 
+[INFO] 2024-03-10 23:52:24 > Start Validation (19 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:52:27 > Test Top 1-acc 31.6766	Test Top 10-acc 73.9429	Test Loss 3.2430684347181007
+[INFO] 2024-03-10 23:52:27 > Best Loss (Step: 13): 3.160608308605341	Best Top 1-acc 31.6766	Best Top 10-acc 73.9429
+[INFO] 2024-03-10 23:52:27 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:59:44 > Train Top 1-acc 53.3039	Train Top 10-acc 87.4197	Train Loss 1.9188
+[INFO] 2024-03-10 23:59:44 > Step:     20 Progress: 20.0% Elapsed: 2:26:59 Loss: 1.919 Top1: 53.3 Top10: 87.42 
+[INFO] 2024-03-10 23:59:44 > Start Validation (20 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-10 23:59:47 > Test Top 1-acc 32.7151	Test Top 10-acc 74.5178	Test Loss 3.123614846068249
+[INFO] 2024-03-10 23:59:47 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.7151	Best Top 10-acc 74.5178
+[INFO] 2024-03-10 23:59:48 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:07:04 > Train Top 1-acc 53.6188	Train Top 10-acc 87.6156	Train Loss 1.9014
+[INFO] 2024-03-11 00:07:04 > Step:     21 Progress: 21.0% Elapsed: 2:34:18 Loss: 1.901 Top1: 53.62 Top10: 87.62 
+[INFO] 2024-03-11 00:07:04 > Start Validation (21 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:07:07 > Test Top 1-acc 28.2826	Test Top 10-acc 71.7915	Test Loss 3.5228173683234423
+[INFO] 2024-03-11 00:07:07 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 28.2826	Best Top 10-acc 71.7915
+[INFO] 2024-03-11 00:07:07 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:14:23 > Train Top 1-acc 53.8319	Train Top 10-acc 87.7934	Train Loss 1.8872
+[INFO] 2024-03-11 00:14:23 > Step:     22 Progress: 22.0% Elapsed: 2:41:38 Loss: 1.887 Top1: 53.83 Top10: 87.79 
+[INFO] 2024-03-11 00:14:23 > Start Validation (22 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:14:27 > Test Top 1-acc 29.5438	Test Top 10-acc 72.8116	Test Loss 3.290117303412463
+[INFO] 2024-03-11 00:14:27 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 29.5438	Best Top 10-acc 72.8116
+[INFO] 2024-03-11 00:14:27 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:21:42 > Train Top 1-acc 54.1344	Train Top 10-acc 87.9241	Train Loss 1.8744
+[INFO] 2024-03-11 00:21:42 > Step:     23 Progress: 23.0% Elapsed: 2:48:57 Loss: 1.874 Top1: 54.13 Top10: 87.92 
+[INFO] 2024-03-11 00:21:42 > Start Validation (23 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:21:46 > Test Top 1-acc 30.3969	Test Top 10-acc 74.0542	Test Loss 3.2387680823442135
+[INFO] 2024-03-11 00:21:46 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.3969	Best Top 10-acc 74.0542
+[INFO] 2024-03-11 00:21:46 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:29:02 > Train Top 1-acc 54.4168	Train Top 10-acc 88.0560	Train Loss 1.8619
+[INFO] 2024-03-11 00:29:02 > Step:     24 Progress: 24.0% Elapsed: 2:56:17 Loss: 1.862 Top1: 54.42 Top10: 88.06 
+[INFO] 2024-03-11 00:29:02 > Start Validation (24 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:29:06 > Test Top 1-acc 29.6736	Test Top 10-acc 73.0712	Test Loss 3.3387078078635013
+[INFO] 2024-03-11 00:29:06 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 29.6736	Best Top 10-acc 73.0712
+[INFO] 2024-03-11 00:29:06 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:36:23 > Train Top 1-acc 54.6222	Train Top 10-acc 88.2177	Train Loss 1.8515
+[INFO] 2024-03-11 00:36:23 > Step:     25 Progress: 25.0% Elapsed: 3:03:37 Loss: 1.851 Top1: 54.62 Top10: 88.22 
+[INFO] 2024-03-11 00:36:23 > Start Validation (25 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:36:26 > Test Top 1-acc 29.3583	Test Top 10-acc 73.3865	Test Loss 3.3480155786350148
+[INFO] 2024-03-11 00:36:26 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 29.3583	Best Top 10-acc 73.3865
+[INFO] 2024-03-11 00:36:26 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:43:42 > Train Top 1-acc 54.8834	Train Top 10-acc 88.3162	Train Loss 1.8412
+[INFO] 2024-03-11 00:43:42 > Step:     26 Progress: 26.0% Elapsed: 3:10:56 Loss: 1.841 Top1: 54.88 Top10: 88.32 
+[INFO] 2024-03-11 00:43:42 > Start Validation (26 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:43:45 > Test Top 1-acc 30.5823	Test Top 10-acc 73.9985	Test Loss 3.204655044510386
+[INFO] 2024-03-11 00:43:45 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.5823	Best Top 10-acc 73.9985
+[INFO] 2024-03-11 00:43:45 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:51:02 > Train Top 1-acc 55.0082	Train Top 10-acc 88.4750	Train Loss 1.8294
+[INFO] 2024-03-11 00:51:02 > Step:     27 Progress: 27.0% Elapsed: 3:18:16 Loss: 1.829 Top1: 55.01 Top10: 88.47 
+[INFO] 2024-03-11 00:51:02 > Start Validation (27 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:51:05 > Test Top 1-acc 27.7448	Test Top 10-acc 70.9570	Test Loss 3.5224986090504453
+[INFO] 2024-03-11 00:51:05 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 27.7448	Best Top 10-acc 70.9570
+[INFO] 2024-03-11 00:51:05 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:58:22 > Train Top 1-acc 55.2407	Train Top 10-acc 88.5439	Train Loss 1.8196
+[INFO] 2024-03-11 00:58:22 > Step:     28 Progress: 28.0% Elapsed: 3:25:36 Loss: 1.82 Top1: 55.24 Top10: 88.54 
+[INFO] 2024-03-11 00:58:22 > Start Validation (28 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 00:58:25 > Test Top 1-acc 28.3939	Test Top 10-acc 72.9228	Test Loss 3.450418443991098
+[INFO] 2024-03-11 00:58:25 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 28.3939	Best Top 10-acc 72.9228
+[INFO] 2024-03-11 00:58:25 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:05:42 > Train Top 1-acc 55.4436	Train Top 10-acc 88.6212	Train Loss 1.8098
+[INFO] 2024-03-11 01:05:42 > Step:     29 Progress: 29.0% Elapsed: 3:32:56 Loss: 1.81 Top1: 55.44 Top10: 88.62 
+[INFO] 2024-03-11 01:05:42 > Start Validation (29 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:05:45 > Test Top 1-acc 31.0274	Test Top 10-acc 75.0742	Test Loss 3.189192321958457
+[INFO] 2024-03-11 01:05:45 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.0274	Best Top 10-acc 75.0742
+[INFO] 2024-03-11 01:05:45 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:13:02 > Train Top 1-acc 55.8432	Train Top 10-acc 88.8560	Train Loss 1.7929
+[INFO] 2024-03-11 01:13:02 > Step:     30 Progress: 30.0% Elapsed: 3:40:16 Loss: 1.793 Top1: 55.84 Top10: 88.86 
+[INFO] 2024-03-11 01:13:02 > Start Validation (30 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:13:05 > Test Top 1-acc 30.8791	Test Top 10-acc 73.0712	Test Loss 3.328009087537092
+[INFO] 2024-03-11 01:13:05 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.8791	Best Top 10-acc 73.0712
+[INFO] 2024-03-11 01:13:05 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:20:23 > Train Top 1-acc 56.1547	Train Top 10-acc 88.9687	Train Loss 1.7817
+[INFO] 2024-03-11 01:20:23 > Step:     31 Progress: 31.0% Elapsed: 3:47:37 Loss: 1.782 Top1: 56.15 Top10: 88.97 
+[INFO] 2024-03-11 01:20:23 > Start Validation (31 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:20:26 > Test Top 1-acc 27.2812	Test Top 10-acc 72.1996	Test Loss 3.5621580582344214
+[INFO] 2024-03-11 01:20:26 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 27.2812	Best Top 10-acc 72.1996
+[INFO] 2024-03-11 01:20:26 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:27:42 > Train Top 1-acc 56.4667	Train Top 10-acc 89.1669	Train Loss 1.7660
+[INFO] 2024-03-11 01:27:42 > Step:     32 Progress: 32.0% Elapsed: 3:54:57 Loss: 1.766 Top1: 56.47 Top10: 89.17 
+[INFO] 2024-03-11 01:27:42 > Start Validation (32 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:27:46 > Test Top 1-acc 28.2085	Test Top 10-acc 73.2567	Test Loss 3.3920159495548963
+[INFO] 2024-03-11 01:27:46 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 28.2085	Best Top 10-acc 73.2567
+[INFO] 2024-03-11 01:27:46 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:35:01 > Train Top 1-acc 56.6835	Train Top 10-acc 89.2545	Train Loss 1.7533
+[INFO] 2024-03-11 01:35:01 > Step:     33 Progress: 33.0% Elapsed: 4:02:16 Loss: 1.753 Top1: 56.68 Top10: 89.25 
+[INFO] 2024-03-11 01:35:01 > Start Validation (33 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:35:05 > Test Top 1-acc 32.0475	Test Top 10-acc 75.4266	Test Loss 3.1729529859050447
+[INFO] 2024-03-11 01:35:05 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.0475	Best Top 10-acc 75.4266
+[INFO] 2024-03-11 01:35:05 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:42:20 > Train Top 1-acc 56.9171	Train Top 10-acc 89.4106	Train Loss 1.7423
+[INFO] 2024-03-11 01:42:20 > Step:     34 Progress: 34.0% Elapsed: 4:09:35 Loss: 1.742 Top1: 56.92 Top10: 89.41 
+[INFO] 2024-03-11 01:42:20 > Start Validation (34 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:42:24 > Test Top 1-acc 31.3613	Test Top 10-acc 73.6276	Test Loss 3.332465921735905
+[INFO] 2024-03-11 01:42:24 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.3613	Best Top 10-acc 73.6276
+[INFO] 2024-03-11 01:42:24 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:49:39 > Train Top 1-acc 57.1531	Train Top 10-acc 89.5409	Train Loss 1.7297
+[INFO] 2024-03-11 01:49:39 > Step:     35 Progress: 35.0% Elapsed: 4:16:54 Loss: 1.73 Top1: 57.15 Top10: 89.54 
+[INFO] 2024-03-11 01:49:39 > Start Validation (35 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:49:43 > Test Top 1-acc 29.5809	Test Top 10-acc 72.9043	Test Loss 3.3657907548219583
+[INFO] 2024-03-11 01:49:43 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 29.5809	Best Top 10-acc 72.9043
+[INFO] 2024-03-11 01:49:43 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:56:58 > Train Top 1-acc 57.4540	Train Top 10-acc 89.6863	Train Loss 1.7149
+[INFO] 2024-03-11 01:56:58 > Step:     36 Progress: 36.0% Elapsed: 4:24:12 Loss: 1.715 Top1: 57.45 Top10: 89.69 
+[INFO] 2024-03-11 01:56:58 > Start Validation (36 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 01:57:01 > Test Top 1-acc 30.0074	Test Top 10-acc 73.9985	Test Loss 3.3418606268545994
+[INFO] 2024-03-11 01:57:01 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.0074	Best Top 10-acc 73.9985
+[INFO] 2024-03-11 01:57:01 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:04:20 > Train Top 1-acc 57.6132	Train Top 10-acc 89.7696	Train Loss 1.7071
+[INFO] 2024-03-11 02:04:20 > Step:     37 Progress: 37.0% Elapsed: 4:31:35 Loss: 1.707 Top1: 57.61 Top10: 89.77 
+[INFO] 2024-03-11 02:04:20 > Start Validation (37 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:04:23 > Test Top 1-acc 27.6892	Test Top 10-acc 72.3479	Test Loss 3.506833039688427
+[INFO] 2024-03-11 02:04:23 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 27.6892	Best Top 10-acc 72.3479
+[INFO] 2024-03-11 02:04:23 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:11:42 > Train Top 1-acc 57.7868	Train Top 10-acc 89.8456	Train Loss 1.6997
+[INFO] 2024-03-11 02:11:42 > Step:     38 Progress: 38.0% Elapsed: 4:38:56 Loss: 1.7 Top1: 57.79 Top10: 89.85 
+[INFO] 2024-03-11 02:11:42 > Start Validation (38 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:11:45 > Test Top 1-acc 30.2485	Test Top 10-acc 73.9800	Test Loss 3.388451641320475
+[INFO] 2024-03-11 02:11:45 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.2485	Best Top 10-acc 73.9800
+[INFO] 2024-03-11 02:11:45 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:19:02 > Train Top 1-acc 58.0511	Train Top 10-acc 89.9696	Train Loss 1.6877
+[INFO] 2024-03-11 02:19:02 > Step:     39 Progress: 39.0% Elapsed: 4:46:16 Loss: 1.688 Top1: 58.05 Top10: 89.97 
+[INFO] 2024-03-11 02:19:02 > Start Validation (39 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:19:05 > Test Top 1-acc 29.7663	Test Top 10-acc 73.7018	Test Loss 3.3773124536350148
+[INFO] 2024-03-11 02:19:05 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 29.7663	Best Top 10-acc 73.7018
+[INFO] 2024-03-11 02:19:05 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:26:31 > Train Top 1-acc 58.2253	Train Top 10-acc 90.0416	Train Loss 1.6799
+[INFO] 2024-03-11 02:26:31 > Step:     40 Progress: 40.0% Elapsed: 4:53:45 Loss: 1.68 Top1: 58.23 Top10: 90.04 
+[INFO] 2024-03-11 02:26:31 > Start Validation (40 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:26:34 > Test Top 1-acc 33.4570	Test Top 10-acc 75.7418	Test Loss 3.1496835589762613
+[INFO] 2024-03-11 02:26:34 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.4570	Best Top 10-acc 75.7418
+[INFO] 2024-03-11 02:26:34 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:33:51 > Train Top 1-acc 58.5044	Train Top 10-acc 90.1514	Train Loss 1.6671
+[INFO] 2024-03-11 02:33:51 > Step:     41 Progress: 41.0% Elapsed: 5:01:05 Loss: 1.667 Top1: 58.5 Top10: 90.15 
+[INFO] 2024-03-11 02:33:51 > Start Validation (41 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:33:54 > Test Top 1-acc 31.2685	Test Top 10-acc 74.5364	Test Loss 3.3195822514836797
+[INFO] 2024-03-11 02:33:54 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.2685	Best Top 10-acc 74.5364
+[INFO] 2024-03-11 02:33:54 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:41:09 > Train Top 1-acc 58.7567	Train Top 10-acc 90.2688	Train Loss 1.6561
+[INFO] 2024-03-11 02:41:09 > Step:     42 Progress: 42.0% Elapsed: 5:08:24 Loss: 1.656 Top1: 58.76 Top10: 90.27 
+[INFO] 2024-03-11 02:41:09 > Start Validation (42 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:41:13 > Test Top 1-acc 31.3798	Test Top 10-acc 74.6291	Test Loss 3.272255192878338
+[INFO] 2024-03-11 02:41:13 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.3798	Best Top 10-acc 74.6291
+[INFO] 2024-03-11 02:41:13 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:48:28 > Train Top 1-acc 58.8576	Train Top 10-acc 90.4051	Train Loss 1.6476
+[INFO] 2024-03-11 02:48:28 > Step:     43 Progress: 43.0% Elapsed: 5:15:42 Loss: 1.648 Top1: 58.86 Top10: 90.41 
+[INFO] 2024-03-11 02:48:28 > Start Validation (43 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:48:31 > Test Top 1-acc 32.5853	Test Top 10-acc 75.8531	Test Loss 3.160706834198813
+[INFO] 2024-03-11 02:48:31 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.5853	Best Top 10-acc 75.8531
+[INFO] 2024-03-11 02:48:31 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:55:47 > Train Top 1-acc 59.2047	Train Top 10-acc 90.5094	Train Loss 1.6366
+[INFO] 2024-03-11 02:55:47 > Step:     44 Progress: 44.0% Elapsed: 5:23:02 Loss: 1.637 Top1: 59.2 Top10: 90.51 
+[INFO] 2024-03-11 02:55:47 > Start Validation (44 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 02:55:51 > Test Top 1-acc 29.6180	Test Top 10-acc 73.0898	Test Loss 3.4938102744807122
+[INFO] 2024-03-11 02:55:51 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 29.6180	Best Top 10-acc 73.0898
+[INFO] 2024-03-11 02:55:51 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:03:06 > Train Top 1-acc 59.3928	Train Top 10-acc 90.5882	Train Loss 1.6266
+[INFO] 2024-03-11 03:03:06 > Step:     45 Progress: 45.0% Elapsed: 5:30:21 Loss: 1.627 Top1: 59.39 Top10: 90.59 
+[INFO] 2024-03-11 03:03:06 > Start Validation (45 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:03:09 > Test Top 1-acc 32.0660	Test Top 10-acc 75.7047	Test Loss 3.19277981268546
+[INFO] 2024-03-11 03:03:09 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.0660	Best Top 10-acc 75.7047
+[INFO] 2024-03-11 03:03:09 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:10:26 > Train Top 1-acc 59.6244	Train Top 10-acc 90.7395	Train Loss 1.6149
+[INFO] 2024-03-11 03:10:26 > Step:     46 Progress: 46.0% Elapsed: 5:37:41 Loss: 1.615 Top1: 59.62 Top10: 90.74 
+[INFO] 2024-03-11 03:10:26 > Start Validation (46 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:10:29 > Test Top 1-acc 32.6780	Test Top 10-acc 75.6862	Test Loss 3.222847505563798
+[INFO] 2024-03-11 03:10:29 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.6780	Best Top 10-acc 75.6862
+[INFO] 2024-03-11 03:10:29 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:17:46 > Train Top 1-acc 59.8818	Train Top 10-acc 90.7940	Train Loss 1.6047
+[INFO] 2024-03-11 03:17:46 > Step:     47 Progress: 47.0% Elapsed: 5:45:01 Loss: 1.605 Top1: 59.88 Top10: 90.79 
+[INFO] 2024-03-11 03:17:46 > Start Validation (47 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:17:50 > Test Top 1-acc 31.2500	Test Top 10-acc 74.5734	Test Loss 3.304496244436202
+[INFO] 2024-03-11 03:17:50 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.2500	Best Top 10-acc 74.5734
+[INFO] 2024-03-11 03:17:50 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:25:06 > Train Top 1-acc 60.0793	Train Top 10-acc 90.9119	Train Loss 1.5946
+[INFO] 2024-03-11 03:25:06 > Step:     48 Progress: 48.0% Elapsed: 5:52:21 Loss: 1.595 Top1: 60.08 Top10: 90.91 
+[INFO] 2024-03-11 03:25:06 > Start Validation (48 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:25:09 > Test Top 1-acc 30.7307	Test Top 10-acc 73.0156	Test Loss 3.4380158104599405
+[INFO] 2024-03-11 03:25:09 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.7307	Best Top 10-acc 73.0156
+[INFO] 2024-03-11 03:25:09 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:32:26 > Train Top 1-acc 60.3335	Train Top 10-acc 91.0339	Train Loss 1.5842
+[INFO] 2024-03-11 03:32:26 > Step:     49 Progress: 49.0% Elapsed: 5:59:41 Loss: 1.584 Top1: 60.33 Top10: 91.03 
+[INFO] 2024-03-11 03:32:26 > Start Validation (49 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:32:29 > Test Top 1-acc 31.8435	Test Top 10-acc 74.4251	Test Loss 3.302995178041543
+[INFO] 2024-03-11 03:32:29 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.8435	Best Top 10-acc 74.4251
+[INFO] 2024-03-11 03:32:29 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:39:45 > Train Top 1-acc 60.6626	Train Top 10-acc 91.1317	Train Loss 1.5711
+[INFO] 2024-03-11 03:39:45 > Step:     50 Progress: 50.0% Elapsed: 6:06:59 Loss: 1.571 Top1: 60.66 Top10: 91.13 
+[INFO] 2024-03-11 03:39:45 > Start Validation (50 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:39:48 > Test Top 1-acc 33.1788	Test Top 10-acc 76.5764	Test Loss 3.2175155322700295
+[INFO] 2024-03-11 03:39:48 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.1788	Best Top 10-acc 76.5764
+[INFO] 2024-03-11 03:39:48 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:47:04 > Train Top 1-acc 60.8763	Train Top 10-acc 91.2264	Train Loss 1.5622
+[INFO] 2024-03-11 03:47:04 > Step:     51 Progress: 51.0% Elapsed: 6:14:18 Loss: 1.562 Top1: 60.88 Top10: 91.23 
+[INFO] 2024-03-11 03:47:04 > Start Validation (51 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:47:07 > Test Top 1-acc 30.6009	Test Top 10-acc 74.2953	Test Loss 3.4461876390949553
+[INFO] 2024-03-11 03:47:07 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.6009	Best Top 10-acc 74.2953
+[INFO] 2024-03-11 03:47:07 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:54:24 > Train Top 1-acc 61.0938	Train Top 10-acc 91.3496	Train Loss 1.5503
+[INFO] 2024-03-11 03:54:24 > Step:     52 Progress: 52.0% Elapsed: 6:21:39 Loss: 1.55 Top1: 61.09 Top10: 91.35 
+[INFO] 2024-03-11 03:54:24 > Start Validation (52 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 03:54:27 > Test Top 1-acc 31.1387	Test Top 10-acc 74.0171	Test Loss 3.387715597181009
+[INFO] 2024-03-11 03:54:27 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.1387	Best Top 10-acc 74.0171
+[INFO] 2024-03-11 03:54:27 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:01:43 > Train Top 1-acc 61.3514	Train Top 10-acc 91.4309	Train Loss 1.5397
+[INFO] 2024-03-11 04:01:43 > Step:     53 Progress: 53.0% Elapsed: 6:28:57 Loss: 1.54 Top1: 61.35 Top10: 91.43 
+[INFO] 2024-03-11 04:01:43 > Start Validation (53 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:01:46 > Test Top 1-acc 31.2129	Test Top 10-acc 74.4622	Test Loss 3.3524840040801185
+[INFO] 2024-03-11 04:01:46 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.2129	Best Top 10-acc 74.4622
+[INFO] 2024-03-11 04:01:46 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:09:03 > Train Top 1-acc 61.6513	Train Top 10-acc 91.5823	Train Loss 1.5251
+[INFO] 2024-03-11 04:09:03 > Step:     54 Progress: 54.0% Elapsed: 6:36:18 Loss: 1.525 Top1: 61.65 Top10: 91.58 
+[INFO] 2024-03-11 04:09:03 > Start Validation (54 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:09:07 > Test Top 1-acc 32.9933	Test Top 10-acc 75.0742	Test Loss 3.262124443620178
+[INFO] 2024-03-11 04:09:07 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.9933	Best Top 10-acc 75.0742
+[INFO] 2024-03-11 04:09:07 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:16:23 > Train Top 1-acc 61.9596	Train Top 10-acc 91.6611	Train Loss 1.5129
+[INFO] 2024-03-11 04:16:23 > Step:     55 Progress: 55.0% Elapsed: 6:43:38 Loss: 1.513 Top1: 61.96 Top10: 91.66 
+[INFO] 2024-03-11 04:16:23 > Start Validation (55 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:16:27 > Test Top 1-acc 31.1758	Test Top 10-acc 74.7589	Test Loss 3.4311653839020773
+[INFO] 2024-03-11 04:16:27 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.1758	Best Top 10-acc 74.7589
+[INFO] 2024-03-11 04:16:27 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:23:42 > Train Top 1-acc 62.2405	Train Top 10-acc 91.7742	Train Loss 1.5010
+[INFO] 2024-03-11 04:23:42 > Step:     56 Progress: 56.0% Elapsed: 6:50:57 Loss: 1.501 Top1: 62.24 Top10: 91.77 
+[INFO] 2024-03-11 04:23:42 > Start Validation (56 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:23:46 > Test Top 1-acc 31.8249	Test Top 10-acc 74.7033	Test Loss 3.372420947700297
+[INFO] 2024-03-11 04:23:46 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.8249	Best Top 10-acc 74.7033
+[INFO] 2024-03-11 04:23:46 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:31:00 > Train Top 1-acc 62.5470	Train Top 10-acc 91.8682	Train Loss 1.4882
+[INFO] 2024-03-11 04:31:00 > Step:     57 Progress: 57.0% Elapsed: 6:58:14 Loss: 1.488 Top1: 62.55 Top10: 91.87 
+[INFO] 2024-03-11 04:31:00 > Start Validation (57 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:31:03 > Test Top 1-acc 31.4911	Test Top 10-acc 76.2982	Test Loss 3.3093877503709197
+[INFO] 2024-03-11 04:31:03 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.4911	Best Top 10-acc 76.2982
+[INFO] 2024-03-11 04:31:03 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:38:20 > Train Top 1-acc 62.7894	Train Top 10-acc 91.9985	Train Loss 1.4760
+[INFO] 2024-03-11 04:38:20 > Step:     58 Progress: 58.0% Elapsed: 7:05:35 Loss: 1.476 Top1: 62.79 Top10: 92.0 
+[INFO] 2024-03-11 04:38:20 > Start Validation (58 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:38:24 > Test Top 1-acc 30.5638	Test Top 10-acc 74.6662	Test Loss 3.386399990727003
+[INFO] 2024-03-11 04:38:24 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.5638	Best Top 10-acc 74.6662
+[INFO] 2024-03-11 04:38:24 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:45:40 > Train Top 1-acc 63.1421	Train Top 10-acc 92.0759	Train Loss 1.4630
+[INFO] 2024-03-11 04:45:40 > Step:     59 Progress: 59.0% Elapsed: 7:12:54 Loss: 1.463 Top1: 63.14 Top10: 92.08 
+[INFO] 2024-03-11 04:45:40 > Start Validation (59 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:45:43 > Test Top 1-acc 32.0846	Test Top 10-acc 74.9815	Test Loss 3.3323442136498516
+[INFO] 2024-03-11 04:45:43 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.0846	Best Top 10-acc 74.9815
+[INFO] 2024-03-11 04:45:43 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:53:00 > Train Top 1-acc 63.3684	Train Top 10-acc 92.2326	Train Loss 1.4510
+[INFO] 2024-03-11 04:53:00 > Step:     60 Progress: 60.0% Elapsed: 7:20:14 Loss: 1.451 Top1: 63.37 Top10: 92.23 
+[INFO] 2024-03-11 04:53:00 > Start Validation (60 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 04:53:03 > Test Top 1-acc 32.3628	Test Top 10-acc 76.2055	Test Loss 3.261805684347181
+[INFO] 2024-03-11 04:53:03 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.3628	Best Top 10-acc 76.2055
+[INFO] 2024-03-11 04:53:03 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:00:19 > Train Top 1-acc 63.6189	Train Top 10-acc 92.3252	Train Loss 1.4392
+[INFO] 2024-03-11 05:00:19 > Step:     61 Progress: 61.0% Elapsed: 7:27:34 Loss: 1.439 Top1: 63.62 Top10: 92.33 
+[INFO] 2024-03-11 05:00:19 > Start Validation (61 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:00:23 > Test Top 1-acc 30.7864	Test Top 10-acc 74.9444	Test Loss 3.4326026984421363
+[INFO] 2024-03-11 05:00:23 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 30.7864	Best Top 10-acc 74.9444
+[INFO] 2024-03-11 05:00:23 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:07:39 > Train Top 1-acc 63.9381	Train Top 10-acc 92.4493	Train Loss 1.4252
+[INFO] 2024-03-11 05:07:39 > Step:     62 Progress: 62.0% Elapsed: 7:34:53 Loss: 1.425 Top1: 63.94 Top10: 92.45 
+[INFO] 2024-03-11 05:07:39 > Start Validation (62 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:07:42 > Test Top 1-acc 32.0846	Test Top 10-acc 75.8346	Test Loss 3.2812268175074184
+[INFO] 2024-03-11 05:07:42 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.0846	Best Top 10-acc 75.8346
+[INFO] 2024-03-11 05:07:42 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:14:58 > Train Top 1-acc 64.2235	Train Top 10-acc 92.5178	Train Loss 1.4146
+[INFO] 2024-03-11 05:14:58 > Step:     63 Progress: 63.0% Elapsed: 7:42:12 Loss: 1.415 Top1: 64.22 Top10: 92.52 
+[INFO] 2024-03-11 05:14:58 > Start Validation (63 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:15:01 > Test Top 1-acc 32.5853	Test Top 10-acc 75.7604	Test Loss 3.3382441580118694
+[INFO] 2024-03-11 05:15:01 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.5853	Best Top 10-acc 75.7604
+[INFO] 2024-03-11 05:15:01 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:22:17 > Train Top 1-acc 64.5900	Train Top 10-acc 92.6358	Train Loss 1.3993
+[INFO] 2024-03-11 05:22:17 > Step:     64 Progress: 64.0% Elapsed: 7:49:32 Loss: 1.399 Top1: 64.59 Top10: 92.64 
+[INFO] 2024-03-11 05:22:17 > Start Validation (64 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:22:20 > Test Top 1-acc 32.0846	Test Top 10-acc 76.2982	Test Loss 3.3298347088278932
+[INFO] 2024-03-11 05:22:20 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.0846	Best Top 10-acc 76.2982
+[INFO] 2024-03-11 05:22:21 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:29:36 > Train Top 1-acc 64.8901	Train Top 10-acc 92.7437	Train Loss 1.3876
+[INFO] 2024-03-11 05:29:36 > Step:     65 Progress: 65.0% Elapsed: 7:56:51 Loss: 1.388 Top1: 64.89 Top10: 92.74 
+[INFO] 2024-03-11 05:29:36 > Start Validation (65 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:29:40 > Test Top 1-acc 32.1958	Test Top 10-acc 75.7047	Test Loss 3.3600183141691393
+[INFO] 2024-03-11 05:29:40 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.1958	Best Top 10-acc 75.7047
+[INFO] 2024-03-11 05:29:40 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:36:57 > Train Top 1-acc 65.1270	Train Top 10-acc 92.8601	Train Loss 1.3759
+[INFO] 2024-03-11 05:36:57 > Step:     66 Progress: 66.0% Elapsed: 8:04:12 Loss: 1.376 Top1: 65.13 Top10: 92.86 
+[INFO] 2024-03-11 05:36:57 > Start Validation (66 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:37:00 > Test Top 1-acc 32.4555	Test Top 10-acc 76.1128	Test Loss 3.3343437036350148
+[INFO] 2024-03-11 05:37:00 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.4555	Best Top 10-acc 76.1128
+[INFO] 2024-03-11 05:37:00 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:44:16 > Train Top 1-acc 65.4670	Train Top 10-acc 92.9435	Train Loss 1.3632
+[INFO] 2024-03-11 05:44:16 > Step:     67 Progress: 67.0% Elapsed: 8:11:31 Loss: 1.363 Top1: 65.47 Top10: 92.94 
+[INFO] 2024-03-11 05:44:16 > Start Validation (67 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:44:19 > Test Top 1-acc 32.1588	Test Top 10-acc 75.9273	Test Loss 3.3832413761127595
+[INFO] 2024-03-11 05:44:19 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.1588	Best Top 10-acc 75.9273
+[INFO] 2024-03-11 05:44:19 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:51:36 > Train Top 1-acc 65.7609	Train Top 10-acc 93.0679	Train Loss 1.3507
+[INFO] 2024-03-11 05:51:36 > Step:     68 Progress: 68.0% Elapsed: 8:18:51 Loss: 1.351 Top1: 65.76 Top10: 93.07 
+[INFO] 2024-03-11 05:51:36 > Start Validation (68 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:51:39 > Test Top 1-acc 32.6966	Test Top 10-acc 75.1113	Test Loss 3.450244575296736
+[INFO] 2024-03-11 05:51:39 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.6966	Best Top 10-acc 75.1113
+[INFO] 2024-03-11 05:51:39 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:58:55 > Train Top 1-acc 65.9584	Train Top 10-acc 93.1660	Train Loss 1.3398
+[INFO] 2024-03-11 05:58:55 > Step:     69 Progress: 69.0% Elapsed: 8:26:10 Loss: 1.34 Top1: 65.96 Top10: 93.17 
+[INFO] 2024-03-11 05:58:55 > Start Validation (69 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 05:58:58 > Test Top 1-acc 33.3642	Test Top 10-acc 76.2982	Test Loss 3.291143128709199
+[INFO] 2024-03-11 05:58:58 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.3642	Best Top 10-acc 76.2982
+[INFO] 2024-03-11 05:58:58 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:06:14 > Train Top 1-acc 66.2377	Train Top 10-acc 93.2125	Train Loss 1.3300
+[INFO] 2024-03-11 06:06:14 > Step:     70 Progress: 70.0% Elapsed: 8:33:28 Loss: 1.33 Top1: 66.24 Top10: 93.21 
+[INFO] 2024-03-11 06:06:14 > Start Validation (70 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:06:17 > Test Top 1-acc 33.1231	Test Top 10-acc 77.1699	Test Loss 3.30526706231454
+[INFO] 2024-03-11 06:06:17 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.1231	Best Top 10-acc 77.1699
+[INFO] 2024-03-11 06:06:17 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:13:33 > Train Top 1-acc 66.5084	Train Top 10-acc 93.3081	Train Loss 1.3154
+[INFO] 2024-03-11 06:13:33 > Step:     71 Progress: 71.0% Elapsed: 8:40:48 Loss: 1.315 Top1: 66.51 Top10: 93.31 
+[INFO] 2024-03-11 06:13:33 > Start Validation (71 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:13:37 > Test Top 1-acc 32.6780	Test Top 10-acc 76.2240	Test Loss 3.4186004729228485
+[INFO] 2024-03-11 06:13:37 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.6780	Best Top 10-acc 76.2240
+[INFO] 2024-03-11 06:13:37 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:20:53 > Train Top 1-acc 66.8232	Train Top 10-acc 93.4221	Train Loss 1.3040
+[INFO] 2024-03-11 06:20:53 > Step:     72 Progress: 72.0% Elapsed: 8:48:07 Loss: 1.304 Top1: 66.82 Top10: 93.42 
+[INFO] 2024-03-11 06:20:53 > Start Validation (72 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:20:56 > Test Top 1-acc 31.3242	Test Top 10-acc 75.9644	Test Loss 3.5098177856083086
+[INFO] 2024-03-11 06:20:56 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 31.3242	Best Top 10-acc 75.9644
+[INFO] 2024-03-11 06:20:56 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:28:13 > Train Top 1-acc 67.0543	Train Top 10-acc 93.5122	Train Loss 1.2939
+[INFO] 2024-03-11 06:28:13 > Step:     73 Progress: 73.0% Elapsed: 8:55:28 Loss: 1.294 Top1: 67.05 Top10: 93.51 
+[INFO] 2024-03-11 06:28:13 > Start Validation (73 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:28:16 > Test Top 1-acc 33.3828	Test Top 10-acc 76.2426	Test Loss 3.4104981917655786
+[INFO] 2024-03-11 06:28:16 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.3828	Best Top 10-acc 76.2426
+[INFO] 2024-03-11 06:28:16 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:35:32 > Train Top 1-acc 67.3337	Train Top 10-acc 93.6080	Train Loss 1.2820
+[INFO] 2024-03-11 06:35:32 > Step:     74 Progress: 74.0% Elapsed: 9:02:47 Loss: 1.282 Top1: 67.33 Top10: 93.61 
+[INFO] 2024-03-11 06:35:32 > Start Validation (74 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:35:35 > Test Top 1-acc 32.7337	Test Top 10-acc 76.1869	Test Loss 3.4201652911721068
+[INFO] 2024-03-11 06:35:35 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.7337	Best Top 10-acc 76.1869
+[INFO] 2024-03-11 06:35:35 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:42:52 > Train Top 1-acc 67.6244	Train Top 10-acc 93.6889	Train Loss 1.2699
+[INFO] 2024-03-11 06:42:52 > Step:     75 Progress: 75.0% Elapsed: 9:10:06 Loss: 1.27 Top1: 67.62 Top10: 93.69 
+[INFO] 2024-03-11 06:42:52 > Start Validation (75 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:42:55 > Test Top 1-acc 32.0289	Test Top 10-acc 76.1128	Test Loss 3.5255123330860534
+[INFO] 2024-03-11 06:42:55 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.0289	Best Top 10-acc 76.1128
+[INFO] 2024-03-11 06:42:55 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:50:14 > Train Top 1-acc 67.8303	Train Top 10-acc 93.7775	Train Loss 1.2602
+[INFO] 2024-03-11 06:50:14 > Step:     76 Progress: 76.0% Elapsed: 9:17:29 Loss: 1.26 Top1: 67.83 Top10: 93.78 
+[INFO] 2024-03-11 06:50:14 > Start Validation (76 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:50:18 > Test Top 1-acc 32.4740	Test Top 10-acc 76.8361	Test Loss 3.4221705767804154
+[INFO] 2024-03-11 06:50:18 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.4740	Best Top 10-acc 76.8361
+[INFO] 2024-03-11 06:50:18 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:57:32 > Train Top 1-acc 68.1207	Train Top 10-acc 93.8606	Train Loss 1.2486
+[INFO] 2024-03-11 06:57:32 > Step:     77 Progress: 77.0% Elapsed: 9:24:47 Loss: 1.249 Top1: 68.12 Top10: 93.86 
+[INFO] 2024-03-11 06:57:32 > Start Validation (77 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 06:57:36 > Test Top 1-acc 32.4926	Test Top 10-acc 76.5208	Test Loss 3.410202614985163
+[INFO] 2024-03-11 06:57:36 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.4926	Best Top 10-acc 76.5208
+[INFO] 2024-03-11 06:57:36 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:04:53 > Train Top 1-acc 68.4104	Train Top 10-acc 93.9263	Train Loss 1.2390
+[INFO] 2024-03-11 07:04:53 > Step:     78 Progress: 78.0% Elapsed: 9:32:07 Loss: 1.239 Top1: 68.41 Top10: 93.93 
+[INFO] 2024-03-11 07:04:53 > Start Validation (78 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:04:56 > Test Top 1-acc 32.3442	Test Top 10-acc 76.3909	Test Loss 3.452603393916914
+[INFO] 2024-03-11 07:04:56 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.3442	Best Top 10-acc 76.3909
+[INFO] 2024-03-11 07:04:56 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:12:11 > Train Top 1-acc 68.6549	Train Top 10-acc 93.9919	Train Loss 1.2300
+[INFO] 2024-03-11 07:12:11 > Step:     79 Progress: 79.0% Elapsed: 9:39:26 Loss: 1.23 Top1: 68.65 Top10: 93.99 
+[INFO] 2024-03-11 07:12:11 > Start Validation (79 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:12:15 > Test Top 1-acc 32.8820	Test Top 10-acc 76.7990	Test Loss 3.4130482659495547
+[INFO] 2024-03-11 07:12:15 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.8820	Best Top 10-acc 76.7990
+[INFO] 2024-03-11 07:12:15 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:19:31 > Train Top 1-acc 68.8679	Train Top 10-acc 94.0759	Train Loss 1.2202
+[INFO] 2024-03-11 07:19:31 > Step:     80 Progress: 80.0% Elapsed: 9:46:45 Loss: 1.22 Top1: 68.87 Top10: 94.08 
+[INFO] 2024-03-11 07:19:31 > Start Validation (80 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:19:34 > Test Top 1-acc 33.9948	Test Top 10-acc 77.0586	Test Loss 3.387692414688427
+[INFO] 2024-03-11 07:19:34 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.9948	Best Top 10-acc 77.0586
+[INFO] 2024-03-11 07:19:34 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:26:50 > Train Top 1-acc 69.1131	Train Top 10-acc 94.1343	Train Loss 1.2103
+[INFO] 2024-03-11 07:26:50 > Step:     81 Progress: 81.0% Elapsed: 9:54:05 Loss: 1.21 Top1: 69.11 Top10: 94.13 
+[INFO] 2024-03-11 07:26:50 > Start Validation (81 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:26:54 > Test Top 1-acc 33.2159	Test Top 10-acc 76.6691	Test Loss 3.513990634272997
+[INFO] 2024-03-11 07:26:54 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.2159	Best Top 10-acc 76.6691
+[INFO] 2024-03-11 07:26:54 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:34:10 > Train Top 1-acc 69.3868	Train Top 10-acc 94.2244	Train Loss 1.1994
+[INFO] 2024-03-11 07:34:10 > Step:     82 Progress: 82.0% Elapsed: 10:01:24 Loss: 1.199 Top1: 69.39 Top10: 94.22 
+[INFO] 2024-03-11 07:34:10 > Start Validation (82 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:34:13 > Test Top 1-acc 33.3642	Test Top 10-acc 76.9659	Test Loss 3.3995676465133533
+[INFO] 2024-03-11 07:34:13 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.3642	Best Top 10-acc 76.9659
+[INFO] 2024-03-11 07:34:13 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:41:30 > Train Top 1-acc 69.5816	Train Top 10-acc 94.3123	Train Loss 1.1889
+[INFO] 2024-03-11 07:41:30 > Step:     83 Progress: 83.0% Elapsed: 10:08:44 Loss: 1.189 Top1: 69.58 Top10: 94.31 
+[INFO] 2024-03-11 07:41:30 > Start Validation (83 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:41:33 > Test Top 1-acc 33.9021	Test Top 10-acc 77.0401	Test Loss 3.4035956045994067
+[INFO] 2024-03-11 07:41:33 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.9021	Best Top 10-acc 77.0401
+[INFO] 2024-03-11 07:41:33 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:48:50 > Train Top 1-acc 69.7839	Train Top 10-acc 94.3634	Train Loss 1.1806
+[INFO] 2024-03-11 07:48:50 > Step:     84 Progress: 84.0% Elapsed: 10:16:05 Loss: 1.181 Top1: 69.78 Top10: 94.36 
+[INFO] 2024-03-11 07:48:50 > Start Validation (84 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:48:54 > Test Top 1-acc 33.5497	Test Top 10-acc 76.7619	Test Loss 3.421133160237389
+[INFO] 2024-03-11 07:48:54 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.5497	Best Top 10-acc 76.7619
+[INFO] 2024-03-11 07:48:54 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:56:11 > Train Top 1-acc 70.0517	Train Top 10-acc 94.4119	Train Loss 1.1716
+[INFO] 2024-03-11 07:56:11 > Step:     85 Progress: 85.0% Elapsed: 10:23:25 Loss: 1.172 Top1: 70.05 Top10: 94.41 
+[INFO] 2024-03-11 07:56:11 > Start Validation (85 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 07:56:14 > Test Top 1-acc 33.0304	Test Top 10-acc 77.0215	Test Loss 3.42491190652819
+[INFO] 2024-03-11 07:56:14 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.0304	Best Top 10-acc 77.0215
+[INFO] 2024-03-11 07:56:14 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:03:31 > Train Top 1-acc 70.2174	Train Top 10-acc 94.4675	Train Loss 1.1638
+[INFO] 2024-03-11 08:03:31 > Step:     86 Progress: 86.0% Elapsed: 10:30:46 Loss: 1.164 Top1: 70.22 Top10: 94.47 
+[INFO] 2024-03-11 08:03:31 > Start Validation (86 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:03:34 > Test Top 1-acc 33.1788	Test Top 10-acc 76.9102	Test Loss 3.4389547014094957
+[INFO] 2024-03-11 08:03:34 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.1788	Best Top 10-acc 76.9102
+[INFO] 2024-03-11 08:03:34 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:10:52 > Train Top 1-acc 70.3862	Train Top 10-acc 94.5392	Train Loss 1.1570
+[INFO] 2024-03-11 08:10:52 > Step:     87 Progress: 87.0% Elapsed: 10:38:06 Loss: 1.157 Top1: 70.39 Top10: 94.54 
+[INFO] 2024-03-11 08:10:52 > Start Validation (87 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:10:55 > Test Top 1-acc 34.1061	Test Top 10-acc 77.5408	Test Loss 3.3980955582344214
+[INFO] 2024-03-11 08:10:55 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 34.1061	Best Top 10-acc 77.5408
+[INFO] 2024-03-11 08:10:55 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:18:11 > Train Top 1-acc 70.5819	Train Top 10-acc 94.5625	Train Loss 1.1506
+[INFO] 2024-03-11 08:18:11 > Step:     88 Progress: 88.0% Elapsed: 10:45:26 Loss: 1.151 Top1: 70.58 Top10: 94.56 
+[INFO] 2024-03-11 08:18:11 > Start Validation (88 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:18:14 > Test Top 1-acc 33.5868	Test Top 10-acc 77.0957	Test Loss 3.4629253987388724
+[INFO] 2024-03-11 08:18:14 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.5868	Best Top 10-acc 77.0957
+[INFO] 2024-03-11 08:18:14 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:25:31 > Train Top 1-acc 70.7902	Train Top 10-acc 94.6246	Train Loss 1.1419
+[INFO] 2024-03-11 08:25:31 > Step:     89 Progress: 89.0% Elapsed: 10:52:45 Loss: 1.142 Top1: 70.79 Top10: 94.62 
+[INFO] 2024-03-11 08:25:31 > Start Validation (89 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:25:34 > Test Top 1-acc 33.1231	Test Top 10-acc 77.3553	Test Loss 3.448824647626113
+[INFO] 2024-03-11 08:25:34 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.1231	Best Top 10-acc 77.3553
+[INFO] 2024-03-11 08:25:34 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:32:51 > Train Top 1-acc 70.9334	Train Top 10-acc 94.6955	Train Loss 1.1365
+[INFO] 2024-03-11 08:32:51 > Step:     90 Progress: 90.0% Elapsed: 11:00:05 Loss: 1.136 Top1: 70.93 Top10: 94.7 
+[INFO] 2024-03-11 08:32:51 > Start Validation (90 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:32:54 > Test Top 1-acc 32.7337	Test Top 10-acc 77.2997	Test Loss 3.464119297106825
+[INFO] 2024-03-11 08:32:54 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 32.7337	Best Top 10-acc 77.2997
+[INFO] 2024-03-11 08:32:54 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:40:10 > Train Top 1-acc 71.0329	Train Top 10-acc 94.7066	Train Loss 1.1315
+[INFO] 2024-03-11 08:40:10 > Step:     91 Progress: 91.0% Elapsed: 11:07:25 Loss: 1.131 Top1: 71.03 Top10: 94.71 
+[INFO] 2024-03-11 08:40:10 > Start Validation (91 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:40:14 > Test Top 1-acc 33.4013	Test Top 10-acc 77.2997	Test Loss 3.464582946958457
+[INFO] 2024-03-11 08:40:14 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.4013	Best Top 10-acc 77.2997
+[INFO] 2024-03-11 08:40:14 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:47:31 > Train Top 1-acc 71.1975	Train Top 10-acc 94.7464	Train Loss 1.1252
+[INFO] 2024-03-11 08:47:31 > Step:     92 Progress: 92.0% Elapsed: 11:14:45 Loss: 1.125 Top1: 71.2 Top10: 94.75 
+[INFO] 2024-03-11 08:47:31 > Start Validation (92 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:47:34 > Test Top 1-acc 33.7908	Test Top 10-acc 77.0030	Test Loss 3.4740356083086055
+[INFO] 2024-03-11 08:47:34 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.7908	Best Top 10-acc 77.0030
+[INFO] 2024-03-11 08:47:34 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:54:50 > Train Top 1-acc 71.3071	Train Top 10-acc 94.7836	Train Loss 1.1205
+[INFO] 2024-03-11 08:54:50 > Step:     93 Progress: 93.0% Elapsed: 11:22:05 Loss: 1.121 Top1: 71.31 Top10: 94.78 
+[INFO] 2024-03-11 08:54:50 > Start Validation (93 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 08:54:54 > Test Top 1-acc 33.3457	Test Top 10-acc 77.2070	Test Loss 3.4612678505192878
+[INFO] 2024-03-11 08:54:54 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.3457	Best Top 10-acc 77.2070
+[INFO] 2024-03-11 08:54:54 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:02:09 > Train Top 1-acc 71.3660	Train Top 10-acc 94.7996	Train Loss 1.1180
+[INFO] 2024-03-11 09:02:09 > Step:     94 Progress: 94.0% Elapsed: 11:29:23 Loss: 1.118 Top1: 71.37 Top10: 94.8 
+[INFO] 2024-03-11 09:02:09 > Start Validation (94 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:02:12 > Test Top 1-acc 33.6239	Test Top 10-acc 77.4295	Test Loss 3.4500243416172105
+[INFO] 2024-03-11 09:02:12 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.6239	Best Top 10-acc 77.4295
+[INFO] 2024-03-11 09:02:12 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:09:29 > Train Top 1-acc 71.5291	Train Top 10-acc 94.8552	Train Loss 1.1121
+[INFO] 2024-03-11 09:09:29 > Step:     95 Progress: 95.0% Elapsed: 11:36:43 Loss: 1.112 Top1: 71.53 Top10: 94.86 
+[INFO] 2024-03-11 09:09:29 > Start Validation (95 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:09:32 > Test Top 1-acc 33.4941	Test Top 10-acc 77.3182	Test Loss 3.4435969955489614
+[INFO] 2024-03-11 09:09:32 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.4941	Best Top 10-acc 77.3182
+[INFO] 2024-03-11 09:09:32 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:16:48 > Train Top 1-acc 71.6232	Train Top 10-acc 94.8555	Train Loss 1.1101
+[INFO] 2024-03-11 09:16:48 > Step:     96 Progress: 96.0% Elapsed: 11:44:03 Loss: 1.11 Top1: 71.62 Top10: 94.86 
+[INFO] 2024-03-11 09:16:48 > Start Validation (96 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:16:52 > Test Top 1-acc 34.0875	Test Top 10-acc 77.3368	Test Loss 3.4211969120919883
+[INFO] 2024-03-11 09:16:52 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 34.0875	Best Top 10-acc 77.3368
+[INFO] 2024-03-11 09:16:52 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:24:09 > Train Top 1-acc 71.6630	Train Top 10-acc 94.8414	Train Loss 1.1089
+[INFO] 2024-03-11 09:24:09 > Step:     97 Progress: 97.0% Elapsed: 11:51:23 Loss: 1.109 Top1: 71.66 Top10: 94.84 
+[INFO] 2024-03-11 09:24:09 > Start Validation (97 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:24:12 > Test Top 1-acc 34.0319	Test Top 10-acc 77.2812	Test Loss 3.463516552299703
+[INFO] 2024-03-11 09:24:12 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 34.0319	Best Top 10-acc 77.2812
+[INFO] 2024-03-11 09:24:12 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:31:28 > Train Top 1-acc 71.6712	Train Top 10-acc 94.8687	Train Loss 1.1065
+[INFO] 2024-03-11 09:31:28 > Step:     98 Progress: 98.0% Elapsed: 11:58:42 Loss: 1.107 Top1: 71.67 Top10: 94.87 
+[INFO] 2024-03-11 09:31:28 > Start Validation (98 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:31:31 > Test Top 1-acc 33.9206	Test Top 10-acc 77.3553	Test Loss 3.4611519380563798
+[INFO] 2024-03-11 09:31:31 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 33.9206	Best Top 10-acc 77.3553
+[INFO] 2024-03-11 09:31:31 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:38:47 > Train Top 1-acc 71.8004	Train Top 10-acc 94.9058	Train Loss 1.1035
+[INFO] 2024-03-11 09:38:47 > Step:     99 Progress: 99.0% Elapsed: 12:06:02 Loss: 1.103 Top1: 71.8 Top10: 94.91 
+[INFO] 2024-03-11 09:38:47 > Start Validation (99 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:38:50 > Test Top 1-acc 34.4028	Test Top 10-acc 77.8375	Test Loss 3.4137785144658754
+[INFO] 2024-03-11 09:38:50 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 34.4028	Best Top 10-acc 77.8375
+[INFO] 2024-03-11 09:38:50 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:46:07 > Train Top 1-acc 71.7184	Train Top 10-acc 94.8705	Train Loss 1.1053
+[INFO] 2024-03-11 09:46:07 > Step:    100 Progress: 100.0% Elapsed: 12:13:21 Loss: 1.105 Top1: 71.72 Top10: 94.87 
+[INFO] 2024-03-11 09:46:07 > Start Validation (100 Step): LSFB-vanilla-small-deep-train-2024_03_10_21_32_41
+[INFO] 2024-03-11 09:46:10 > Test Top 1-acc 34.1432	Test Top 10-acc 77.2997	Test Loss 3.447138121290801
+[INFO] 2024-03-11 09:46:10 > Best Loss (Step: 20): 3.123614846068249	Best Top 1-acc 34.1432	Best Top 10-acc 77.2997
+[INFO] 2024-03-11 09:46:10 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small-deep/checkpoints/LSFB-vanilla-small-deep-train-2024_03_10_21_32_41

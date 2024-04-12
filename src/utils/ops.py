@@ -4,7 +4,9 @@ from torch.nn.utils import spectral_norm
 from torch.nn import init
 import torch
 import torch.nn as nn
+from torchvision.ops.stochastic_depth import StochasticDepth
 import numpy as np
+from einops.layers.torch import Rearrange
 
 class eca(nn.Module):
     """Constructs a ECA module. by BangguWu
@@ -14,10 +16,10 @@ class eca(nn.Module):
         channel: Number of channels of the input feature map
         k_size: Adaptive selection of kernel size
     """
-    def __init__(self, channel, k_size=3):
+    def __init__(self, k_size=3):
         super(eca, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.conv = conv1d(1, 1, k_size, padding=(k_size - 1) // 2, bias=False)
+        self.conv = conv1dbasic(1, 1, k_size, padding=(k_size - 1) // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -70,17 +72,139 @@ def linear(in_features, out_features, bias=True):
 def snlinear(in_features, out_features, bias=True):
     return spectral_norm(nn.Linear(in_features=in_features, out_features=out_features, bias=bias), eps=1e-6)
 
-def conv1d(in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
+def dropout(p):
+    return nn.Dropout(p)
+
+def drop_path(p,mode):
+    return StochasticDepth(p,mode)
+
+def conv1dbasic(in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
     return nn.Conv1d(in_channels, out_channels, kernel_size=k_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias, padding_mode=padding_mode) 
 
-def snconv1d(in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
+def snconv1dbasic(in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
     return spectral_norm(nn.Conv1d(in_channels, out_channels, kernel_size=k_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias, padding_mode=padding_mode))
 
+class conv1d(nn.Module):
+    def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
+        super(conv1d, self).__init__()
+        self.pad = nn.ConstantPad1d((k_size-1,0),0)
+        self.conv = conv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
+
+    def forward(self, x):
+        x = self.pad(x)
+        x = self.conv(x)
+        return x
+
+class snconv1d(nn.Module):
+    def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
+        super(snconv1d, self).__init__()
+        self.pad = nn.ConstantPad1d((k_size-1,0),0)
+        self.conv = snconv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
+
+    def forward(self, x):
+        x = self.pad(x)
+        x = self.conv(x)
+        return x
+
+class dwconv1d(nn.Module):
+    def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
+        super(dwconv1d, self).__init__()
+        groups = in_channels
+        self.pad = nn.ConstantPad1d((k_size-1,0),0)
+        self.conv = conv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
+
+    def forward(self, x):
+        x = self.pad(x)
+        x = self.conv(x)
+        return x
+
+class sndwconv1d(nn.Module):
+    def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
+        super(sndwconv1d, self).__init__()
+        groups = in_channels
+        self.pad = nn.ConstantPad1d((k_size-1,0),0)
+        self.conv = snconv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
+
+    def forward(self, x):
+        x = self.pad(x)
+        x = self.conv(x)
+        return x
+
+class dwsepconv1d(nn.Module):
+    def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
+        super(dwsepconv1d, self).__init__() 
+        self.pad = nn.ConstantPad1d((k_size-1,0),0)
+        self.depthwise = conv1dbasic(in_channels=in_channels, out_channels=in_channels, k_size=k_size, stride=stride, padding=padding, dilation=dilation, groups=in_channels, bias=bias, padding_mode=padding_mode)
+        self.pointwise = conv1dbasic(in_channels=in_channels, out_channels=out_channels, k_size=1, stride=stride, padding=padding, dilation=dilation, bias=bias, padding_mode=padding_mode)
+    def forward(self, x): 
+        x = self.pad(x)
+        x = self.depthwise(x) 
+        x = self.pointwise(x) 
+        return x
+ 
 def batchnorm(in_features, eps=1e-4, momentum=0.1, affine=True):
+    if not isinstance(in_features, int):
+        in_features = in_features[0]
     return nn.BatchNorm1d(in_features, eps=eps, momentum=momentum, affine=affine, track_running_stats=True)
 
 def layernorm(in_features, eps=1e-4, elementwise_affine=True, bias=True):
+    if not isinstance(in_features, int):
+        in_features = in_features[-1]
     return nn.LayerNorm(in_features, eps=eps, elementwise_affine=elementwise_affine, bias=bias)
+
+class SLayerNorm(nn.Module):
+    def __init__(self, dims, epsilon=1e-5):
+        super().__init__()
+        self.epsilon = epsilon
+
+        self.alpha = nn.Parameter(torch.ones([1, dims[-2], 1]), requires_grad=True)
+        self.beta = nn.Parameter(torch.zeros([1, dims[-2], 1]), requires_grad=True)
+
+    def forward(self, x):
+        mean = x.mean(axis=1, keepdim=True)
+        var = ((x - mean) ** 2).mean(dim=1, keepdim=True)
+        std = (var + self.epsilon).sqrt()
+        y = (x - mean) / std
+        y = y * self.alpha + self.beta
+        return y
+
+class TLayerNorm(nn.Module):
+    def __init__(self, dims, epsilon=1e-5):
+        super().__init__()
+        self.epsilon = epsilon
+
+        self.alpha = nn.Parameter(torch.ones([1, 1, dims[-1]]), requires_grad=True)
+        self.beta = nn.Parameter(torch.zeros([1, 1, dims[-1]]), requires_grad=True)
+
+    def forward(self, x):
+        mean = x.mean(axis=-1, keepdim=True)
+        var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
+        std = (var + self.epsilon).sqrt()
+        y = (x - mean) / std
+        y = y * self.alpha + self.beta
+        return y
+
+class Spatial_FC(nn.Module):
+    def __init__(self, dims):
+        super(Spatial_FC, self).__init__()
+        self.fc = nn.Linear(dims[-2], dims[-2])
+        self.arr0 = Rearrange('b n d -> b d n')
+        self.arr1 = Rearrange('b d n -> b n d')
+
+    def forward(self, x):
+        x = self.arr0(x)
+        x = self.fc(x)
+        x = self.arr1(x)
+        return x
+
+class Temporal_FC(nn.Module):
+    def __init__(self, dims):
+        super(Temporal_FC, self).__init__()
+        self.fc = nn.Linear(dims[-1], dims[-1])
+
+    def forward(self, x):
+        x = self.fc(x)
+        return x
 
 def adjust_learning_rate(optimizer, lr_org, epoch, total_epoch, dataset):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
@@ -94,3 +218,28 @@ def adjust_learning_rate(optimizer, lr_org, epoch, total_epoch, dataset):
 
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+class DropBlock(torch.nn.Module):
+    """Incomplete/Untested"""
+    def __init__(self, p, block_size=3):
+        super().__init__()
+        self.p = 1-p
+        self.block_size = block_size
+
+    def forward(self, img):
+        invalid = (1 - self.p) / (self.block_size ** 2)
+        valid = (img.shape[1] ** 2) / ((img.shape[1] - self.block_size + 1) ** 2)        
+        gamma = invalid * valid 
+        mask = torch.bernoulli(torch.ones((img.shape[0],img.shape[1])) * gamma)
+        mask_block = 1 - F.max_pool1d(
+            mask,
+            kernel_size=self.block_size,
+            stride=1,
+            padding=self.block_size // 2,
+        )
+        mask_ = mask_block.unsqueeze(-1).expand(img.size())
+        img = mask_ * img * (mask_.numel() / mask_.sum())
+        return img
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(p={self.p},block_size={self.block_size})"

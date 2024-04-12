@@ -1,0 +1,39 @@
+DATA:
+  name: "LSFB"
+  poses: [["pose","all"],["right_hand","all"],["left_hand","all"], ["face",[61,39,0,269,291,405,17,181,33,159,133,145,46,52,65,55,263,386,362,374,276,282,295,285]]]
+  num_keypoints: 99
+  num_classes: 637
+  min_samples: 20
+  oversample: True
+  max_len: 15
+  input_size: [15, 99, 3]
+  flip_p: 0.0
+  scale: 0.0
+MODEL:
+  backbone: "conv1d"
+  apply_attn: True
+  apply_dw_conv: True
+  embed_size: 32
+  conv_dim: 32
+  act_fn: "GELU"
+  feature_norm: "batchnorm"
+  nheads: 4
+  expand_ratio: 1
+  depth: 2
+  dropout: 0.2
+  drop_path: 0.0
+  late_dropout: 0.0
+  late_drop_path: 0.0
+  late_dropout_step: 0
+  late_drop_path_step: 0
+  init: "ortho"
+LOSS:
+  loss_type: "CCE"
+OPTIMIZATION:
+  type_: "RAdam"
+  batch_size: 2048
+  lr: 0.001
+  weight_decay: 0.0001
+  beta1: 0.001
+  beta2: 0.999
+  total_steps: 100

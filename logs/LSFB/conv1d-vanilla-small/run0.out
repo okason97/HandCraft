@@ -1,0 +1,151 @@
+You have chosen a specific GPU. This will completely disable data parallelism.
+[INFO] 2024-03-10 21:06:30 > Run name : LSFB-vanilla-small-train-2024_03_10_21_06_30
+[INFO] 2024-03-10 21:06:30 > cfgs.DATA =
+[INFO] 2024-03-10 21:06:30 > {
+  "name": "LSFB",
+  "input_size": [
+    15,
+    99,
+    3
+  ],
+  "num_classes": 637,
+  "min_samples": 20,
+  "max_len": 15,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      "all"
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        39,
+        0,
+        269,
+        291,
+        405,
+        17,
+        181,
+        33,
+        159,
+        133,
+        145,
+        46,
+        52,
+        65,
+        55,
+        263,
+        386,
+        362,
+        374,
+        276,
+        282,
+        295,
+        285
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0
+}
+[INFO] 2024-03-10 21:06:30 > cfgs.MODEL =
+[INFO] 2024-03-10 21:06:30 > {
+  "backbone": "conv1d",
+  "apply_sn": false,
+  "act_fn": "GELU",
+  "feature_norm": "batchnorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 32,
+  "conv_dim": 32,
+  "expand_ratio": 2,
+  "depth": 3,
+  "dropout": 0.2,
+  "drop_path": 0.0,
+  "late_dropout": 0.0,
+  "late_drop_path": 0.0,
+  "late_dropout_step": 0,
+  "late_drop_path_step": 0,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": true,
+  "apply_dw_conv": true
+}
+[INFO] 2024-03-10 21:06:30 > cfgs.LOSS =
+[INFO] 2024-03-10 21:06:30 > {
+  "loss_type": "CCE",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "use_relative_loss": true
+}
+[INFO] 2024-03-10 21:06:30 > cfgs.OPTIMIZATION =
+[INFO] 2024-03-10 21:06:30 > {
+  "type_": "RAdam",
+  "lrscheduler": null,
+  "batch_size": 2048,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "momentum": "N/A",
+  "nesterov": "N/A",
+  "alpha": "N/A",
+  "beta1": 0.001,
+  "beta2": 0.999,
+  "total_steps": 100,
+  "world_size": 1
+}
+[INFO] 2024-03-10 21:06:30 > cfgs.PRE =
+[INFO] 2024-03-10 21:06:30 > {
+  "apply_rflip": true
+}
+[INFO] 2024-03-10 21:06:30 > cfgs.AUG =
+[INFO] 2024-03-10 21:06:30 > {}
+[INFO] 2024-03-10 21:06:30 > cfgs.RUN =
+[INFO] 2024-03-10 21:06:30 > {
+  "mixed_precision": true,
+  "entity": null,
+  "project": "handcraft",
+  "cfg_file": "./src/configs/LSFB/conv1d/vanilla-small.yaml",
+  "data_dir": "/mnt/sda2/datasets/isolated-cont-sl/LSFB/",
+  "save_dir": "/mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-small/",
+  "ckpt_dir": null,
+  "load_best": false,
+  "seed": 3361,
+  "distributed_data_parallel": false,
+  "backend": "nccl",
+  "total_nodes": 1,
+  "current_node": 0,
+  "num_workers": 4,
+  "prefetch_factor": 20,
+  "synchronized_bn": false,
+  "train": true,
+  "empty_cache": false,
+  "load_data_in_memory": false,
+  "print_every": 1,
+  "save_every": 1,
+  "dset_used": 1.0,
+  "fix_seed": false
+}
+[INFO] 2024-03-10 21:06:30 > Load LSFB train dataset.
+[INFO] 2024-03-10 21:06:31 > Train dataset size: 1003305
+[INFO] 2024-03-10 21:06:31 > Valid dataset size: 5392
+[INFO] 2024-03-10 21:06:31 > Load LSFB test dataset.
+[INFO] 2024-03-10 21:06:31 > Test dataset size: 41255
+[INFO] 2024-03-10 21:06:31 > Build the model.
+[INFO] 2024-03-10 21:06:31 > Modules are located on './src/models.conv1d'.

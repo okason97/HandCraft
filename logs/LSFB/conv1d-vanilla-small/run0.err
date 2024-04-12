@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 102, in <module>
+    loader.load_worker(local_rank=rank,
+  File "/home/grios/HandCraft/src/loader.py", line 193, in load_worker
+    model = model_generator.load_classifier(DATA=cfgs.DATA,
+  File "/home/grios/HandCraft/src/models/model.py", line 41, in load_classifier
+    model = module.Classifier(input_size=DATA.input_size,
+  File "/home/grios/HandCraft/src/models/conv1d.py", line 99, in __init__
+    ops.init_weights(self.modules, init_weights)
+  File "/home/grios/HandCraft/src/utils/ops.py", line 41, in init_weights
+    init.orthogonal_(module.weight)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/nn/init.py", line 483, in orthogonal_
+    q, r = torch.linalg.qr(flattened)
+KeyboardInterrupt

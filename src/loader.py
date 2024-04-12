@@ -15,23 +15,23 @@ import torch
 import torch.distributed as dist
 import wandb
 
-from data_util import Dataset_
+from data.data_util import Dataset_, train_val_dataset, OversamplingWrapper
 from worker import WORKER
 import utils.log as log
 import utils.ckpt as ckpt
 import utils.misc as misc
 import utils.custom_ops as custom_ops
-import models.model as model
+import models.model as model_generator
 
 
 def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # define default variables for loading ckpt or testing the trained model.
     # -----------------------------------------------------------------------------
-    step, epoch, topk, best_step, best_loss, is_best = \
-        0, 0, cfgs.OPTIMIZATION.batch_size, 0, None, False
-    loss_list_dict = {"loss": [], "top1": [], "top5": []}
-    metric_dict_during_train = {}
+    step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc, is_best = \
+        0, 0, cfgs.OPTIMIZATION.batch_size, 0, 999, 0, 0, False
+    loss_list_dict = {"train_loss": [], "train_top1": [], "train_top10": []}
+    metric_dict_during_train = {"test_loss": [], "test_top1": [], "test_top10": []}
 
     # -----------------------------------------------------------------------------
     # determine cuda, cudnn, and backends settings.
@@ -59,7 +59,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     if local_rank == 0:
         logger = log.make_logger(cfgs.RUN.save_dir, run_name, None)
-        if cfgs.RUN.ckpt_dir is not None and cfgs.RUN.freezeD == -1:
+        if cfgs.RUN.ckpt_dir is not None:
             folder_hier = cfgs.RUN.ckpt_dir.split("/")
             if folder_hier[-1] == "":
                 folder_hier.pop()
@@ -81,9 +81,20 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         train_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
                                  train=True,
                                  load_data_in_memory=cfgs.RUN.load_data_in_memory,
-                                 poses=cfgs.DATA.poses)
+                                 poses=cfgs.DATA.poses,
+                                 max_len=cfgs.DATA.max_len,
+                                 min_samples=cfgs.DATA.min_samples,
+                                 random_crop=cfgs.DATA.random_crop,
+                                 drop_frame=cfgs.DATA.drop_frame,
+                                 drop_keypoint=cfgs.DATA.drop_keypoint,
+                                 block_size=cfgs.DATA.block_size,
+                                 flip_p=cfgs.DATA.flip_p,
+                                 scale=cfgs.DATA.scale,
+                                 rot=cfgs.DATA.rot)
 
-        train_dataset, valid_dataset = misc.train_val_dataset(dataset = train_dataset, val_split=0.1, random_state = cfgs.RUN.seed, stratify=train_dataset.data['sign'].to_list())
+        cfgs.DATA.num_classes = len(train_dataset.classes)
+
+        train_dataset, valid_dataset = train_val_dataset(dataset = train_dataset, val_split=0.1, random_state = cfgs.RUN.seed, stratify=train_dataset.data['sign'].to_list())
 
         if cfgs.RUN.dset_used > 1:
             dset_used = int(cfgs.RUN.dset_used)
@@ -92,10 +103,10 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         else:
             dset_used = cfgs.RUN.dset_used
         if dset_used != 1:
-            train_dataset, _ = misc.train_val_dataset(dataset = train_dataset, val_split=None, train_size=dset_used, random_state = cfgs.RUN.seed)
+            train_dataset, _ = train_val_dataset(dataset = train_dataset, val_split=None, train_size=dset_used, random_state = cfgs.RUN.seed)
 
-        if cfgs.RUN.oversample:
-            train_dataset = misc.OversamplingWrapper(train_dataset)
+        if cfgs.DATA.oversample:
+            train_dataset = OversamplingWrapper(train_dataset)
 
         if local_rank == 0:
             logger.info("Train dataset size: {dataset_size}".format(dataset_size=len(train_dataset)))
@@ -105,11 +116,13 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         valid_dataset = None
 
     if local_rank == 0:
-        logger.info("Load {name} {ref} dataset.".format(name=cfgs.DATA.name, ref=cfgs.RUN.ref_dataset))
+        logger.info("Load {name} test dataset.".format(name=cfgs.DATA.name))
     test_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
                             train=False,
                             load_data_in_memory=cfgs.RUN.load_data_in_memory,
                             filter_classes=train_dataset.classes,
+                            map_classes=train_dataset.dataset.dataset.map_classes,
+                            max_len=cfgs.DATA.max_len,
                             poses=cfgs.DATA.poses)
     if local_rank == 0:
             logger.info("Test dataset size: {dataset_size}".format(dataset_size=len(test_dataset)))
@@ -144,6 +157,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                       batch_size=cfgs.OPTIMIZATION.batch_size,
                                       shuffle=(train_sampler is None),
                                       pin_memory=True,
+                                      prefetch_factor=cfgs.RUN.prefetch_factor,
                                       num_workers=cfgs.RUN.num_workers,
                                       sampler=train_sampler,
                                       drop_last=True,
@@ -152,6 +166,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                         batch_size=cfgs.OPTIMIZATION.batch_size,
                                         shuffle=False,
                                         pin_memory=True,
+                                        prefetch_factor=cfgs.RUN.prefetch_factor,
                                         num_workers=cfgs.RUN.num_workers,
                                         sampler=valid_sampler,
                                         drop_last=False)
@@ -171,6 +186,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                     batch_size=cfgs.OPTIMIZATION.batch_size,
                                     shuffle=False,
                                     pin_memory=True,
+                                    prefetch_factor=cfgs.RUN.prefetch_factor,
                                     num_workers=cfgs.RUN.num_workers,
                                     sampler=test_sampler,
                                     drop_last=False)
@@ -178,7 +194,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # load the model
     # -----------------------------------------------------------------------------
-    model = model.load_classifier(DATA=cfgs.DATA,
+    model = model_generator.load_classifier(DATA=cfgs.DATA,
                                     MODEL=cfgs.MODEL,
                                     MODULES=cfgs.MODULES,
                                     RUN=cfgs.RUN,
@@ -191,7 +207,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # define optimizer
     # -----------------------------------------------------------------------------
-    cfgs.define_optimizer(model)
+    cfgs.define_optimizer(model, len(train_dataloader))
 
     # -----------------------------------------------------------------------------
     # load the model from a checkpoint if possible
@@ -200,23 +216,24 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         if local_rank == 0:
             logger.handlers[0].close()
             os.remove(join(cfgs.RUN.save_dir, "logs", run_name + ".log"))
-        run_name, step, epoch, topk, best_step, best_loss, logger =\
+        run_name, step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc, logger =\
             ckpt.load_model_ckpts(ckpt_dir=cfgs.RUN.ckpt_dir,
                                       load_best=cfgs.RUN.load_best,
                                       model=model,
-                                      optimizer=cfgs.OPTIMIZATION.g_optimizer,
+                                      optimizer=cfgs.OPTIMIZATION.optimizer,
                                       run_name=run_name,
                                       is_train=cfgs.RUN.train,
                                       RUN=cfgs.RUN,
                                       logger=logger,
                                       global_rank=global_rank,
                                       device=local_rank,
-                                      cfg_file=cfgs.RUN.cfg_file)
+                                      cfg_file=cfgs.RUN.cfg_file,
+                                      backbone=cfgs.MODEL.backbone)
 
         if topk == "initialize":
             topk == cfgs.OPTIMIZATION.batch_size
 
-    if cfgs.RUN.ckpt_dir is None or cfgs.RUN.freezeD != -1:
+    if cfgs.RUN.ckpt_dir is None:
         if local_rank == 0:
             cfgs.RUN.ckpt_dir = ckpt.make_ckpt_dir(join(cfgs.RUN.save_dir, "checkpoints", run_name))
         dict_dir = join(cfgs.RUN.save_dir, "statistics", run_name)
@@ -227,7 +244,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # prepare parallel training
     # -----------------------------------------------------------------------------
     if cfgs.OPTIMIZATION.world_size > 1:
-        model = model.prepare_parallel_training(model=model,
+        model = model_generator.prepare_parallel_training(model=model,
                                         world_size=cfgs.OPTIMIZATION.world_size,
                                         distributed_data_parallel=cfgs.RUN.distributed_data_parallel,
                                         synchronized_bn=cfgs.RUN.synchronized_bn,
@@ -248,6 +265,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         logger=logger,
         best_step=best_step,
         best_loss=best_loss,
+        best_t1acc=best_t1acc,
+        best_t10acc=best_t10acc,
         loss_list_dict=loss_list_dict,
         metric_dict_during_train=metric_dict_during_train,
     )
@@ -260,15 +279,15 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             logger.info("Start training!")
 
         worker.prepare_train_iter(epoch_counter=epoch)
-        while step <= cfgs.OPTIMIZATION.total_steps:
-            top1, top5, loss = worker.train_step()
+        while step < cfgs.OPTIMIZATION.total_steps:
+            top1, top10, loss = worker.train_step(step)
 
             if global_rank == 0 and (step + 1) % cfgs.RUN.print_every == 0:
 
                 worker.log_train_statistics(current_step=step,
                                             loss=loss,
                                             top1=top1,
-                                            top5=top5)
+                                            top10=top10)
             step += 1
 
             if step % cfgs.RUN.save_every == 0:
@@ -294,7 +313,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
 
     if global_rank == 0:
         best_step = ckpt.load_best_model(ckpt_dir=cfgs.RUN.ckpt_dir,
-                                         model=model)
+                                         model=model,
+                                         backbone=cfgs.MODEL.backbone)
         print(""), logger.info("-" * 80)
     worker.evaluate(step=best_step, writing=False, training=False)
     

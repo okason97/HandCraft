@@ -16,7 +16,7 @@ from torch.multiprocessing import Process
 import torch
 import torch.multiprocessing as mp
 
-import config
+import configs.config as config
 import loader
 import utils.log as log
 import utils.misc as misc
@@ -41,38 +41,23 @@ def load_configs_initialize_training():
     parser.add_argument("-tn", "--total_nodes", default=1, type=int, help="total number of nodes for training")
     parser.add_argument("-cn", "--current_node", default=0, type=int, help="rank of the current node")
     parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--prefetch_factor", type=int, default=2)
     parser.add_argument("-sync_bn", "--synchronized_bn", action="store_true", help="turn on synchronized batchnorm")
     parser.add_argument("-mpc", "--mixed_precision", action="store_true", help="turn on mixed precision training")
 
     parser.add_argument("-t", "--train", action="store_true")
     parser.add_argument("-empty_cache", "--empty_cache", action="store_true", help="empty cuda caches after training step of generator and discriminator, \
                         slightly reduces memory usage but slows training speed. (not recommended for normal use)")
+    parser.add_argument("-l", "--load_data_in_memory", action="store_true", help="put the whole train dataset on the main memory for fast I/O")
 
-    parser.add_argument("--print_every", type=int, default=100, help="logging interval")
-    parser.add_argument("-every", "--save_every", type=int, default=2000, help="save interval")
+    parser.add_argument("--print_every", type=int, default=5, help="logging interval")
+    parser.add_argument("-every", "--save_every", type=int, default=5, help="save interval")
 
     parser.add_argument("--dset_used", type=float, default=1.0, help="size of the training dataset, if less than 1 then it will be the fraction of the dataset used, \
                         if greater than 1 then it will be the number of elements to be used.")
-    parser.add_argument("--oversample", action="store_true", help="oversample dataset.")
 
     args = parser.parse_args()
     run_cfgs = vars(args)
-
-    if not args.train and \
-            "none" in args.eval_metrics and \
-            not args.save_real_images and \
-            not args.save_fake_images and \
-            not args.vis_fake_images and \
-            not args.k_nearest_neighbor and \
-            not args.interpolation and \
-            not args.frequency_analysis and \
-            not args.tsne_analysis and \
-            not args.intra_class_fid and \
-            not args.GAN_train and \
-            not args.GAN_test and \
-            not args.semantic_factorization:
-        parser.print_help(sys.stderr)
-        sys.exit(1)
 
     gpus_per_node, rank = torch.cuda.device_count(), torch.cuda.current_device()
 

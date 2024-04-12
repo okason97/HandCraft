@@ -1,0 +1,65 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.16.4 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d/wandb/run-20240307_095618-16wcmvcj
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-conv1d-train-2024_03_07_09_56_13
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/16wcmvcj
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 102, in <module>
+    loader.load_worker(local_rank=rank,
+  File "/home/grios/HandCraft/src/loader.py", line 276, in load_worker
+    top1, top10, loss = worker.train_step(step)
+  File "/home/grios/HandCraft/src/worker.py", line 91, in train_step
+    for values, labels in self.train_dataloader:
+  File "/home/griosException in thread MsgRouterThr:
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.10/threading.py", line 953, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router.py", line 69, in message_loop
+    msg = self._read_message()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router_queue.py", line 32, in _read_message
+    msg = self._response_queue.get(timeout=1)
+  File "/usr/lib/python3.10/multiprocessing/queues.py", line 117, in get
+    res = self._recv_bytes()
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 212, in recv_bytes
+    self._check_closed()
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 136, in _check_closed
+    raise OSError("handle is closed")
+OSError: handle is closed
+MB uploaded (0.000 MB deduped)Exception ignored in atexit callback: <function _Manager._atexit_setup.<locals>.<lambda> at 0x7fd490d32cb0>
+Traceback (most recent call last):
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 126, in <lambda>
+    self._atexit_lambda = lambda: self._atexit_teardown()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 135, in _atexit_teardown
+    self._teardown(exit_code)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 145, in _teardown
+    result = self._service.join()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/service/service.py", line 123, in join
+    ret = self._internal_proc.wait()
+  File "/usr/lib/python3.10/subprocess.py", line 1222, in wait
+    self._wait(timeout=sigint_timeout)
+  File "/usr/lib/python3.10/subprocess.py", line 1953, in _wait
+    time.sleep(delay)
+KeyboardInterrupt: 
+wandb: \ 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)Exception in thread MsgRouterThr:
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.10/threading.py", line 953, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router.py", line 69, in message_loop
+    msg = self._read_message()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router_queue.py", line 32, in _read_message
+    msg = self._response_queue.get(timeout=1)
+  File "/usr/lib/python3.10/multiprocessing/queues.py", line 117, in get
+    res = self._recv_bytes()
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 212, in recv_bytes
+    self._check_closed()
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 136, in _check_closed
+    raise OSError("handle is closed")
+OSError: handle is closed
