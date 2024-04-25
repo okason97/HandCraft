@@ -1,0 +1,29 @@
+DATA:
+  name: "LSFB"
+  mode: "prediction"
+  poses: [["pose","all"],["right_hand","all"],["left_hand","all"], ["face",[61,39,0,269,291,405,17,181,33,159,133,145,46,52,65,55,263,386,362,374,276,282,295,285]]]
+  num_keypoints: 99
+  num_classes: 610
+  min_samples: 20
+  oversample: True
+  max_len: 32
+  target_len: 10
+  input_size: [32, 99, 3]
+MODEL:
+  backbone: "siMLPe"
+  use_spatial_fc: False
+  feature_norm: "slayernorm"
+  depth: 48
+  init: "ortho"
+LOSS:
+  loss_type: "siMLPe"
+  use_relative_loss: True
+OPTIMIZATION:
+  type_: "Adam"
+  batch_size: 128
+  lr: 1e-5
+  weight_decay: 1e-4
+  beta1: 0.9
+  beta2: 0.999
+  total_steps: 40000
+  lookahead: False

@@ -9,10 +9,10 @@ import utils.misc as misc
 from torchvision.ops.stochastic_depth import StochasticDepth
 
 class Conv1DBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, expand_ratio, dropout, drop_path, MODULES):
+    def __init__(self, in_channels, out_channels, expand_ratio, dropout_p, drop_path, MODULES):
         super(Conv1DBlock, self).__init__()
         self.res = (in_channels==out_channels)
-        self.dropout = dropout
+        self.dropout_p = dropout_p
         expanded_channels = out_channels * expand_ratio
 
         self.in_linear = MODULES.linear(in_features=in_channels, out_features=expanded_channels)
@@ -21,7 +21,7 @@ class Conv1DBlock(nn.Module):
         self.bn = MODULES.feature_norm(in_features=expanded_channels)
         self.out_linear = MODULES.linear(in_features=expanded_channels, out_features=out_channels)
 
-        self.dropout = MODULES.dropout(p=dropout)
+        self.dropout = MODULES.dropout(p=dropout_p)
         self.drop_path = MODULES.drop_path(p=drop_path,mode="batch")
 
         self.activation = MODULES.act_fn
@@ -60,45 +60,44 @@ class Block(nn.Module):
 
         return x
 
-class Classifier(nn.Module):
-    def __init__(self, input_size, embed_size, conv_dim, apply_attn, expand_ratio, nheads, dropout,
-                 drop_path, num_classes, init_weights, depth, mixed_precision, MODULES, MODEL):
-        super(Classifier, self).__init__()
-        self.MODEL = MODEL
-        f_input_size = input_size[1]*input_size[2]
-        self.in_dims = [embed_size]+[conv_dim]*(depth-1)
-        self.out_dims = [conv_dim]*depth
+class Model(nn.Module):
+    def __init__(self, DATA, RUN, MODULES, MODEL):
+        super(Model, self).__init__()
 
-        self.mixed_precision = mixed_precision
+        f_input_size = DATA.input_size[1]*DATA.input_size[2]
+        self.in_dims = [MODEL.embed_size]+[MODEL.conv_dim]*(MODEL.depth-1)
+        self.out_dims = [MODEL.conv_dim]*MODEL.depth
+
+        self.mixed_precision = RUN.mixed_precision
 
         self.blocks = []
         for index in range(len(self.in_dims)):
             self.blocks += [[
                 Block(in_channels=self.in_dims[index],
                             out_channels=self.out_dims[index],
-                            expand_ratio=expand_ratio,
-                            dropout=dropout,
-                            drop_path=drop_path,
+                            expand_ratio=MODEL.expand_ratio,
+                            dropout=MODEL.dropout,
+                            drop_path=MODEL.drop_path,
                             MODULES=MODULES)
             ]]
 
-            if apply_attn:
-                self.blocks += [[MODULES.transformer_layer(in_features=self.out_dims[index], nhead=nheads, dim_feedforward=self.out_dims[index], dropout=dropout)]]
+            if MODEL.apply_attn:
+                self.blocks += [[MODULES.transformer_layer(in_features=self.out_dims[index], nhead=MODEL.nheads, dim_feedforward=self.out_dims[index], dropout=MODEL.dropout)]]
 
         self.blocks = nn.ModuleList([nn.ModuleList(block) for block in self.blocks])
 
         self.inlinear = MODULES.linear(f_input_size, self.in_dims[0], bias=False)
         # self.inlineart = MODULES.linear(input_size[0], self.in_dims[0], bias=False)
         # self.emblinear = MODULES.linear(f_input_size, self.in_dims[0], bias=False)
-        self.bn = MODULES.feature_norm(in_features=input_size[0])
+        self.bn = MODULES.feature_norm(in_features=DATA.input_size[0])
         self.top_linear = MODULES.linear(self.out_dims[-1], self.out_dims[-1]*2)
         #self.pooling = MODULES.pooling(self.out_dims[-1]*2)
-        self.outlinear = MODULES.linear(input_size[0], num_classes)
+        self.outlinear = MODULES.linear(DATA.input_size[0], DATA.num_classes)
 
-        self.dropout = MODULES.dropout(p=dropout)
+        self.dropout = MODULES.dropout(p=MODEL.dropout)
 
-        if init_weights:
-            ops.init_weights(self.modules, init_weights)
+        if MODEL.init:
+            ops.init_weights(self.modules, MODEL.init)
 
     def forward(self, x, eval=False):
         with torch.cuda.amp.autocast() if self.mixed_precision and not eval else misc.dummy_context_mgr() as mp:

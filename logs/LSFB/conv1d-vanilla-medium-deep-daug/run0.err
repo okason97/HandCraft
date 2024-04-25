@@ -2,11 +2,11 @@ wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relog
 wandb: wandb version 0.16.6 is available!  To upgrade, please run:
 wandb:  $ pip install wandb --upgrade
 wandb: Tracking run with wandb version 0.13.2
-wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-daug/wandb/run-20240412_020802-2q94didf
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-daug/wandb/run-20240415_042711-2ho0ungg
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run LSFB-vanilla-medium-deep-daug-train-2024_04_12_02_07_59
+wandb: Syncing run LSFB-vanilla-medium-deep-daug-train-2024_04_15_04_25_08
 wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft
-wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/2q94didf
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/2ho0ungg
 /home/grios/myphyton/lib/python3.10/site-packages/torch/optim/lr_scheduler.py:143: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
   warnings.warn("Detected call of `lr_scheduler.step()` before `optimizer.step()`. "
 /home/grios/HandCraft/src/utils/optimizers.py:89: UserWarning: This overload of add_ is deprecated:
@@ -14,20 +14,25 @@ wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft/runs/2q94didf
 Consider using one of the following signatures instead:
 	add_(Tensor other, *, Number alpha) (Triggered internally at ../torch/csrc/utils/python_arg_parser.cpp:1630.)
   p.data.mul_(self.alpha).add_(1.0 - self.alpha, param_state['cached_params'])  # crucial line
-Exception in thread MsgRouterThr:
-Traceback (most recent call last):
-  File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
-    self.run()
-  File "/usr/lib/python3.10/threading.py", line 953, in run
-    self._target(*self._args, **self._kwargs)
-  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router.py", line 69, in message_loop
-    msg = self._read_message()
-  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/interface/router_queue.py", line 32, in _read_message
-    msg = self._response_queue.get(timeout=1)
-  File "/usr/lib/python3.10/multiprocessing/queues.py", line 117, in get
-    res = self._recv_bytes()
-  File "/usr/lib/python3.10/multiprocessing/connection.py", line 212, in recv_bytes
-    self._check_closed()
-  File "/usr/lib/python3.10/multiprocessing/connection.py", line 136, in _check_closed
-    raise OSError("handle is closed")
-OSError: handle is closed
+wandb: Waiting for W&B process to finish... (success).
+wandb: - 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.001 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: | 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: / 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: - 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.001 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: | 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: / 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: - 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: | 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: / 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: - 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb: \ 0.042 MB of 0.042 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:   test_loss ▇▅▄▃▃▂▂▁▂▂█▁▁▁▂▃▂▂▂▂▂▁▂▁▁▁▂▂▂▂▁▁▂▂▂▂▂▂▂▂
+wandb:   test_top1 ▁▂▂▃▄▅▅▆▅▅▁▆▆▆▅▅▅▆▆▆▆▇▆▇▇▇▇▆▇▇▇▇████████
+wandb:  test_top10 ▂▃▄▅▆▇▇▇▇▇▁▇▇▇▇▇▇▇▇▇▇▇▇█████████████████
+wandb:  train_loss █▇▆▅▄▃▃▃▃▃▄▄▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁
+wandb:  train_top1 ▁▁▂▃▄▅▅▅▅▅▅▄▅▅▅▅▆▆▆▆▆▆▆▆▇▇▇▇▇▇▇▇████████
+wandb: train_top10 ▁▂▄▅▆▇▇▇▇▇▆▆▇▇▆▇▇▇▇▇▇▇██████████████████
+wandb: 
+wandb: Run summary:
+wandb:   test_loss 3.89716
+wandb:   test_top1 35.41547
+wandb:  test_top10 75.18625
+wandb:  train_loss 0.59768
+wandb:  train_top1 84.87675
+wandb: train_top10 97.24682
+wandb: 
+wandb: Synced LSFB-vanilla-medium-deep-daug-train-2024_04_15_04_25_08: https://wandb.ai/gaston-g-rios/handcraft/runs/2ho0ungg
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /mnt/sda2/models/HandCraft/samples/LSFB/conv1d-vanilla-medium-deep-daug/wandb/run-20240415_042711-2ho0ungg/logs

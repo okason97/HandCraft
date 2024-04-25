@@ -42,12 +42,15 @@ class WORKER(object):
         self.loss_list_dict = loss_list_dict
         self.metric_dict_during_train = metric_dict_during_train
         self.metric_dict_during_final_eval = {}
+        if self.RUN.mode == "prediction":
+            self.dct_m, self.idct_m = misc.get_dct_matrix(cfgs.DATA.max_len)
+            self.dct_m = torch.tensor(self.dct_m).unsqueeze(0)
+            self.idct_m = torch.tensor(self.idct_m).unsqueeze(0)
 
         #self.cfgs.define_augments(local_rank)
         self.cfgs.define_losses()
         self.DATA = cfgs.DATA
         self.MODEL = cfgs.MODEL
-        self.LOSS = cfgs.LOSS
         self.OPTIMIZATION = cfgs.OPTIMIZATION
         self.PRE = cfgs.PRE
         self.AUG = cfgs.AUG
@@ -55,7 +58,7 @@ class WORKER(object):
         self.MISC = cfgs.MISC
         self.DDP = self.RUN.distributed_data_parallel
 
-        self.ce_loss = cfgs.LOSS.loss()
+        self.loss = cfgs.LOSS.loss()
 
         if self.DDP:
             self.group = dist.new_group([n for n in range(self.OPTIMIZATION.world_size)])
@@ -87,7 +90,9 @@ class WORKER(object):
         # toggle gradients
         misc.toggle_grad(model=self.model, grad=True)
         # create accumulators
-        valid_top1_acc, valid_top10_acc, valid_loss = misc.AverageMeter(), misc.AverageMeter(), misc.AverageMeter()
+        if self.RUN.mode == "classification":
+            valid_top1_acc, valid_top10_acc = misc.AverageMeter(), misc.AverageMeter()
+        valid_loss = misc.AverageMeter()
         # sample real values and labels, then train for an epoch
         for values, labels in self.train_dataloader:
             self.OPTIMIZATION.optimizer.zero_grad()
@@ -96,11 +101,23 @@ class WORKER(object):
                 values = values.to(self.local_rank, non_blocking=True)
                 labels = labels.to(self.local_rank, non_blocking=True)
 
+                if self.RUN.mode == "prediction":
+                    offset = values[:, -1:]
+                    # apply Discrete Cosine Transform 
+                    values = torch.matmul(self.dct_m, values)
+
                 # get model output for the current batch
                 outputs = self.model(values)
 
+                if self.RUN.mode == "prediction":
+                    # apply Inverse Discrete Cosine Transform 
+                    values = torch.matmul(self.idct_m, outputs)
+
+                    # apply output over the last frame as offset
+                    outputs = outputs[:, :self.DATA.target_len] + offset                
+
             # calculate Cross Entropy Loss
-            loss = self.ce_loss(outputs, labels)
+            loss = self.loss(outputs, labels)
 
             # accumulate gradients of the model
             if self.RUN.mixed_precision:
@@ -117,19 +134,39 @@ class WORKER(object):
             if self.OPTIMIZATION.scheduler:
                 self.OPTIMIZATION.scheduler.step()
 
-            # calculate topk
-            valid_acc1, valid_acc10 = misc.accuracy(outputs.data, labels, topk=(1, 10))
+            if self.RUN.mode == "classification":
+                # calculate topk
+                valid_acc1, valid_acc10 = misc.accuracy(outputs.data, labels, topk=(1, 10))
 
-            # accumulate loss and topk
+                # accumulate topk
+                valid_top1_acc.update(valid_acc1.item(), values.size(0))
+                valid_top10_acc.update(valid_acc10.item(), values.size(0))
+
+            # accumulate loss
             valid_loss.update(loss.item(), values.size(0))
-            valid_top1_acc.update(valid_acc1.item(), values.size(0))
-            valid_top10_acc.update(valid_acc10.item(), values.size(0))
 
         if self.local_rank == 0:
-            self.logger.info("Train Top 1-acc {top1.avg:.4f}\t"
-                             "Train Top 10-acc {top10.avg:.4f}\t"
-                             "Train Loss {loss.avg:.4f}".format(top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss))
+            if self.RUN.mode == "classification":
+                self.logger.info("Train Top 1-acc {top1.avg:.4f}\t"
+                                "Train Top 10-acc {top10.avg:.4f}\t"
+                                "Train Loss {loss.avg:.4f}".format(top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss))
+            else:
+                self.logger.info("Train Loss {loss.avg:.4f}".format(top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss))
 
+        # apply late dropout when reaching the indicated step
+        self.apply_l_drop(step)
+
+        if self.RUN.empty_cache:
+            torch.cuda.empty_cache()
+
+        if self.RUN.mode == "classification":
+            top1 = valid_top1_acc.avg
+            top10 = valid_top10_acc.avg
+        else:
+            top1, top10 = None, None
+        return top1, top10, valid_loss.avg
+    
+    def apply_l_drop(self, step):
         if self.MODEL.late_dropout:
             if self.MODEL.late_dropout_step <= step:
                 if self.MODEL.apply_ema:
@@ -145,33 +182,41 @@ class WORKER(object):
                 else:
                     self.model.update_drop_path(self.MODEL.late_drop_path)
 
-        if self.RUN.empty_cache:
-            torch.cuda.empty_cache()
-        return valid_top1_acc.avg, valid_top10_acc.avg, valid_loss.avg
-
-
     # -----------------------------------------------------------------------------
     # log training statistics
     # -----------------------------------------------------------------------------
     def log_train_statistics(self, current_step, loss, top1, top10):
         self.wandb_step = current_step + 1
 
-        log_message = LOG_FORMAT.format(
-            step=current_step + 1,
-            progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
-            elapsed=misc.elapsed_time(self.start_time),
-            loss=loss,
-            top1=top1,
-            top10=top10
-        )
+        if self.RUN.mode == "classification":
+            log_message = LOG_FORMAT.format(
+                step=current_step + 1,
+                progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
+                elapsed=misc.elapsed_time(self.start_time),
+                loss=loss,
+                top1=top1,
+                top10=top10
+            )
+        else:
+            log_message = LOG_FORMAT.format(
+                step=current_step + 1,
+                progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
+                elapsed=misc.elapsed_time(self.start_time),
+                loss=loss,
+            )
         self.logger.info(log_message)
 
         # save loss values in wandb event file and .npz format
-        dict = {
-            "train_loss": loss,
-            "train_top1": top1,
-            "train_top10": top10,
-        }
+        if self.RUN.mode == "classification":
+            dict = {
+                "train_loss": loss,
+                "train_top1": top1,
+                "train_top10": top10,
+            }
+        else:
+            dict = {
+                "train_loss": loss,
+            }
 
         wandb.log(dict, step=self.wandb_step)
 
@@ -202,18 +247,25 @@ class WORKER(object):
         }
 
         if self.global_rank == 0:
-            self.logger.info("Test Top 1-acc {top1:.4f}\t"
-                             "Test Top 10-acc {top10:.4f}\t"
-                             "Test Loss {loss}".format(top1=top1_acc, top10=top10_acc, loss=loss))
+            if self.RUN.mode == "classification":
+                self.logger.info("Test Top 1-acc {top1:.4f}\t"
+                                "Test Top 10-acc {top10:.4f}\t"
+                                "Test Loss {loss}".format(top1=top1_acc, top10=top10_acc, loss=loss))
+            else:
+                self.logger.info("Test Loss {loss}".format(loss=loss))
             if self.best_loss is None or loss <= self.best_loss:
                 self.best_loss, self.best_t1acc, self.best_t10acc, self.best_step, is_best = loss, top1_acc, top10_acc, step, True
             if writing:
                 wandb.log(metric_dict, step=self.wandb_step)
             if training:
-                self.logger.info("Best Loss (Step: {step}): {loss}\t"
-                                 "Best Top 1-acc {top1:.4f}\t"
-                                 "Best Top 10-acc {top10:.4f}".format(
-                    step=self.best_step, loss=self.best_loss, top1=top1_acc, top10=top10_acc))
+                if self.RUN.mode == "classification":
+                    self.logger.info("Best Top 1-acc {top1:.4f}\t"
+                                    "Best Top 10-acc {top10:.4f}\t"
+                                    "Best Loss (Step: {step}): {loss}".format(
+                        step=self.best_step, loss=self.best_loss, top1=top1_acc, top10=top10_acc))
+                else:
+                    self.logger.info("Best Loss (Step: {step}): {loss}\t".format(
+                        step=self.best_step, loss=self.best_loss))
 
         if self.global_rank == 0:
             if training:
@@ -282,14 +334,23 @@ class WORKER(object):
                 outputs = self.model(values)
 
             # calculate Cross Entropy Loss
-            l = self.ce_loss(outputs, labels)
+            l = self.loss(outputs, labels)
 
-            # calculate topk
-            acc1, acc10 = misc.accuracy(outputs.data, labels, topk=(1, 10))
+            if self.RUN.mode == "classification":
+                # calculate topk
+                acc1, acc10 = misc.accuracy(outputs.data, labels, topk=(1, 10))
 
-            # accumulate loss and topk
+                # accumulate topk
+                top1_acc.update(acc1.item(), values.size(0))
+                top10_acc.update(acc10.item(), values.size(0))
+
+            # accumulate loss
             loss.update(l.item(), values.size(0))
-            top1_acc.update(acc1.item(), values.size(0))
-            top10_acc.update(acc10.item(), values.size(0))
 
-        return top1_acc.avg, top10_acc.avg, loss.avg
+        if self.RUN.mode == "classification":
+            top1 = top1_acc.avg
+            top10 = top10_acc.avg
+        else:
+            top1, top10 = None, None
+
+        return top1, top10, loss.avg

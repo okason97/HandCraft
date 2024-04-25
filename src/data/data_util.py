@@ -106,10 +106,7 @@ class CropFrames(torch.nn.Module):
         self.size = size
 
     def forward(self, img):
-        img = torch.permute(img, [1,2,0])
-        if img.shape[0]<self.size:
-            img = torch.tensor(np.pad(img, ((0, self.size-img.shape[0]),(0,0),(0,0)), 'wrap'))
-        elif img.shape[0]>self.size:
+        if img.shape[0]>self.size:
             offset = img.shape[0]-self.size
             r = random.randint(0, offset-1)
             img = img[r:-(offset-r)]
@@ -118,6 +115,23 @@ class CropFrames(torch.nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(size={self.size})"
 
+class PadFrames(torch.nn.Module):
+    """
+    Pad the given list of frames to the given size.
+    """
+
+    def __init__(self, size):
+        super().__init__()
+        self.size = size
+
+    def forward(self, img):
+        img = torch.permute(img, [1,2,0])
+        if img.shape[0]<self.size:
+            img = torch.tensor(np.pad(img, ((0, self.size-img.shape[0]),(0,0),(0,0)), 'wrap'))
+        return img
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(size={self.size})"
 
 class RandomAffine(torch.nn.Module):
 
@@ -149,20 +163,23 @@ class Dataset_(Dataset):
                  filter_classes=None,
                  map_classes=None,
                  max_len=15,
-                 min_samples=0,
+                 min_samples=None,
+                 target_len=None,
                  random_crop=False,
                  drop_frame=0.0,
                  drop_keypoint=0.0,
                  block_size=9,
                  flip_p=0.0,
                  scale=0.0,
-                 rot=0.0):
+                 rot=0.0,
+                 mode="classification"):
         super(Dataset_, self).__init__()
+        self.mode = mode
+        self.target_len = target_len
         self.data_dir = data_dir
         self.train = train
         self.load_data_in_memory = load_data_in_memory
         self.trsf_list = []
-        self.pose_trsf_list = []
         self.poses = poses
         self.filter_classes = filter_classes
         self.map_classes = map_classes
@@ -170,8 +187,25 @@ class Dataset_(Dataset):
         self.max_len = max_len
         self.centers = []
 
+        self.load_dataset()
+
+        self.load_data_in_memory = load_data_in_memory
+
         self.trsf_list += [transforms.ToTensor()]
         self.trsf_list += [transforms.Normalize([-0.0224,  0.2656,  0.1731], [0.0641, 0.3551, 0.2297])]
+        self.trsf_list += [PadFrames(self.max_len)]
+
+        if self.load_data_in_memory:
+            self.pre_trsf = transforms.Compose(self.trsf_list)
+
+            self.trsf_list = []
+            self.pose_data = []
+            self.labels = []
+            for index in range(len(self.data)):
+                value, label = self.load(index)
+                self.pose_data.append(self.pre_trsf(value))
+                self.labels.append(label)
+
         if random_crop:
             self.trsf_list += [RandomCropFrames(self.max_len)]
         else:
@@ -183,8 +217,6 @@ class Dataset_(Dataset):
         if drop_keypoint>0:
             self.trsf_list += [DropKeypoints(block_size, drop_keypoint)]
         self.trsf = transforms.Compose(self.trsf_list)
-
-        self.load_dataset()
 
     def load_dataset(self):
         mode = "train" if self.train == True else "test"
@@ -257,8 +289,21 @@ class Dataset_(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-            value, label = self.load(index)
-            return torch.flatten(self.trsf(value), 1), torch.tensor(label)
+            if self.mode == "classification":
+                if self.load_data_in_memory:
+                    value, label = self.pose_data[index] ,self.labels[index]
+                else:
+                    value, label = self.load(index)
+                return torch.flatten(self.trsf(value), 1), torch.tensor(label)
+            elif self.mode == "prediction":
+                if self.load_data_in_memory:
+                    value = self.pose_data[index]
+                else:
+                    value, _ = self.load(index)
+                value = torch.flatten(self.trsf(value), 1)
+                return value[:-self.target_len], value[-self.target_len:]
+            else:
+                raise NotImplementedError
 
 class OversamplingWrapper(torch.utils.data.Dataset):
     def __init__(self, dataset, oversampling_size=None):

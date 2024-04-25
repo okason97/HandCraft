@@ -146,10 +146,12 @@ class Configurations(object):
         self.OPTIMIZATION.lr = 0.0002
         # weight decay strength
         self.OPTIMIZATION.weight_decay = 0.0
+        # use lookahead
+        self.OPTIMIZATION.lookahead = True
         # momentum value for SGD and RMSprop optimizers
         self.OPTIMIZATION.momentum = "N/A"
         # nesterov value for SGD optimizer
-        self.OPTIMIZATION.nesterov = "N/A"
+        self.OPTIMIZATION.nesterov = False
         # alpha value for RMSprop optimizer
         self.OPTIMIZATION.alpha = "N/A"
         # beta values for RAdam optimizer
@@ -217,7 +219,8 @@ class Configurations(object):
     def define_losses(self):
         losses_dic = {
             "CCE": losses.cce,
-            "siMLPe": losses.siMLPe
+            "motion_loss": losses.motion_loss,
+            "relative_motion_loss": losses.relative_motion_loss,
         }
 
         self.LOSS.loss = losses_dic[self.LOSS.loss_type]
@@ -288,14 +291,12 @@ class Configurations(object):
                                                             weight_decay=self.OPTIMIZATION.weight_decay,
                                                             momentum=self.OPTIMIZATION.momentum,
                                                             nesterov=self.OPTIMIZATION.nesterov)
-            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         elif self.OPTIMIZATION.type_ == "RMSprop":
             self.OPTIMIZATION.optimizer = torch.optim.RMSprop(params=params,
                                                                 lr=self.OPTIMIZATION.lr,
                                                                 weight_decay=self.OPTIMIZATION.weight_decay,
                                                                 momentum=self.OPTIMIZATION.momentum,
                                                                 alpha=self.OPTIMIZATION.alpha)
-            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         elif self.OPTIMIZATION.type_ == "Adam":
             betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
             eps_ = 1e-6
@@ -305,7 +306,6 @@ class Configurations(object):
                                                            betas=betas,
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
-            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         elif self.OPTIMIZATION.type_ == "RAdam":
             betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
             eps_ = 1e-6
@@ -315,15 +315,17 @@ class Configurations(object):
                                                            betas=betas,
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
-            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
         else:
             raise NotImplementedError
         
         if self.OPTIMIZATION.lrscheduler == "OneCycle":
-            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.OPTIMIZATION.optimizer.optimizer, max_lr=0.01, pct_start=0.3, three_phase=False, steps_per_epoch=len_dataloader, epochs=self.OPTIMIZATION.total_steps)
+            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.OPTIMIZATION.optimizer, max_lr=0.01, pct_start=0.3, three_phase=False, steps_per_epoch=len_dataloader, epochs=self.OPTIMIZATION.total_steps)
         else:
             self.OPTIMIZATION.scheduler = None
-    
+
+        if self.OPTIMIZATION.lookahead:
+            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
+
     """
     def define_augments(self, device):
         self.AUG.series_augment = misc.identity

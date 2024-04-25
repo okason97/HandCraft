@@ -10,9 +10,6 @@ DATA:
   drop_frame: 0.2
   drop_keypoint: 0.2
   block_size: 9
-  flip_p: 0.5
-  scale: 0.05
-  rot: 5
 MODEL:
   backbone: "conv1d"
   apply_attn: True

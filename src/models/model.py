@@ -12,46 +12,17 @@ from sync_batchnorm.batchnorm import convert_model
 import utils.misc as misc
 from ema_pytorch import EMA
 
-def load_generator(DATA, MODEL, MODULES, RUN, device, logger):
+def load_model(DATA, MODEL, MODULES, RUN, device, logger):
     if device == 0:
         logger.info("Build the model.")
     module = __import__("models.{backbone}".format(backbone=MODEL.backbone), fromlist=["something"])
     if device == 0:
         logger.info("Modules are located on './src/models.{backbone}'.".format(backbone=MODEL.backbone))
 
-        model = module.Generator(input_size=DATA.input_size,
-                                 mixed_precision=RUN.mixed_precision,
-                                 MODULES=MODULES,
-                                 MODEL=MODEL).to(device)
-
-    if device == 0:
-        logger.info(misc.count_parameters(model))
-    if device == 0:
-        logger.info(model)
-    return model
-
-
-def load_classifier(DATA, MODEL, MODULES, RUN, device, logger):
-    if device == 0:
-        logger.info("Build the model.")
-    module = __import__("models.{backbone}".format(backbone=MODEL.backbone), fromlist=["something"])
-    if device == 0:
-        logger.info("Modules are located on './src/models.{backbone}'.".format(backbone=MODEL.backbone))
-
-        model = module.Classifier(input_size=DATA.input_size,
-                                   embed_size=MODEL.embed_size,
-                                   conv_dim=MODEL.conv_dim,
-                                   apply_attn=MODEL.apply_attn,
-                                   expand_ratio=MODEL.expand_ratio,
-                                   nheads=MODEL.nheads,
-                                   dropout=MODEL.dropout,
-                                   drop_path=MODEL.drop_path,
-                                   num_classes=DATA.num_classes,
-                                   init_weights=MODEL.init,
-                                   depth=MODEL.depth,
-                                   mixed_precision=RUN.mixed_precision,
-                                   MODULES=MODULES,
-                                   MODEL=MODEL)
+        model = module.Model(DATA=DATA,
+                                RUN=RUN,
+                                MODULES=MODULES,
+                                MODEL=MODEL)
         if MODEL.apply_ema:
             model = EMA(model,
                         beta = MODEL.ema_beta,              # exponential moving average factor

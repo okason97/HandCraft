@@ -194,7 +194,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # load the model
     # -----------------------------------------------------------------------------
-    model = model_generator.load_classifier(DATA=cfgs.DATA,
+    model = model_generator.load_model(DATA=cfgs.DATA,
                                     MODEL=cfgs.MODEL,
                                     MODULES=cfgs.MODULES,
                                     RUN=cfgs.RUN,

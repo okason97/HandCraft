@@ -37,19 +37,19 @@ class TransMLP(nn.Module):
         x = self.mlps(x)
         return x
 
-class Generator(nn.Module):
+class Model(nn.Module):
     '''
     MLP-based network for human motion prediction.
     siMLPe article: https://arxiv.org/abs/2207.01567
     siMLPe code: https://github.com/dulucas/siMLPe/tree/main
     '''
-    def __init__(self, input_size, mixed_precision, MODULES, MODEL):
-        super(Generator, self).__init__()
+    def __init__(self, DATA, RUN, MODULES, MODEL):
+        super(Model, self).__init__()
         self.arr0 = Rearrange('b n d -> b d n')
         self.arr1 = Rearrange('b d n -> b n d')
-        self.mixed_precision = mixed_precision
-        dim = input_size[-2]*input_size[-1]
-        seq = input_size[-3]
+        self.mixed_precision = RUN.mixed_precision
+        seq = DATA.input_size[-2]*DATA.input_size[-1]
+        dim = DATA.input_size[-3]
 
         self.motion_mlp = TransMLP(
             dims=[seq, dim],
@@ -92,4 +92,4 @@ class Generator(nn.Module):
                 motion_feats = self.arr1(motion_feats)
                 motion_feats = self.motion_fc_out(motion_feats)
 
-            return motion_feats
+        return motion_feats
