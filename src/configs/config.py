@@ -47,6 +47,7 @@ class Configurations(object):
         self.DATA.min_samples = 10
         # maximum number of frames
         self.DATA.max_len = 15
+        self.DATA.target_len = 8
         # oversample dataset to current maximum number of samples per class
         self.DATA.oversample = False
         # data poses and keypoints used
