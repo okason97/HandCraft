@@ -30,8 +30,12 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc, is_best = \
         0, 0, cfgs.OPTIMIZATION.batch_size, 0, 999, 0, 0, False
-    loss_list_dict = {"train_loss": [], "train_top1": [], "train_top10": []}
-    metric_dict_during_train = {"test_loss": [], "test_top1": [], "test_top10": []}
+    if cfgs.RUN.mode == "classification":
+        loss_list_dict = {"train_loss": [], "train_top1": [], "train_top10": []}
+        metric_dict_during_train = {"test_loss": [], "test_top1": [], "test_top10": []}
+    else:
+        metric_dict_during_train = {"test_loss": []}
+        loss_list_dict = {"train_loss": []}
 
     # -----------------------------------------------------------------------------
     # determine cuda, cudnn, and backends settings.
@@ -282,6 +286,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         if global_rank == 0:
             logger.info("Start training!")
 
+            if cfgs.RUN.mode == "prediction":
+                worker.visualize_real_poses()
+
         worker.prepare_train_iter(epoch_counter=epoch)
         while step < cfgs.OPTIMIZATION.total_steps:
             top1, top10, loss = worker.train_step(step)
@@ -295,6 +302,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             step += 1
 
             if step % cfgs.RUN.save_every == 0:
+                if global_rank == 0 and cfgs.RUN.mode == "prediction":
+                    worker.visualize_fake_poses(step=step)
+
                 # validate model for monitoring purpose
                 is_best = worker.evaluate(step=step, writing=True, training=True)
 

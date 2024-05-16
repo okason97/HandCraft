@@ -4,7 +4,7 @@
 
 # src/utils/misc.py
 
-from os.path import exists, join, isfile
+from os.path import dirname, exists, join, isfile
 from datetime import datetime
 import random
 import os
@@ -17,6 +17,8 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 import utils.ckpt as ckpt
 
@@ -337,3 +339,135 @@ def get_dct_matrix(N):
             dct_m[k, i] = w * np.cos(np.pi * (i + 1 / 2) * k / N)
     idct_m = np.linalg.inv(dct_m)
     return dct_m, idct_m
+
+def i_normalize(data, pose):
+    MEAN = {
+        'pose': [0.0011, 0.1365, 0.0693],
+        'right_hand': [-0.0325,  0.1191,  0.0000],
+        'left_hand': [0.0251, 0.1365, 0.0000],
+        'face': [-0.0024, -0.0086,  0.1384]
+    }
+    STD = {
+        'pose': [0.0184, 0.1365, 0.0692],
+        'right_hand': [0.0111, 0.0222, 42],
+        'left_hand': [0.0105, 0.0198, 42],
+        'face': [0.0046, 0.0086, 0.0040]
+    }
+
+    mean = np.array(MEAN[pose])
+    std = np.array(STD[pose])
+
+    mean = mean[None, None, :]
+    std = std[None, None, :]
+
+    # Normalize the data
+    normalized_data = data * std + mean
+
+    return normalized_data
+
+# MediaPipe pose landmarks connection (in their order)
+
+CONNECTIONS = {'pose': [(0, 1), (1, 2), (2, 3), (3, 7), (0, 4), (4, 5), (5, 6), (6, 8), (9, 10), (11, 12), (11, 13), (13, 15), (15, 17), (11, 23), (12, 14), (14, 16), (15,19), (15,21), (16,22), (16,20), (20,18), (19,17), (16, 18), (12, 24), (23, 24), (23, 25), (25, 27), (27, 29), (29, 31), (24, 26), (26, 28), (28, 30), (30, 32)],
+               'right_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
+               'left_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
+               'face': [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 0), 
+                    (8, 9), (9, 10), (10, 11), (11, 8),
+                    (12, 13), (13, 14), (14, 15),
+                    (16, 17), (17, 18), (18, 19), (19, 16),
+                    (20, 21), (21, 22), (22, 23)]}
+
+POSE_CONNECTIONS = [(0, 1), (1, 2), (2, 3), (3, 7), (0, 4), (4, 5), (5, 6), (6, 8), (9, 10), (11, 12), (11, 13), (13, 15), (15, 17), (11, 23), (12, 14), (14, 16), (15,19), (15,21), (16,22), (16,20), (20,18), (19,17), (16, 18), (12, 24), (23, 24), (23, 25), (25, 27), (27, 29), (29, 31), (24, 26), (26, 28), (28, 30), (30, 32)]
+FACE_CONNECTIONS = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 0), 
+                    (8, 9), (9, 10), (10, 11), (11, 8),
+                    (12, 13), (13, 14), (14, 15),
+                    (16, 17), (17, 18), (18, 19), (19, 16),
+                    (20, 21), (21, 22), (22, 23)]
+HAND_CONNECTIONS = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)]
+
+def plot_keypoints(xyz_keypoints, connections):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    xs = xyz_keypoints[:, 0]
+    ys = xyz_keypoints[:, 1]
+    zs = xyz_keypoints[:, 2]
+
+    ax.scatter(xs, ys, zs)
+
+    for connection in connections:
+        start = connection[0]
+        end = connection[1]
+
+        ax.plot([xs[start], xs[end]], [ys[start], ys[end]], [zs[start], zs[end]], 'blue')
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    # Set aspect ratio
+    max_range = np.array([xs.max()-xs.min(), ys.max()-ys.min(), zs.max()-zs.min()]).max() / 2.0
+    mid_x = (xs.max()+xs.min()) * 0.5
+    mid_y = (ys.max()+ys.min()) * 0.5
+    mid_z = (zs.max()+zs.min()) * 0.5
+    ax.set_xlim(mid_x - max_range, mid_x + max_range)
+    ax.set_ylim(mid_y - max_range, mid_y + max_range)
+    ax.set_zlim(mid_z - max_range, mid_z + max_range)
+
+    ax.view_init(-70, -90)
+
+    return plt
+
+def animate_keypoints(xyz_keypoints, pose):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    xss = xyz_keypoints[:, :, 0]
+    yss = xyz_keypoints[:, :, 1]
+    zss = xyz_keypoints[:, :, 2]
+
+    def animate(i):
+        ax.cla()   
+        xs = xss[i]
+        ys = yss[i]
+        zs = zss[i]
+        ax.scatter(xs, ys, zs)
+
+        for connection in CONNECTIONS[pose]:
+            start = connection[0]
+            end = connection[1]
+
+            ax.plot([xs[start], xs[end]], [ys[start], ys[end]], [zs[start], zs[end]], 'blue')
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+
+        # Set aspect ratio
+        max_range = np.array([xss[0].max()-xss[0].min(), yss[0].max()-yss[0].min(), zss[0].max()-zss[0].min()]).max() / 2.0
+        mid_x = (xss[0].max()+xss[0].min()) * 0.5
+        mid_y = (yss[0].max()+yss[0].min()) * 0.5
+        mid_z = (zss[0].max()+zss[0].min()) * 0.5
+        ax.set_xlim(mid_x - max_range, mid_x + max_range)
+        ax.set_ylim(mid_y - max_range, mid_y + max_range)
+        ax.set_zlim(mid_z - max_range, mid_z + max_range)
+
+        ax.view_init(-70, -90)
+    
+    ani = animation.FuncAnimation(fig, animate, repeat=False,
+                                        frames=len(xyz_keypoints) - 1, interval=50)
+    return plt, ani
+
+def save_gif(ani, save_path, logger, logging=True):
+    if logger is None:
+        logging = False
+    directory = dirname(save_path)
+
+    if not exists(directory):
+        os.makedirs(directory)
+
+    writer = animation.PillowWriter(fps=15,
+                                 metadata=dict(artist='Me'),
+                                 bitrate=1800)
+    ani.save(save_path, writer=writer)
+    if logging:
+        logger.info("Save poses to {}".format(save_path))

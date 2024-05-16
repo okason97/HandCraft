@@ -18,6 +18,31 @@ import random
 import torch.nn.functional as F
 import math
 
+def normalize(data, pose):
+    MEAN = {
+        'pose': [0.0011, 0.1365, 0.0693],
+        'right_hand': [-0.0325,  0.1191,  0.0000],
+        'left_hand': [0.0251, 0.1365, 0.0000],
+        'face': [-0.0024, -0.0086,  0.1384]
+    }
+    STD = {
+        'pose': [0.0184, 0.1365, 0.0692],
+        'right_hand': [0.0111, 0.0222, 42],
+        'left_hand': [0.0105, 0.0198, 42],
+        'face': [0.0046, 0.0086, 0.0040]
+    }
+
+    mean = np.array(MEAN[pose])
+    std = np.array(STD[pose])
+
+    mean = mean[None, None, :]
+    std = std[None, None, :]
+
+    # Normalize the data
+    normalized_data = (data - mean) / std
+
+    return normalized_data
+
 class DropFrames(torch.nn.Module):
     """
     Sets frames from the input image to 0 with a probability of p.
@@ -88,7 +113,6 @@ class RandomCropFrames(torch.nn.Module):
         self.expanded_size = self.size*window_expand
 
     def forward(self, img):
-        img = torch.permute(img, [1,2,0])
         offset = 0 if img.shape[0]<self.expanded_size else random.randint(0, img.shape[0]-self.expanded_size)
         frames_indexes = np.sort(np.random.choice(range(min(img.shape[0], self.expanded_size)), size=self.size, replace=True)) + offset
         return img[frames_indexes]
@@ -128,7 +152,7 @@ class PadFrames(torch.nn.Module):
         img = torch.permute(img, [1,2,0])
         if img.shape[0]<self.size:
             img = torch.tensor(np.pad(img, ((0, self.size-img.shape[0]),(0,0),(0,0)), 'wrap'))
-        return img
+        return img.half()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(size={self.size})"
@@ -192,7 +216,7 @@ class Dataset_(Dataset):
         self.load_data_in_memory = load_data_in_memory
 
         self.trsf_list += [transforms.ToTensor()]
-        self.trsf_list += [transforms.Normalize([-0.0224,  0.2656,  0.1731], [0.0641, 0.3551, 0.2297])]
+        #self.trsf_list += [transforms.Normalize([-0.0224,  0.2656,  0.1731], [0.0641, 0.3551, 0.2297])]
         self.trsf_list += [PadFrames(self.max_len)]
 
         if self.load_data_in_memory:
@@ -277,9 +301,11 @@ class Dataset_(Dataset):
                 take_center = False
             pose_data[:,:,0] -= self.centers[0]
             pose_data[:,:,1] -= self.centers[1]
-            pose_data[:,:,2] -= self.centers[2]
             if 'hand' in pose:
                 pose_data[:,:,2] = 0
+            else:
+                pose_data[:,:,2] -= self.centers[2]
+            pose_data = normalize(pose_data, pose)
             poses_data.append(pose_data)
         value = np.concatenate(poses_data,axis=1)
         label = self.data[index, 'sign']

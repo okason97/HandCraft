@@ -14,14 +14,6 @@ import utils.misc as misc
 import wandb
 
 
-LOG_FORMAT = ("Step: {step:>6} "
-              "Progress: {progress:<.1%} "
-              "Elapsed: {elapsed} "
-              "Loss: {loss:<.4} "
-              "Top1: {top1:<.4} "
-              "Top10: {top10:<.4} ")
-
-
 class WORKER(object):
     def __init__(self, cfgs, run_name, model, train_dataloader, valid_dataloader, test_dataloader, 
                  global_rank, local_rank, logger, best_step, best_loss, best_t1acc, best_t10acc,
@@ -42,10 +34,11 @@ class WORKER(object):
         self.loss_list_dict = loss_list_dict
         self.metric_dict_during_train = metric_dict_during_train
         self.metric_dict_during_final_eval = {}
-        if self.RUN.mode == "prediction":
-            self.dct_m, self.idct_m = misc.get_dct_matrix(cfgs.DATA.max_len)
-            self.dct_m = torch.tensor(self.dct_m).unsqueeze(0)
-            self.idct_m = torch.tensor(self.idct_m).unsqueeze(0)
+        self.wandb_step = None
+        if cfgs.RUN.mode == "prediction":
+            self.dct_m, self.idct_m = misc.get_dct_matrix(cfgs.DATA.input_size[0])
+            self.dct_m = torch.tensor(self.dct_m, dtype=torch.half).unsqueeze(0).to(self.local_rank)
+            self.idct_m = torch.tensor(self.idct_m, dtype=torch.half).unsqueeze(0).to(self.local_rank)
 
         #self.cfgs.define_augments(local_rank)
         self.cfgs.define_losses()
@@ -58,7 +51,7 @@ class WORKER(object):
         self.MISC = cfgs.MISC
         self.DDP = self.RUN.distributed_data_parallel
 
-        self.loss = cfgs.LOSS.loss()
+        self.loss = cfgs.LOSS.loss
 
         if self.DDP:
             self.group = dist.new_group([n for n in range(self.OPTIMIZATION.world_size)])
@@ -151,7 +144,7 @@ class WORKER(object):
                                 "Train Top 10-acc {top10.avg:.4f}\t"
                                 "Train Loss {loss.avg:.4f}".format(top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss))
             else:
-                self.logger.info("Train Loss {loss.avg:.4f}".format(top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss))
+                self.logger.info("Train Loss {loss.avg:.4f}".format(loss=valid_loss))
 
         # apply late dropout when reaching the indicated step
         self.apply_l_drop(step)
@@ -185,10 +178,16 @@ class WORKER(object):
     # -----------------------------------------------------------------------------
     # log training statistics
     # -----------------------------------------------------------------------------
-    def log_train_statistics(self, current_step, loss, top1, top10):
+    def log_train_statistics(self, current_step, loss, top1=None, top10=None):
         self.wandb_step = current_step + 1
 
         if self.RUN.mode == "classification":
+            LOG_FORMAT = ("Step: {step:>6} "
+                        "Progress: {progress:<.1%} "
+                        "Elapsed: {elapsed} "
+                        "Loss: {loss:<.4} "
+                        "Top1: {top1:<.4} "
+                        "Top10: {top10:<.4} ")
             log_message = LOG_FORMAT.format(
                 step=current_step + 1,
                 progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
@@ -198,6 +197,10 @@ class WORKER(object):
                 top10=top10
             )
         else:
+            LOG_FORMAT = ("Step: {step:>6} "
+                        "Progress: {progress:<.1%} "
+                        "Elapsed: {elapsed} "
+                        "Loss: {loss:<.4} ")
             log_message = LOG_FORMAT.format(
                 step=current_step + 1,
                 progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
@@ -330,8 +333,20 @@ class WORKER(object):
                 values = values.to(self.local_rank)
                 labels = labels.to(self.local_rank)
 
+                if self.RUN.mode == "prediction":
+                    offset = values[:, -1:]
+                    # apply Discrete Cosine Transform 
+                    values = torch.matmul(self.dct_m, values)
+
                 # get model output for the current batch
                 outputs = self.model(values)
+
+                if self.RUN.mode == "prediction":
+                    # apply Inverse Discrete Cosine Transform 
+                    values = torch.matmul(self.idct_m, outputs)
+
+                    # apply output over the last frame as offset
+                    outputs = outputs[:, :self.DATA.target_len] + offset                
 
             # calculate Cross Entropy Loss
             l = self.loss(outputs, labels)
@@ -354,3 +369,85 @@ class WORKER(object):
             top1, top10 = None, None
 
         return top1, top10, loss.avg
+
+    # -----------------------------------------------------------------------------
+    # visualize fake poses for monitoring purpose.
+    # -----------------------------------------------------------------------------
+    def visualize_fake_poses(self, step):
+        if self.global_rank == 0:
+            self.logger.info("Visualize fake poses.")
+
+        #generate fake
+        self.model.eval()
+        for values, targets in self.test_dataloader:
+            with torch.autocast("cuda") as mpc:
+                # load values and labels onto the GPU memory
+                values = values.to(self.local_rank)
+
+                offset = values[:, -1:]
+                # apply Discrete Cosine Transform 
+                values = torch.matmul(self.dct_m, values)
+
+                # get model output for the current batch
+                outputs = self.model(values)
+
+                # apply Inverse Discrete Cosine Transform 
+                values = torch.matmul(self.idct_m, outputs)
+
+                # apply output over the last frame as offset
+                outputs = outputs[:, :self.DATA.target_len] + offset
+
+        input = torch.unflatten(outputs[0], 1, (99, 3)).detach().cpu()
+        body_kp = misc.i_normalize(input[:,:33,:], 'pose')
+        rhand_kp = misc.i_normalize(input[:,33:(33+21),:], 'right_hand')
+        lhand_kp = misc.i_normalize(input[:,(33+21):(33+21+21),:], 'left_hand')
+        face_kp = misc.i_normalize(input[:,(33+21+21):,:], 'face')
+
+        self.animate_save_poses(body_kp, 'pose', step, 'generated')
+        self.animate_save_poses(rhand_kp, 'right_hand', step, 'generated')
+        self.animate_save_poses(lhand_kp, 'left_hand', step, 'generated')
+        self.animate_save_poses(face_kp, 'face', step, 'generated')
+
+        if step == 0:
+            input = torch.unflatten(targets[0], 1, (99, 3)).detach().cpu()
+            body_kp = misc.i_normalize(input[:,:33,:], 'pose')
+            rhand_kp = misc.i_normalize(input[:,33:(33+21),:], 'right_hand')
+            lhand_kp = misc.i_normalize(input[:,(33+21):(33+21+21),:], 'left_hand')
+            face_kp = misc.i_normalize(input[:,(33+21+21):,:], 'face')
+
+            self.animate_save_poses(body_kp, 'pose', step, 'target')
+            self.animate_save_poses(rhand_kp, 'right_hand', step, 'target')
+            self.animate_save_poses(lhand_kp, 'left_hand', step, 'target')
+            self.animate_save_poses(face_kp, 'face', step, 'target')
+
+    def animate_save_poses(self, keypoints, pose, step, mode):
+        plt, ani = misc.animate_keypoints(keypoints, pose)
+
+        misc.save_gif(ani=ani,
+                        save_path=join(self.RUN.save_dir,
+                        "figures/{run_name}/{mode}_keypoints_{pose}_{step}.gif".format(run_name=self.run_name, mode=mode, pose=pose, step=step)),
+                        logger=self.logger,
+                        logging=self.global_rank == 0 and self.logger)
+
+        if self.wandb_step:
+            wandb.log({"{mode}_poses_{pose}".format(mode=mode, pose=pose): plt}, step=self.wandb_step)
+        else:
+            wandb.log({"{mode}_poses_{pose}".format(mode=mode, pose=pose): plt})
+
+    # -----------------------------------------------------------------------------
+    # visualize real poses for monitoring purpose.
+    # -----------------------------------------------------------------------------
+    def visualize_real_poses(self):
+        if self.global_rank == 0:
+            self.logger.info("Visualize real poses.")
+
+        input = torch.unflatten(self.test_dataloader.dataset[0][0], 1, (99, 3))
+        body_kp = misc.i_normalize(input[:,:33,:], 'pose')
+        rhand_kp = misc.i_normalize(input[:,33:(33+21),:], 'right_hand')
+        lhand_kp = misc.i_normalize(input[:,(33+21):(33+21+21),:], 'left_hand')
+        face_kp = misc.i_normalize(input[:,(33+21+21):,:], 'face')
+
+        self.animate_save_poses(body_kp, 'pose', '', 'real')
+        self.animate_save_poses(rhand_kp, 'right_hand', '', 'real')
+        self.animate_save_poses(lhand_kp, 'left_hand', '', 'real')
+        self.animate_save_poses(face_kp, 'face', '', 'real')

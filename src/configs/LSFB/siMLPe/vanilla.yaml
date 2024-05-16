@@ -7,16 +7,16 @@ DATA:
   oversample: True
   max_len: 32
   target_len: 8
-  input_size: [32, 99, 3]
+  input_size: [24, 99, 3]
 MODEL:
   backbone: "siMLPe"
   use_spatial_fc: False
   feature_norm: "slayernorm"
-  depth: 48
+  depth: 4
   init: "ortho"
 LOSS:
-  loss_type: "siMLPe"
-  use_relative_loss: True
+  loss_type: "motion"
+  relative_motion: True
 OPTIMIZATION:
   type_: "Adam"
   batch_size: 128
@@ -24,5 +24,5 @@ OPTIMIZATION:
   weight_decay: 0.0001
   beta1: 0.9
   beta2: 0.999
-  total_steps: 40000
+  total_steps: 100
   lookahead: False

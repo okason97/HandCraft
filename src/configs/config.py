@@ -95,6 +95,10 @@ class Configurations(object):
         self.MODEL.embed_size = 64
         # base channel for the classifier architecture
         self.MODEL.conv_dim = 64
+        # kernel size for the convolutions
+        self.MODEL.k_size = 17
+        # stride size for the convolutions
+        self.MODEL.stride = 1
         # expand ratio of channels for conv1d block
         self.MODEL.expand_ratio = 2
         # classifier's depth
@@ -123,14 +127,14 @@ class Configurations(object):
         # -----------------------------------------------------------------------------
         self.LOSS = misc.make_empty_object()
 
-        # type of loss \in ["CCE", "siMLPe"]
+        # type of loss \in ["CCE", "motion"]
         self.LOSS.loss_type = "CCE"
         # start iteration for EMALosses in src/utils/EMALosses
         self.LOSS.lecam_ema_start_iter = "N/A"
         # decay rate for the EMALosses
         self.LOSS.lecam_ema_decay = "N/A"
-        # use relative loss for siMLPe
-        self.LOSS.use_relative_loss = True
+        # use relative motion for motion loss
+        self.LOSS.relative_motion = True
 
         # -----------------------------------------------------------------------------
         # optimizer settings
@@ -219,9 +223,8 @@ class Configurations(object):
 
     def define_losses(self):
         losses_dic = {
-            "CCE": losses.cce,
-            "motion_loss": losses.motion_loss,
-            "relative_motion_loss": losses.relative_motion_loss,
+            "CCE": nn.CrossEntropyLoss(),
+            "motion": losses.MotionLoss(relative_motion=self.LOSS.relative_motion),
         }
 
         self.LOSS.loss = losses_dic[self.LOSS.loss_type]

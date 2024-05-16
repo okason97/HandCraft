@@ -9,20 +9,19 @@ import utils.misc as misc
 from torchvision.ops.stochastic_depth import StochasticDepth
 
 class Conv1DBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, expand_ratio, dropout_p, drop_path, MODULES):
+    def __init__(self, in_channels, out_channels, MODEL, MODULES):
         super(Conv1DBlock, self).__init__()
         self.res = (in_channels==out_channels)
-        self.dropout_p = dropout_p
-        expanded_channels = out_channels * expand_ratio
+        expanded_channels = out_channels * MODEL.expand_ratio
 
         self.in_linear = MODULES.linear(in_features=in_channels, out_features=expanded_channels)
-        self.conv1d = MODULES.conv1d(in_channels=expanded_channels, out_channels=expanded_channels, k_size=17, stride=1, padding="valid")
+        self.conv1d = MODULES.conv1d(in_channels=expanded_channels, out_channels=expanded_channels, k_size=MODEL.k_size, stride=MODEL.stride, padding="valid")
         self.eca = MODULES.eca()
         self.bn = MODULES.feature_norm(in_features=expanded_channels)
         self.out_linear = MODULES.linear(in_features=expanded_channels, out_features=out_channels)
 
-        self.dropout = MODULES.dropout(p=dropout_p)
-        self.drop_path = MODULES.drop_path(p=drop_path,mode="batch")
+        self.dropout = MODULES.dropout(p=MODEL.dropout)
+        self.drop_path = MODULES.drop_path(p=MODEL.drop_path,mode="batch")
 
         self.activation = MODULES.act_fn
 
@@ -42,13 +41,12 @@ class Conv1DBlock(nn.Module):
             return x
 
 class Block(nn.Module):
-    def __init__(self, in_channels, out_channels, expand_ratio, dropout, drop_path, MODULES):
+    def __init__(self, in_channels, out_channels, MODEL, MODULES):
         super(Block, self).__init__()
-        self.dropout = dropout
 
-        self.conv1d0 = Conv1DBlock(in_channels, in_channels, expand_ratio, dropout, drop_path, MODULES)
-        self.conv1d1 = Conv1DBlock(in_channels, in_channels, expand_ratio, dropout, drop_path, MODULES)
-        self.conv1d2 = Conv1DBlock(in_channels, out_channels, expand_ratio, dropout, drop_path, MODULES)
+        self.conv1d0 = Conv1DBlock(in_channels, in_channels, MODEL, MODULES)
+        self.conv1d1 = Conv1DBlock(in_channels, in_channels, MODEL, MODULES)
+        self.conv1d2 = Conv1DBlock(in_channels, out_channels, MODEL, MODULES)
 
         self.bn = MODULES.feature_norm(in_features=in_channels)
 
@@ -75,9 +73,7 @@ class Model(nn.Module):
             self.blocks += [[
                 Block(in_channels=self.in_dims[index],
                             out_channels=self.out_dims[index],
-                            expand_ratio=MODEL.expand_ratio,
-                            dropout=MODEL.dropout,
-                            drop_path=MODEL.drop_path,
+                            MODEL=MODEL,
                             MODULES=MODULES)
             ]]
 

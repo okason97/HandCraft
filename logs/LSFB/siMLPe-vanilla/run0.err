@@ -1,15 +1,23 @@
-/home/grios/myphyton/lib/python3.10/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: Unexpected error from cudaGetDeviceCount(). Did you run some cuda functions before calling NumCudaDevices() that might have already set an error? Error 803: system has unsupported display driver / cuda driver combination (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
-  return torch._C._cuda_getDeviceCount() > 0
-No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
-/home/grios/myphyton/lib/python3.10/site-packages/torch/cuda/__init__.py:628: UserWarning: Can't initialize NVML
-  warnings.warn("Can't initialize NVML")
-Traceback (most recent call last):
-  File "/home/grios/HandCraft/src/main.py", line 89, in <module>
-    cfgs, gpus_per_node, run_name, rank = load_configs_initialize_training()
-  File "/home/grios/HandCraft/src/main.py", line 63, in load_configs_initialize_training
-    gpus_per_node, rank = torch.cuda.device_count(), torch.cuda.current_device()
-  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/cuda/__init__.py", line 787, in current_device
-    _lazy_init()
-  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
-    torch._C._cuda_init()
-RuntimeError: Unexpected error from cudaGetDeviceCount(). Did you run some cuda functions before calling NumCudaDevices() that might have already set an error? Error 803: system has unsupported display driver / cuda driver combination
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.17.0 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-vanilla/wandb/run-20240515_204607-1r5qkruc
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-vanilla-train-2024_05_15_20_40_05
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft-siMLPe
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft-siMLPe/runs/1r5qkruc
+wandb: Waiting for W&B process to finish... (success).
+wandb: - 13.598 MB of 13.598 MB uploaded (0.000 MB deduped)wandb: \ 13.598 MB of 13.598 MB uploaded (0.000 MB deduped)wandb: | 13.598 MB of 13.598 MB uploaded (0.000 MB deduped)wandb: / 13.598 MB of 13.598 MB uploaded (0.000 MB deduped)wandb: - 13.598 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: \ 13.598 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: | 13.598 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: / 13.598 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: - 13.793 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: \ 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: | 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: / 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: - 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: \ 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: | 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: / 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: - 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: \ 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: | 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb: / 13.800 MB of 13.800 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:  test_loss █▆▄▃▃▃▂▂▂▃▂▂▃▁▃▂▂▁▂▂▂▁▂▄▃▃▂▅▂▅▄▇▃▃▃▅▃▄▄▄
+wandb: train_loss █▇▆▆▅▅▅▅▄▄▄▄▄▄▄▃▃▃▃▃▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁
+wandb: 
+wandb: Run summary:
+wandb:  test_loss 12.07626
+wandb: train_loss 13.45336
+wandb: 
+wandb: Synced LSFB-vanilla-train-2024_05_15_20_40_05: https://wandb.ai/gaston-g-rios/handcraft-siMLPe/runs/1r5qkruc
+wandb: Synced 5 W&B file(s), 796 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-vanilla/wandb/run-20240515_204607-1r5qkruc/logs
