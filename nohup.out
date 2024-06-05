@@ -86,3 +86,5 @@ Traceback (most recent call last):
     raise ConnectionError(e, request=request)
 requests.exceptions.ConnectionError: HTTPSConnectionPool(host='discord.com', port=443): Max retries exceeded with url: /api/webhooks/1037349670936117258/WFC8G6wIWgv6N_DU76-x1WAprInENfergQLq_wTnHvq031ksWKOrrfYcqrCQybr-I0dA?wait=True (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7f5a5b98b2b0>: Failed to establish a new connection: [Errno -3] Temporary failure in name resolution'))
 Terminated
+./script.sh: line 10: ./logs/LSFB/CsiMLPe-vanilla/run0.out: No such file or directory
+./script.sh: line 10: ./logs/LSFB/CsiMLPe-vanilla/run0.out: No such file or directory

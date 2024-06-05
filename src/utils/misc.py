@@ -19,6 +19,10 @@ import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import math
+from torch.utils.data import Sampler
+import shutil
+from torch import linalg as LA
 
 import utils.ckpt as ckpt
 
@@ -307,7 +311,7 @@ def enable_allreduce(dict_):
     return loss
 
 def sigmoid(x):
-    return 1/(1+exp(-x))
+    return 1/(1+math.exp(-x))
 
 def mixup_data(x_a, x_b, alpha=5, beta=5):
     if alpha > 0 and beta > 0:
@@ -376,13 +380,12 @@ CONNECTIONS = {'pose': [(0, 1), (1, 2), (2, 3), (3, 7), (0, 4), (4, 5), (5, 6), 
                     (16, 17), (17, 18), (18, 19), (19, 16),
                     (20, 21), (21, 22), (22, 23)]}
 
-POSE_CONNECTIONS = [(0, 1), (1, 2), (2, 3), (3, 7), (0, 4), (4, 5), (5, 6), (6, 8), (9, 10), (11, 12), (11, 13), (13, 15), (15, 17), (11, 23), (12, 14), (14, 16), (15,19), (15,21), (16,22), (16,20), (20,18), (19,17), (16, 18), (12, 24), (23, 24), (23, 25), (25, 27), (27, 29), (29, 31), (24, 26), (26, 28), (28, 30), (30, 32)]
-FACE_CONNECTIONS = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 0), 
-                    (8, 9), (9, 10), (10, 11), (11, 8),
-                    (12, 13), (13, 14), (14, 15),
-                    (16, 17), (17, 18), (18, 19), (19, 16),
-                    (20, 21), (21, 22), (22, 23)]
-HAND_CONNECTIONS = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)]
+CONNECTIONS_REDUCED = {'pose': [(0, 1), (1, 2), (0, 3), (3, 4), (4, 5)],
+               'right_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
+               'left_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
+               'face': [(0, 1), (1, 2), (2, 3), (3, 0), 
+                    (4, 5), (5, 6), (6, 7), (7, 4),
+                    (8, 9), (9, 10), (10, 11), (11, 8)]}
 
 def plot_keypoints(xyz_keypoints, connections):
     fig = plt.figure()
@@ -432,7 +435,7 @@ def animate_keypoints(xyz_keypoints, pose):
         zs = zss[i]
         ax.scatter(xs, ys, zs)
 
-        for connection in CONNECTIONS[pose]:
+        for connection in CONNECTIONS_REDUCED[pose]:
             start = connection[0]
             end = connection[1]
 
@@ -457,6 +460,60 @@ def animate_keypoints(xyz_keypoints, pose):
                                         frames=len(xyz_keypoints) - 1, interval=50)
     return plt, ani
 
+def animate_all_keypoints(pose_keypoints, rhand_keypoints, lhand_keypoints, face_keypoints):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    def animate(i):
+        ax.cla()
+
+        xs_max, xs_min, ys_max, ys_min, zs_max, zs_min = np.empty(4), np.empty(4), np.empty(4), np.empty(4), np.empty(4), np.empty(4)
+        xs_max[0], xs_min[0], ys_max[0], ys_min[0], zs_max[0], zs_min[0] = create_axis(ax, pose_keypoints, i, CONNECTIONS_REDUCED['pose'])
+        xs_max[1], xs_min[1], ys_max[1], ys_min[1], zs_max[1], zs_min[1] = create_axis(ax, rhand_keypoints, i, CONNECTIONS_REDUCED['right_hand'])
+        xs_max[2], xs_min[2], ys_max[2], ys_min[2], zs_max[2], zs_min[2] = create_axis(ax, lhand_keypoints, i, CONNECTIONS_REDUCED['left_hand'])
+        xs_max[3], xs_min[3], ys_max[3], ys_min[3], zs_max[3], zs_min[3] = create_axis(ax, face_keypoints, i, CONNECTIONS_REDUCED['face'])
+
+        xs_max = max(xs_max)
+        ys_max = max(ys_max)
+        zs_max = max(zs_max)
+        xs_min = min(xs_min)
+        ys_min = min(ys_min)
+        zs_min = min(zs_min)
+
+        # Set aspect ratio
+        max_range = np.array([xs_max-xs_min, ys_max-ys_min, zs_max-zs_min]).max() / 2.0
+        mid_x = (xs_max+xs_min) * 0.5
+        mid_y = (ys_max+ys_min) * 0.5
+        mid_z = (zs_max+zs_min) * 0.5
+        ax.set_xlim(mid_x - max_range, mid_x + max_range)
+        ax.set_ylim(mid_y - max_range, mid_y + max_range)
+        ax.set_zlim(mid_z - max_range, mid_z + max_range)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+
+        ax.view_init(-90, -90)
+
+    ani = animation.FuncAnimation(fig, animate, repeat=False,
+                                        frames=len(pose_keypoints) - 1, interval=50)
+
+    return plt, ani
+
+def create_axis(ax, xyz_keypoints, i, connections):
+    xs = xyz_keypoints[i, :, 0]
+    ys = xyz_keypoints[i, :, 1]
+    zs = xyz_keypoints[i, :, 2]
+    ax.scatter(xs, ys, zs, s=5)
+
+    for connection in connections:
+        start = connection[0]
+        end = connection[1]
+
+        ax.plot([xs[start], xs[end]], [ys[start], ys[end]], [zs[start], zs[end]], 'blue')
+
+    return xyz_keypoints[0, :, 0].max(), xyz_keypoints[0, :, 0].min(), xyz_keypoints[0, :, 1].max(), xyz_keypoints[0, :, 1].min(), xyz_keypoints[0, :, 2].max(), xyz_keypoints[0, :, 2].min()
+
 def save_gif(ani, save_path, logger, logging=True):
     if logger is None:
         logging = False
@@ -468,6 +525,44 @@ def save_gif(ani, save_path, logger, logging=True):
     writer = animation.PillowWriter(fps=15,
                                  metadata=dict(artist='Me'),
                                  bitrate=1800)
-    ani.save(save_path, writer=writer)
+    ani.save(save_path, writer=writer, dpi=200)
     if logging:
         logger.info("Save poses to {}".format(save_path))
+
+def classifier_free_guidance(pred, guidance_scale):
+    # Compute scores from both models
+    pred_uncond, pred_cond = pred.chunk(2)
+
+    # Combine scores
+    pred = pred_uncond + guidance_scale * (pred_cond - pred_uncond)
+    return pred
+
+class SingleClassSamplerFabric():
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.class_indices = [[] for _ in range(len(self.dataset.classes))]
+        for i, (value, target, label) in enumerate(dataset):
+            self.class_indices[int(label.item())].append(i)
+
+    def get_sampler(self, class_label):
+        return SingleClassSampler(self.class_indices[class_label])
+
+class SingleClassSampler(Sampler):
+    def __init__(self, indices):
+        self.indices = indices
+
+    def __iter__(self):
+        random.shuffle(self.indices)
+        return iter(self.indices)
+
+    def __len__(self):
+        return len(self.indices)
+
+def prepare_save_folder(directory):
+    if exists(directory):
+        shutil.rmtree(directory)
+    os.makedirs(directory, exist_ok=True)
+
+def mpjpe(motion_pred, motion_target):
+    pjpe = LA.vector_norm(motion_pred - motion_target, 2, -1)
+    return torch.mean(pjpe)

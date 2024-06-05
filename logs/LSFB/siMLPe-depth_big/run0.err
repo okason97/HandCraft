@@ -1,0 +1,42 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.17.0
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/wandb/run-20240531_114427-21xa55n3
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-depth_big-train-2024_05_31_11_44_26
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft-siMLPe
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft-siMLPe/runs/21xa55n3
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 107, in <module>
+    loader.load_worker(local_rank=rank,
+  File "/home/grios/HandCraft/src/loader.py", line 295, in load_worker
+    top1, top10, loss = worker.train_step(step)
+  File "/home/grios/HandCraft/src/worker.py", line 169, in prediction_train_step
+    for values, targets in self.train_dataloader:
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 631, in __next__
+    data = self._next_data()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1329, in _next_data
+    idx, data = self._get_data()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1285, in _get_data
+    success, data = self._try_get_data()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1133, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/usr/lib/python3.10/queue.py", line 180, in get
+    self.not_empty.wait(remaining)
+  File "/usr/lib/python3.10/threading.py", line 324, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt
+Exception ignored in atexit callback: <function _Manager._atexit_setup.<locals>.<lambda> at 0x7ff558bf77f0>
+Traceback (most recent call last):
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 156, in <lambda>
+    self._atexit_lambda = lambda: self._atexit_teardown()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 165, in _atexit_teardown
+    self._teardown(exit_code)
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/wandb_manager.py", line 176, in _teardown
+    result = self._service.join()
+  File "/home/grios/myphyton/lib/python3.10/site-packages/wandb/sdk/service/service.py", line 266, in join
+    ret = self._internal_proc.wait()
+  File "/usr/lib/python3.10/subprocess.py", line 1222, in wait
+    self._wait(timeout=sigint_timeout)
+  File "/usr/lib/python3.10/subprocess.py", line 1953, in _wait
+    time.sleep(delay)
+KeyboardInterrupt: 

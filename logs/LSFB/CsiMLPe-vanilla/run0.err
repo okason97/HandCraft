@@ -1,0 +1,22 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.17.0 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.13.2
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/CsiMLPe-vanilla/wandb/run-20240530_020805-2myheihk
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Resuming run vanilla-train-2024_05_21_19_17_26
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft-CsiMLPe
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft-CsiMLPe/runs/2myheihk
+Traceback (most recent call last):
+  File "/home/grios/HandCraft/src/main.py", line 107, in <module>
+    loader.load_worker(local_rank=rank,
+  File "/home/grios/HandCraft/src/loader.py", line 348, in load_worker
+    single_class_sampler = single_class_sampler_fabric.get_sampler(class_n)
+  File "/home/grios/HandCraft/src/utils/misc.py", line 494, in get_sampler
+    return SingleClassSampler(self.class_indices[class_label])
+IndexError: list index out of range
+wandb: Waiting for W&B process to finish... (failed 1). Press Control-C to abort syncing.
+wandb: - 0.000 MB of 0.000 MB uploaded (0.000 MB deduped)wandb: \ 0.000 MB of 0.000 MB uploaded (0.000 MB deduped)wandb: | 0.000 MB of 0.002 MB uploaded (0.000 MB deduped)wandb: / 0.000 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: - 0.000 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: \ 0.000 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: | 0.000 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: / 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: - 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: \ 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: | 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: / 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: - 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: \ 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: | 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb: / 0.003 MB of 0.003 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: Synced vanilla-train-2024_05_21_19_17_26: https://wandb.ai/gaston-g-rios/handcraft-CsiMLPe/runs/2myheihk
+wandb: Synced 3 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /mnt/sda2/models/HandCraft/samples/LSFB/CsiMLPe-vanilla/wandb/run-20240530_020805-2myheihk/logs

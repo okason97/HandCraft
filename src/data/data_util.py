@@ -294,11 +294,11 @@ class Dataset_(Dataset):
         take_center = True
         for pose, keypoints in self.poses:
             pose_data = np.load(os.path.join(self.data_dir, 'poses', pose, self.data[index]['id'].item()+'.npy'))
-            if keypoints != 'all':
-                pose_data = pose_data[:,keypoints,:]
             if take_center:
                 self.centers = [pose_data[0,0,0], pose_data[0,0,1], pose_data[0,0,2]]
                 take_center = False
+            if keypoints != 'all':
+                pose_data = pose_data[:,keypoints,:]
             pose_data[:,:,0] -= self.centers[0]
             pose_data[:,:,1] -= self.centers[1]
             if 'hand' in pose:
@@ -314,10 +314,44 @@ class Dataset_(Dataset):
     def __len__(self):
         return len(self.data)
 
+    def get_classification_item(self, index):
+        if self.load_data_in_memory:
+            value, label = self.pose_data[index], self.labels[index]
+        else:
+            value, label = self.load(index)
+        return torch.flatten(self.trsf(value), 1), torch.tensor(label)
+
+    def get_prediction_item(self, index):
+        if self.load_data_in_memory:
+            value = self.pose_data[index]
+        else:
+            value, _ = self.load(index)
+        value = torch.flatten(self.trsf(value), 1)
+        return value[:-self.target_len], value[-self.target_len:]
+    
+    def get_cond_prediction_item(self, index):
+        if self.load_data_in_memory:
+            value, label = self.pose_data[index], self.labels[index]
+        else:
+            value, label = self.load(index)
+        value = torch.flatten(self.trsf(value), 1)
+        return value[:-self.target_len], value[-self.target_len:], torch.tensor(label)
+
+    def __getitem__(self, index):
+        if self.mode == "classification":
+            return self.get_classification_item(index)
+        elif self.mode == "prediction":
+            return self.get_prediction_item(index)
+        elif self.mode == "cond_prediction":
+            return self.get_cond_prediction_item(index)
+        else:
+            raise NotImplementedError
+
+    """
     def __getitem__(self, index):
             if self.mode == "classification":
                 if self.load_data_in_memory:
-                    value, label = self.pose_data[index] ,self.labels[index]
+                    value, label = self.pose_data[index], self.labels[index]
                 else:
                     value, label = self.load(index)
                 return torch.flatten(self.trsf(value), 1), torch.tensor(label)
@@ -328,8 +362,16 @@ class Dataset_(Dataset):
                     value, _ = self.load(index)
                 value = torch.flatten(self.trsf(value), 1)
                 return value[:-self.target_len], value[-self.target_len:]
+            elif self.mode == "cond_prediction":
+                if self.load_data_in_memory:
+                    value, label = self.pose_data[index], self.labels[index]
+                else:
+                    value, label = self.load(index)
+                value = torch.flatten(self.trsf(value), 1)
+                return value[:-self.target_len], value[-self.target_len:], torch.tensor(label)
             else:
                 raise NotImplementedError
+    """
 
 class OversamplingWrapper(torch.utils.data.Dataset):
     def __init__(self, dataset, oversampling_size=None):

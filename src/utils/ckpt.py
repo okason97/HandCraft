@@ -38,6 +38,7 @@ def load_ckpt(model, optimizer, ckpt_path, load_model=False, load_opt=False, loa
         step = ckpt["step"]
         best_step = ckpt["best_step"]
         best_loss = ckpt["best_loss"]
+        best_mpjpe = ckpt["best_mpjpe"]
         best_t1acc = ckpt["best_t1acc"]
         best_t10acc = ckpt["best_t10acc"]
 
@@ -49,7 +50,7 @@ def load_ckpt(model, optimizer, ckpt_path, load_model=False, load_opt=False, loa
             topk = ckpt["topk"]
         except:
             topk = "initialize"
-        return seed, run_name, step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc
+        return seed, run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc
 
 
 def load_model_ckpts(ckpt_dir, load_best, model, optimizer, run_name,
@@ -59,7 +60,7 @@ def load_model_ckpts(ckpt_dir, load_best, model, optimizer, run_name,
     ckpt_path = glob.glob(join(ckpt_dir, "model={model}-{when}-weights-step*.pth".format(model=backbone,when=when)))[0]
     prev_run_name = torch.load(ckpt_path, map_location=lambda storage, loc: storage)["run_name"]
 
-    seed, prev_run_name, step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc =\
+    seed, prev_run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc =\
         load_ckpt(model=model,
                   optimizer=optimizer,
                   ckpt_path=ckpt_path,
@@ -79,7 +80,7 @@ def load_model_ckpts(ckpt_dir, load_best, model, optimizer, run_name,
 
         logger.info("Checkpoint is {}".format(ckpt_path))
 
-    return prev_run_name, step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc, logger
+    return prev_run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, logger
 
 
 def load_best_model(ckpt_dir, model, backbone):
@@ -87,7 +88,7 @@ def load_best_model(ckpt_dir, model, backbone):
     model = misc.peel_model(model)
     ckpt_path = glob.glob(join(ckpt_dir, "model={model}-best-weights-step*.pth".format(model=backbone)))[0]
 
-    _, _, _, _, _, _, best_step, _, _ = load_ckpt(model=model,
+    _, _, _, _, _, best_step, _, _, _, _ = load_ckpt(model=model,
                                                   optimizer=None,
                                                   ckpt_path=ckpt_path,
                                                   load_model=True,
@@ -99,31 +100,3 @@ def load_best_model(ckpt_dir, model, backbone):
 
 def load_prev_dict(directory, file_name):
     return np.load(join(directory, file_name), allow_pickle=True).item()
-
-
-def check_is_pre_trained_model(ckpt_dir, GAN_train, GAN_test):
-    assert GAN_train*GAN_test == 0, "cannot conduct GAN_train and GAN_test togather."
-    if GAN_train:
-        mode = "fake_trained"
-    else:
-        mode = "real_trained"
-
-    ckpt_list = glob.glob(join(ckpt_dir, "model=C-{mode}-best-weights.pth".format(mode=mode)))
-    if len(ckpt_list) == 0:
-        is_pre_train_model = False
-    else:
-        is_pre_train_model = True
-    return is_pre_train_model, mode
-
-
-def load_GAN_train_test_model(model, mode, optimizer, RUN):
-    ckpt_path = join(RUN.ckpt_dir, "model=C-{mode}-best-weights.pth".format(mode=mode))
-    ckpt = torch.load(ckpt_path, map_location=lambda storage, loc: storage)
-
-    model.load_state_dict(ckpt["state_dict"])
-    optimizer.load_state_dict(ckpt["optimizer"])
-    epoch_trained = ckpt["epoch"]
-    best_top1 = ckpt["best_top1"]
-    best_top10 = ckpt["best_top10"]
-    best_epoch = ckpt["best_epoch"]
-    return epoch_trained, best_top1, best_top10, best_epoch

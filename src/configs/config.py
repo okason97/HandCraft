@@ -93,6 +93,10 @@ class Configurations(object):
         self.MODEL.nheads = 4
         # embeding size
         self.MODEL.embed_size = 64
+        # class embeding size
+        self.MODEL.class_emb_size = 32
+        # class dropout probability for classifier-free guidance
+        self.MODEL.class_dropout_prob = 0.0
         # base channel for the classifier architecture
         self.MODEL.conv_dim = 64
         # kernel size for the convolutions
@@ -183,6 +187,8 @@ class Configurations(object):
         # -----------------------------------------------------------------------------
         self.RUN = misc.make_empty_object()
         self.RUN.mixed_precision = False
+        # classifier-free guidance scale (1 = regular conditional generation)
+        self.RUN.guidance_scale = 1
 
         # -----------------------------------------------------------------------------
         # run settings

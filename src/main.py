@@ -47,6 +47,10 @@ def load_configs_initialize_training():
     parser.add_argument("-mpc", "--mixed_precision", action="store_true", help="turn on mixed precision training")
 
     parser.add_argument("-t", "--train", action="store_true")
+    parser.add_argument("--test", action="store_true")
+    parser.add_argument("-ss", "--save_sample", action="store_true")
+    parser.add_argument("-sd", "--save_dataset", action="store_true")
+    parser.add_argument("--sd_num", type=int, default=10)
     parser.add_argument("-empty_cache", "--empty_cache", action="store_true", help="empty cuda caches after training step of generator and discriminator, \
                         slightly reduces memory usage but slows training speed. (not recommended for normal use)")
     parser.add_argument("-l", "--load_data_in_memory", action="store_true", help="put the whole train dataset on the main memory for fast I/O")

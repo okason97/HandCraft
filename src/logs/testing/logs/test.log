@@ -40370,3 +40370,1625 @@
   (motion_fc_in): Linear(in_features=297, out_features=297, bias=True)
   (motion_fc_out): Linear(in_features=297, out_features=297, bias=True)
 )
+[INFO] 2024-05-29 17:36:56 > Run name : test
+[INFO] 2024-05-29 17:36:56 > cfgs.DATA =
+[INFO] 2024-05-29 17:36:56 > {
+  "name": "LSFB",
+  "input_size": [
+    24,
+    99,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 8,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      "all"
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        39,
+        0,
+        269,
+        291,
+        405,
+        17,
+        181,
+        33,
+        159,
+        133,
+        145,
+        46,
+        52,
+        65,
+        55,
+        263,
+        386,
+        362,
+        374,
+        276,
+        282,
+        295,
+        285
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-29 17:36:56 > cfgs.MODEL =
+[INFO] 2024-05-29 17:36:56 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-29 17:36:56 > cfgs.LOSS =
+[INFO] 2024-05-29 17:36:56 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-29 17:36:56 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-29 17:36:56 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-29 17:36:56 > cfgs.PRE =
+[INFO] 2024-05-29 17:36:56 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-29 17:36:56 > cfgs.AUG =
+[INFO] 2024-05-29 17:36:56 > {}
+[INFO] 2024-05-29 17:36:56 > cfgs.RUN =
+[INFO] 2024-05-29 17:36:56 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-29 17:36:56 > Build the model.
+[INFO] 2024-05-29 17:36:56 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-29 17:36:56 > Number of parameters: 181788
+[INFO] 2024-05-29 17:36:56 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=297, out_features=297, bias=True)
+  (motion_fc_out): Linear(in_features=297, out_features=297, bias=True)
+)
+[INFO] 2024-05-30 01:03:33 > Run name : test
+[INFO] 2024-05-30 01:03:33 > cfgs.DATA =
+[INFO] 2024-05-30 01:03:33 > {
+  "name": "LSFB",
+  "input_size": [
+    24,
+    99,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 8,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      "all"
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        39,
+        0,
+        269,
+        291,
+        405,
+        17,
+        181,
+        33,
+        159,
+        133,
+        145,
+        46,
+        52,
+        65,
+        55,
+        263,
+        386,
+        362,
+        374,
+        276,
+        282,
+        295,
+        285
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 01:03:33 > cfgs.MODEL =
+[INFO] 2024-05-30 01:03:33 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 01:03:33 > cfgs.LOSS =
+[INFO] 2024-05-30 01:03:33 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 01:03:33 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 01:03:33 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 01:03:33 > cfgs.PRE =
+[INFO] 2024-05-30 01:03:33 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 01:03:33 > cfgs.AUG =
+[INFO] 2024-05-30 01:03:33 > {}
+[INFO] 2024-05-30 01:03:33 > cfgs.RUN =
+[INFO] 2024-05-30 01:03:33 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 01:03:33 > Build the model.
+[INFO] 2024-05-30 01:03:33 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-30 01:03:33 > Number of parameters: 181788
+[INFO] 2024-05-30 01:03:33 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=297, out_features=297, bias=True)
+  (motion_fc_out): Linear(in_features=297, out_features=297, bias=True)
+)
+[INFO] 2024-05-30 11:20:06 > Run name : test
+[INFO] 2024-05-30 11:20:06 > cfgs.DATA =
+[INFO] 2024-05-30 11:20:06 > {
+  "name": "LSFB",
+  "input_size": [
+    24,
+    99,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 8,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      "all"
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        39,
+        0,
+        269,
+        291,
+        405,
+        17,
+        181,
+        33,
+        159,
+        133,
+        145,
+        46,
+        52,
+        65,
+        55,
+        263,
+        386,
+        362,
+        374,
+        276,
+        282,
+        295,
+        285
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 11:20:06 > cfgs.MODEL =
+[INFO] 2024-05-30 11:20:06 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 11:20:06 > cfgs.LOSS =
+[INFO] 2024-05-30 11:20:06 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 11:20:06 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 11:20:06 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 11:20:06 > cfgs.PRE =
+[INFO] 2024-05-30 11:20:06 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 11:20:06 > cfgs.AUG =
+[INFO] 2024-05-30 11:20:06 > {}
+[INFO] 2024-05-30 11:20:06 > cfgs.RUN =
+[INFO] 2024-05-30 11:20:06 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 11:20:07 > Build the model.
+[INFO] 2024-05-30 11:20:07 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-30 11:20:07 > Number of parameters: 181788
+[INFO] 2024-05-30 11:20:07 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=297, out_features=297, bias=True)
+  (motion_fc_out): Linear(in_features=297, out_features=297, bias=True)
+)
+[INFO] 2024-05-30 11:33:30 > Run name : test
+[INFO] 2024-05-30 11:33:30 > cfgs.DATA =
+[INFO] 2024-05-30 11:33:30 > {
+  "name": "LSFB",
+  "input_size": [
+    24,
+    99,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 24,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        0,
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 11:33:30 > cfgs.MODEL =
+[INFO] 2024-05-30 11:33:30 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 11:33:30 > cfgs.LOSS =
+[INFO] 2024-05-30 11:33:30 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 11:33:30 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 11:33:30 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 11:33:30 > cfgs.PRE =
+[INFO] 2024-05-30 11:33:30 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 11:33:30 > cfgs.AUG =
+[INFO] 2024-05-30 11:33:30 > {}
+[INFO] 2024-05-30 11:33:30 > cfgs.RUN =
+[INFO] 2024-05-30 11:33:30 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 11:33:31 > Run name : test
+[INFO] 2024-05-30 11:33:31 > cfgs.DATA =
+[INFO] 2024-05-30 11:33:31 > {
+  "name": "LSFB",
+  "input_size": [
+    24,
+    99,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 24,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        0,
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 99,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 11:33:31 > cfgs.MODEL =
+[INFO] 2024-05-30 11:33:31 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 11:33:31 > cfgs.LOSS =
+[INFO] 2024-05-30 11:33:31 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 11:33:31 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 11:33:31 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 11:33:31 > cfgs.PRE =
+[INFO] 2024-05-30 11:33:31 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 11:33:31 > cfgs.AUG =
+[INFO] 2024-05-30 11:33:31 > {}
+[INFO] 2024-05-30 11:33:31 > cfgs.RUN =
+[INFO] 2024-05-30 11:33:31 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 11:33:40 > Build the model.
+[INFO] 2024-05-30 11:33:40 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-30 11:33:40 > Number of parameters: 181788
+[INFO] 2024-05-30 11:33:40 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=24, out_features=24, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=297, out_features=297, bias=True)
+  (motion_fc_out): Linear(in_features=297, out_features=297, bias=True)
+)
+[INFO] 2024-05-30 11:37:54 > Run name : test
+[INFO] 2024-05-30 11:37:54 > cfgs.DATA =
+[INFO] 2024-05-30 11:37:54 > {
+  "name": "LSFB",
+  "input_size": [
+    8,
+    61,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 24,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        0,
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 61,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 11:37:54 > cfgs.MODEL =
+[INFO] 2024-05-30 11:37:54 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 11:37:54 > cfgs.LOSS =
+[INFO] 2024-05-30 11:37:54 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 11:37:54 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 11:37:54 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 11:37:54 > cfgs.PRE =
+[INFO] 2024-05-30 11:37:54 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 11:37:54 > cfgs.AUG =
+[INFO] 2024-05-30 11:37:54 > {}
+[INFO] 2024-05-30 11:37:54 > cfgs.RUN =
+[INFO] 2024-05-30 11:37:54 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 11:37:55 > Build the model.
+[INFO] 2024-05-30 11:37:55 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-30 11:37:55 > Number of parameters: 69096
+[INFO] 2024-05-30 11:37:55 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=183, out_features=183, bias=True)
+  (motion_fc_out): Linear(in_features=183, out_features=183, bias=True)
+)
+[INFO] 2024-05-30 11:38:16 > Run name : test
+[INFO] 2024-05-30 11:38:16 > cfgs.DATA =
+[INFO] 2024-05-30 11:38:16 > {
+  "name": "LSFB",
+  "input_size": [
+    8,
+    61,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 24,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        0,
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 61,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 11:38:16 > cfgs.MODEL =
+[INFO] 2024-05-30 11:38:16 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 11:38:16 > cfgs.LOSS =
+[INFO] 2024-05-30 11:38:16 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 11:38:16 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 11:38:16 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 11:38:16 > cfgs.PRE =
+[INFO] 2024-05-30 11:38:16 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 11:38:16 > cfgs.AUG =
+[INFO] 2024-05-30 11:38:16 > {}
+[INFO] 2024-05-30 11:38:16 > cfgs.RUN =
+[INFO] 2024-05-30 11:38:16 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 11:38:16 > Build the model.
+[INFO] 2024-05-30 11:38:16 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-30 11:38:16 > Number of parameters: 69096
+[INFO] 2024-05-30 11:38:16 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=183, out_features=183, bias=True)
+  (motion_fc_out): Linear(in_features=183, out_features=183, bias=True)
+)
+[INFO] 2024-05-30 11:44:33 > Run name : test
+[INFO] 2024-05-30 11:44:33 > cfgs.DATA =
+[INFO] 2024-05-30 11:44:33 > {
+  "name": "LSFB",
+  "input_size": [
+    8,
+    60,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 24,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 60,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 11:44:33 > cfgs.MODEL =
+[INFO] 2024-05-30 11:44:33 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 11:44:33 > cfgs.LOSS =
+[INFO] 2024-05-30 11:44:33 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 11:44:33 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 11:44:33 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 11:44:33 > cfgs.PRE =
+[INFO] 2024-05-30 11:44:33 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 11:44:33 > cfgs.AUG =
+[INFO] 2024-05-30 11:44:33 > {}
+[INFO] 2024-05-30 11:44:33 > cfgs.RUN =
+[INFO] 2024-05-30 11:44:33 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 11:44:34 > Build the model.
+[INFO] 2024-05-30 11:44:34 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-30 11:44:34 > Number of parameters: 66888
+[INFO] 2024-05-30 11:44:34 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=180, out_features=180, bias=True)
+  (motion_fc_out): Linear(in_features=180, out_features=180, bias=True)
+)
+[INFO] 2024-05-30 12:11:41 > Run name : test
+[INFO] 2024-05-30 12:11:41 > cfgs.DATA =
+[INFO] 2024-05-30 12:11:41 > {
+  "name": "LSFB",
+  "input_size": [
+    8,
+    60,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 24,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 60,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-30 12:11:41 > cfgs.MODEL =
+[INFO] 2024-05-30 12:11:41 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-30 12:11:41 > cfgs.LOSS =
+[INFO] 2024-05-30 12:11:41 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-30 12:11:41 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-30 12:11:41 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-30 12:11:41 > cfgs.PRE =
+[INFO] 2024-05-30 12:11:41 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-30 12:11:41 > cfgs.AUG =
+[INFO] 2024-05-30 12:11:41 > {}
+[INFO] 2024-05-30 12:11:41 > cfgs.RUN =
+[INFO] 2024-05-30 12:11:41 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-30 12:11:41 > Build the model.
+[INFO] 2024-05-30 12:11:41 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-30 12:11:41 > Number of parameters: 66888
+[INFO] 2024-05-30 12:11:41 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=8, out_features=8, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=180, out_features=180, bias=True)
+  (motion_fc_out): Linear(in_features=180, out_features=180, bias=True)
+)
+[INFO] 2024-05-31 10:22:41 > Run name : test
+[INFO] 2024-05-31 10:22:41 > cfgs.DATA =
+[INFO] 2024-05-31 10:22:41 > {
+  "name": "LSFB",
+  "input_size": [
+    16,
+    60,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 16,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 60,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-05-31 10:22:41 > cfgs.MODEL =
+[INFO] 2024-05-31 10:22:41 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-05-31 10:22:41 > cfgs.LOSS =
+[INFO] 2024-05-31 10:22:41 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": true
+}
+[INFO] 2024-05-31 10:22:41 > cfgs.OPTIMIZATION =
+[INFO] 2024-05-31 10:22:41 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100
+}
+[INFO] 2024-05-31 10:22:41 > cfgs.PRE =
+[INFO] 2024-05-31 10:22:41 > {
+  "apply_rflip": true
+}
+[INFO] 2024-05-31 10:22:41 > cfgs.AUG =
+[INFO] 2024-05-31 10:22:41 > {}
+[INFO] 2024-05-31 10:22:41 > cfgs.RUN =
+[INFO] 2024-05-31 10:22:41 > {
+  "mixed_precision": false,
+  "guidance_scale": 1
+}
+[INFO] 2024-05-31 10:22:42 > Build the model.
+[INFO] 2024-05-31 10:22:42 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-05-31 10:22:42 > Number of parameters: 67688
+[INFO] 2024-05-31 10:22:42 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=180, out_features=180, bias=True)
+  (motion_fc_out): Linear(in_features=180, out_features=180, bias=True)
+)

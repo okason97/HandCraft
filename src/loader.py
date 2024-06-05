@@ -28,13 +28,13 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # define default variables for loading ckpt or testing the trained model.
     # -----------------------------------------------------------------------------
-    step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc, is_best = \
-        0, 0, cfgs.OPTIMIZATION.batch_size, 0, 999, 0, 0, False
+    step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, is_best = \
+        0, 0, cfgs.OPTIMIZATION.batch_size, 0, 999, 999, 0, 0, False
     if cfgs.RUN.mode == "classification":
         loss_list_dict = {"train_loss": [], "train_top1": [], "train_top10": []}
         metric_dict_during_train = {"test_loss": [], "test_top1": [], "test_top10": []}
     else:
-        metric_dict_during_train = {"test_loss": []}
+        metric_dict_during_train = {"test_loss": [], "test_mpjpe":[]}
         loss_list_dict = {"train_loss": []}
 
     # -----------------------------------------------------------------------------
@@ -79,7 +79,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # load train and test datasets.
     # -----------------------------------------------------------------------------
-    if cfgs.RUN.train:
+    if cfgs.RUN.train or cfgs.RUN.save_dataset:
         if local_rank == 0:
             logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
         train_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
@@ -144,7 +144,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     if cfgs.RUN.distributed_data_parallel:
         cfgs.OPTIMIZATION.batch_size = cfgs.OPTIMIZATION.batch_size//cfgs.OPTIMIZATION.world_size
 
-    if cfgs.RUN.train and cfgs.RUN.distributed_data_parallel:
+    if (cfgs.RUN.train or cfgs.RUN.save_dataset) and cfgs.RUN.distributed_data_parallel:
         train_sampler = DistributedSampler(train_dataset,
                                            num_replicas=cfgs.OPTIMIZATION.world_size,
                                            rank=local_rank,
@@ -160,7 +160,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         train_sampler = None
         valid_sampler = None
 
-    if cfgs.RUN.train:
+    if cfgs.RUN.train or cfgs.RUN.save_dataset:
         train_dataloader = DataLoader(dataset=train_dataset,
                                       batch_size=cfgs.OPTIMIZATION.batch_size,
                                       shuffle=(train_sampler is None),
@@ -224,7 +224,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         if local_rank == 0:
             logger.handlers[0].close()
             os.remove(join(cfgs.RUN.save_dir, "logs", run_name + ".log"))
-        run_name, step, epoch, topk, best_step, best_loss, best_t1acc, best_t10acc, logger =\
+        run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, logger =\
             ckpt.load_model_ckpts(ckpt_dir=cfgs.RUN.ckpt_dir,
                                       load_best=cfgs.RUN.load_best,
                                       model=model,
@@ -273,6 +273,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         logger=logger,
         best_step=best_step,
         best_loss=best_loss,
+        best_mpjpe=best_mpjpe,
         best_t1acc=best_t1acc,
         best_t10acc=best_t10acc,
         loss_list_dict=loss_list_dict,
@@ -286,7 +287,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         if global_rank == 0:
             logger.info("Start training!")
 
-            if cfgs.RUN.mode == "prediction":
+            if "prediction" in cfgs.RUN.mode:
                 worker.visualize_real_poses()
 
         worker.prepare_train_iter(epoch_counter=epoch)
@@ -302,7 +303,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             step += 1
 
             if step % cfgs.RUN.save_every == 0:
-                if global_rank == 0 and cfgs.RUN.mode == "prediction":
+                if global_rank == 0 and "prediction" in cfgs.RUN.mode:
                     worker.visualize_fake_poses(step=step)
 
                 # validate model for monitoring purpose
@@ -330,7 +331,31 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                          model=model,
                                          backbone=cfgs.MODEL.backbone)
         print(""), logger.info("-" * 80)
-    worker.evaluate(step=best_step, writing=False, training=False)
+
+    if cfgs.RUN.test:
+        worker.evaluate(step=best_step, writing=False, training=False)
+
+    if cfgs.RUN.save_sample:
+        if global_rank == 0:
+            print(""), logger.info("-" * 80)
+        worker.visualize_fake_poses(step=0)
+
+    if cfgs.RUN.save_dataset:
+        if global_rank == 0:
+            print(""), logger.info("-" * 80)
+        single_class_sampler_fabric = misc.SingleClassSamplerFabric(train_dataset)
+        for class_n in train_dataset.classes:
+            print(f"Generating class {class_n}")
+            single_class_sampler = single_class_sampler_fabric.get_sampler(class_n)
+            class_dataloader = DataLoader(dataset=train_dataset,
+                                batch_size=cfgs.OPTIMIZATION.batch_size,
+                                pin_memory=True,
+                                prefetch_factor=cfgs.RUN.prefetch_factor,
+                                num_workers=cfgs.RUN.num_workers,
+                                sampler=single_class_sampler,
+                                drop_last=True,
+                                persistent_workers=True)
+            worker.save_dataset(class_dataloader)
     
     if global_rank == 0:
         wandb.finish()
