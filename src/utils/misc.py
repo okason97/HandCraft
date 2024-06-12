@@ -498,7 +498,9 @@ def animate_all_keypoints(pose_keypoints, rhand_keypoints, lhand_keypoints, face
     ani = animation.FuncAnimation(fig, animate, repeat=False,
                                         frames=len(pose_keypoints) - 1, interval=50)
 
-    return plt, ani
+    plt.close(fig)
+
+    return ani
 
 def create_axis(ax, xyz_keypoints, i, connections):
     xs = xyz_keypoints[i, :, 0]

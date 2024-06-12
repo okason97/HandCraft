@@ -1,0 +1,7 @@
+wandb: Currently logged in as: gastonr (gaston-g-rios). Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.17.0
+wandb: Run data is saved locally in /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-loss_simple/wandb/run-20240606_000514-3jpqpll7
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run LSFB-loss_simple-train-2024_06_06_00_05_12
+wandb: ⭐️ View project at https://wandb.ai/gaston-g-rios/handcraft-siMLPe
+wandb: 🚀 View run at https://wandb.ai/gaston-g-rios/handcraft-siMLPe/runs/3jpqpll7

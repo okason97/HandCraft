@@ -592,7 +592,7 @@ class WORKER(object):
 
     def animate_save_poses(self, keypoints, step, mode):
         body_kp, rhand_kp, lhand_kp, face_kp = self.split_keypoints(keypoints)
-        plt, ani = misc.animate_all_keypoints(body_kp, rhand_kp, lhand_kp, face_kp)
+        ani = misc.animate_all_keypoints(body_kp, rhand_kp, lhand_kp, face_kp)
 
         save_path = join(self.RUN.save_dir,
                         "figures/{run_name}/{mode}_keypoints_{step}.gif".format(run_name=self.run_name, mode=mode, step=step))

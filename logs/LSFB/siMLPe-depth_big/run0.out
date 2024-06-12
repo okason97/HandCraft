@@ -1,7 +1,7 @@
 You have chosen a specific GPU. This will completely disable data parallelism.
-[INFO] 2024-05-31 11:44:26 > Run name : LSFB-depth_big-train-2024_05_31_11_44_26
-[INFO] 2024-05-31 11:44:26 > cfgs.DATA =
-[INFO] 2024-05-31 11:44:26 > {
+[INFO] 2024-06-06 00:08:54 > Run name : LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:08:54 > cfgs.DATA =
+[INFO] 2024-06-06 00:08:54 > {
   "name": "LSFB",
   "input_size": [
     16,
@@ -60,8 +60,8 @@ You have chosen a specific GPU. This will completely disable data parallelism.
   "block_size": 5,
   "rot": 0.0
 }
-[INFO] 2024-05-31 11:44:26 > cfgs.MODEL =
-[INFO] 2024-05-31 11:44:26 > {
+[INFO] 2024-06-06 00:08:54 > cfgs.MODEL =
+[INFO] 2024-06-06 00:08:54 > {
   "backbone": "siMLPe",
   "apply_sn": false,
   "act_fn": "ReLU",
@@ -93,18 +93,18 @@ You have chosen a specific GPU. This will completely disable data parallelism.
   "use_spatial_fc": false,
   "apply_dw_conv": false
 }
-[INFO] 2024-05-31 11:44:26 > cfgs.LOSS =
-[INFO] 2024-05-31 11:44:26 > {
+[INFO] 2024-06-06 00:08:54 > cfgs.LOSS =
+[INFO] 2024-06-06 00:08:54 > {
   "loss_type": "motion",
   "lecam_ema_start_iter": "N/A",
   "lecam_ema_decay": "N/A",
   "relative_motion": true
 }
-[INFO] 2024-05-31 11:44:26 > cfgs.OPTIMIZATION =
-[INFO] 2024-05-31 11:44:26 > {
+[INFO] 2024-06-06 00:08:54 > cfgs.OPTIMIZATION =
+[INFO] 2024-06-06 00:08:54 > {
   "type_": "Adam",
   "lrscheduler": null,
-  "batch_size": 128,
+  "batch_size": 256,
   "lr": 1e-05,
   "weight_decay": 0.0001,
   "lookahead": false,
@@ -116,14 +116,14 @@ You have chosen a specific GPU. This will completely disable data parallelism.
   "total_steps": 100,
   "world_size": 1
 }
-[INFO] 2024-05-31 11:44:26 > cfgs.PRE =
-[INFO] 2024-05-31 11:44:26 > {
+[INFO] 2024-06-06 00:08:54 > cfgs.PRE =
+[INFO] 2024-06-06 00:08:54 > {
   "apply_rflip": true
 }
-[INFO] 2024-05-31 11:44:26 > cfgs.AUG =
-[INFO] 2024-05-31 11:44:26 > {}
-[INFO] 2024-05-31 11:44:26 > cfgs.RUN =
-[INFO] 2024-05-31 11:44:26 > {
+[INFO] 2024-06-06 00:08:54 > cfgs.AUG =
+[INFO] 2024-06-06 00:08:54 > {}
+[INFO] 2024-06-06 00:08:54 > cfgs.RUN =
+[INFO] 2024-06-06 00:08:54 > {
   "mixed_precision": true,
   "guidance_scale": 1,
   "entity": null,
@@ -133,7 +133,7 @@ You have chosen a specific GPU. This will completely disable data parallelism.
   "save_dir": "/mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/",
   "ckpt_dir": null,
   "load_best": false,
-  "seed": 463,
+  "seed": 2498,
   "distributed_data_parallel": false,
   "backend": "nccl",
   "mode": "prediction",
@@ -154,15 +154,15 @@ You have chosen a specific GPU. This will completely disable data parallelism.
   "dset_used": 1.0,
   "fix_seed": false
 }
-[INFO] 2024-05-31 11:44:26 > Load LSFB train dataset.
-[INFO] 2024-05-31 11:44:26 > Train dataset size: 957700
-[INFO] 2024-05-31 11:44:26 > Valid dataset size: 5235
-[INFO] 2024-05-31 11:44:26 > Load LSFB test dataset.
-[INFO] 2024-05-31 11:44:26 > Test dataset size: 40059
-[INFO] 2024-05-31 11:44:26 > Build the model.
-[INFO] 2024-05-31 11:44:26 > Modules are located on './src/models.siMLPe'.
-[INFO] 2024-05-31 11:44:26 > Number of parameters: 68952
-[INFO] 2024-05-31 11:44:26 > Model(
+[INFO] 2024-06-06 00:08:54 > Load LSFB train dataset.
+[INFO] 2024-06-06 00:08:54 > Train dataset size: 957700
+[INFO] 2024-06-06 00:08:54 > Valid dataset size: 5235
+[INFO] 2024-06-06 00:08:54 > Load LSFB test dataset.
+[INFO] 2024-06-06 00:08:55 > Test dataset size: 40059
+[INFO] 2024-06-06 00:08:55 > Build the model.
+[INFO] 2024-06-06 00:08:55 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-06-06 00:08:55 > Number of parameters: 68952
+[INFO] 2024-06-06 00:08:55 > Model(
   (arr0): Rearrange('b n d -> b d n')
   (arr1): Rearrange('b d n -> b n d')
   (motion_mlp): TransMLP(
@@ -208,14 +208,294 @@ You have chosen a specific GPU. This will completely disable data parallelism.
   (motion_fc_in): Linear(in_features=180, out_features=180, bias=True)
   (motion_fc_out): Linear(in_features=180, out_features=180, bias=True)
 )
-[INFO] 2024-05-31 11:44:28 > Start training!
-[INFO] 2024-05-31 11:44:28 > Visualize real poses.
-[INFO] 2024-05-31 11:44:30 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_05_31_11_44_26/real_keypoints_.gif
-[INFO] 2024-05-31 11:51:37 > Train Loss 25.8585
-[INFO] 2024-05-31 11:51:37 > Step:      1 Progress: 1.0% Elapsed: 0:07:08 Loss: 25.86 
-[INFO] 2024-05-31 11:51:37 > Visualize fake poses.
-[INFO] 2024-05-31 11:51:40 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_05_31_11_44_26/generated_keypoints_1.gif
-[INFO] 2024-05-31 11:51:40 > Start Validation (1 Step): LSFB-depth_big-train-2024_05_31_11_44_26
-[INFO] 2024-05-31 11:51:44 > Test Loss 20.244567812798472	Test Loss 14.453677172874881
-[INFO] 2024-05-31 11:51:44 > Best MPJPE 14.453677172874881	Best Loss (Step: 1): 20.244567812798472	
-[INFO] 2024-05-31 11:51:44 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_05_31_11_44_26
+[INFO] 2024-06-06 00:08:57 > Start training!
+[INFO] 2024-06-06 00:08:57 > Visualize real poses.
+[INFO] 2024-06-06 00:08:59 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/real_keypoints_.gif
+[INFO] 2024-06-06 00:15:22 > Train Loss 26.8004
+[INFO] 2024-06-06 00:15:22 > Step:      1 Progress: 1.0% Elapsed: 0:06:25 Loss: 26.8 
+[INFO] 2024-06-06 00:15:22 > Visualize fake poses.
+[INFO] 2024-06-06 00:15:40 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_1.gif
+[INFO] 2024-06-06 00:15:40 > Start Validation (1 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:15:42 > Test Loss 20.869711079274115	Test Loss 14.879189052053485
+[INFO] 2024-06-06 00:15:42 > Best MPJPE 14.879189052053485	Best Loss (Step: 1): 20.869711079274115	
+[INFO] 2024-06-06 00:15:42 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:22:04 > Train Loss 23.8563
+[INFO] 2024-06-06 00:22:04 > Step:      2 Progress: 2.0% Elapsed: 0:13:07 Loss: 23.86 
+[INFO] 2024-06-06 00:22:04 > Visualize fake poses.
+[INFO] 2024-06-06 00:22:16 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_2.gif
+[INFO] 2024-06-06 00:22:16 > Start Validation (2 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:22:19 > Test Loss 20.107551337153772	Test Loss 14.295687082139446
+[INFO] 2024-06-06 00:22:19 > Best MPJPE 14.295687082139446	Best Loss (Step: 2): 20.107551337153772	
+[INFO] 2024-06-06 00:22:19 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:28:40 > Train Loss 23.4059
+[INFO] 2024-06-06 00:28:40 > Step:      3 Progress: 3.0% Elapsed: 0:19:43 Loss: 23.41 
+[INFO] 2024-06-06 00:28:40 > Visualize fake poses.
+[INFO] 2024-06-06 00:28:45 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_3.gif
+[INFO] 2024-06-06 00:28:45 > Start Validation (3 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:28:47 > Test Loss 19.772030205348614	Test Loss 14.070609479465139
+[INFO] 2024-06-06 00:28:47 > Best MPJPE 14.070609479465139	Best Loss (Step: 3): 19.772030205348614	
+[INFO] 2024-06-06 00:28:47 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:35:10 > Train Loss 23.1686
+[INFO] 2024-06-06 00:35:10 > Step:      4 Progress: 4.0% Elapsed: 0:26:13 Loss: 23.17 
+[INFO] 2024-06-06 00:35:10 > Visualize fake poses.
+[INFO] 2024-06-06 00:35:13 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_4.gif
+[INFO] 2024-06-06 00:35:13 > Start Validation (4 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:35:15 > Test Loss 19.54025787965616	Test Loss 13.86359240687679
+[INFO] 2024-06-06 00:35:15 > Best MPJPE 13.86359240687679	Best Loss (Step: 4): 19.54025787965616	
+[INFO] 2024-06-06 00:35:15 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:41:37 > Train Loss 23.0207
+[INFO] 2024-06-06 00:41:37 > Step:      5 Progress: 5.0% Elapsed: 0:32:40 Loss: 23.02 
+[INFO] 2024-06-06 00:41:37 > Visualize fake poses.
+[INFO] 2024-06-06 00:41:40 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_5.gif
+[INFO] 2024-06-06 00:41:40 > Start Validation (5 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:41:42 > Test Loss 19.43131566380134	Test Loss 13.824004596466093
+[INFO] 2024-06-06 00:41:42 > Best MPJPE 13.824004596466093	Best Loss (Step: 5): 19.43131566380134	
+[INFO] 2024-06-06 00:41:42 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:48:04 > Train Loss 22.9117
+[INFO] 2024-06-06 00:48:04 > Step:      6 Progress: 6.0% Elapsed: 0:39:07 Loss: 22.91 
+[INFO] 2024-06-06 00:48:04 > Visualize fake poses.
+[INFO] 2024-06-06 00:48:07 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_6.gif
+[INFO] 2024-06-06 00:48:07 > Start Validation (6 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:48:09 > Test Loss 19.37300023877746	Test Loss 13.747451050620821
+[INFO] 2024-06-06 00:48:09 > Best MPJPE 13.747451050620821	Best Loss (Step: 6): 19.37300023877746	
+[INFO] 2024-06-06 00:48:09 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:54:31 > Train Loss 22.8277
+[INFO] 2024-06-06 00:54:31 > Step:      7 Progress: 7.0% Elapsed: 0:45:34 Loss: 22.83 
+[INFO] 2024-06-06 00:54:31 > Visualize fake poses.
+[INFO] 2024-06-06 00:54:34 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_7.gif
+[INFO] 2024-06-06 00:54:34 > Start Validation (7 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 00:54:36 > Test Loss 19.328838347659982	Test Loss 13.712341809933143
+[INFO] 2024-06-06 00:54:36 > Best MPJPE 13.712341809933143	Best Loss (Step: 7): 19.328838347659982	
+[INFO] 2024-06-06 00:54:36 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:00:58 > Train Loss 22.7614
+[INFO] 2024-06-06 01:00:58 > Step:      8 Progress: 8.0% Elapsed: 0:52:01 Loss: 22.76 
+[INFO] 2024-06-06 01:00:58 > Visualize fake poses.
+[INFO] 2024-06-06 01:01:01 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_8.gif
+[INFO] 2024-06-06 01:01:01 > Start Validation (8 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:01:04 > Test Loss 19.27558500477555	Test Loss 13.685715138490927
+[INFO] 2024-06-06 01:01:04 > Best MPJPE 13.685715138490927	Best Loss (Step: 8): 19.27558500477555	
+[INFO] 2024-06-06 01:01:04 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:07:26 > Train Loss 22.6970
+[INFO] 2024-06-06 01:07:26 > Step:      9 Progress: 9.0% Elapsed: 0:58:29 Loss: 22.7 
+[INFO] 2024-06-06 01:07:26 > Visualize fake poses.
+[INFO] 2024-06-06 01:07:29 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_9.gif
+[INFO] 2024-06-06 01:07:29 > Start Validation (9 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:07:31 > Test Loss 19.18978629417383	Test Loss 13.623353927889207
+[INFO] 2024-06-06 01:07:31 > Best MPJPE 13.623353927889207	Best Loss (Step: 9): 19.18978629417383	
+[INFO] 2024-06-06 01:07:31 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:13:53 > Train Loss 22.6468
+[INFO] 2024-06-06 01:13:53 > Step:     10 Progress: 10.0% Elapsed: 1:04:56 Loss: 22.65 
+[INFO] 2024-06-06 01:13:53 > Visualize fake poses.
+[INFO] 2024-06-06 01:13:56 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_10.gif
+[INFO] 2024-06-06 01:13:56 > Start Validation (10 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:13:59 > Test Loss 19.17168099331423	Test Loss 13.602613120821394
+[INFO] 2024-06-06 01:13:59 > Best MPJPE 13.602613120821394	Best Loss (Step: 10): 19.17168099331423	
+[INFO] 2024-06-06 01:13:59 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:20:21 > Train Loss 22.6015
+[INFO] 2024-06-06 01:20:21 > Step:     11 Progress: 11.0% Elapsed: 1:11:24 Loss: 22.6 
+[INFO] 2024-06-06 01:20:21 > Visualize fake poses.
+[INFO] 2024-06-06 01:20:24 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_11.gif
+[INFO] 2024-06-06 01:20:24 > Start Validation (11 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:20:26 > Test Loss 19.090765281757403	Test Loss 13.543185888252149
+[INFO] 2024-06-06 01:20:26 > Best MPJPE 13.543185888252149	Best Loss (Step: 11): 19.090765281757403	
+[INFO] 2024-06-06 01:20:26 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:26:48 > Train Loss 22.5606
+[INFO] 2024-06-06 01:26:48 > Step:     12 Progress: 12.0% Elapsed: 1:17:51 Loss: 22.56 
+[INFO] 2024-06-06 01:26:48 > Visualize fake poses.
+[INFO] 2024-06-06 01:26:51 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_12.gif
+[INFO] 2024-06-06 01:26:51 > Start Validation (12 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:26:54 > Test Loss 19.0917950095511	Test Loss 13.553213049188157
+[INFO] 2024-06-06 01:26:54 > Best MPJPE 13.543185888252149	Best Loss (Step: 11): 19.090765281757403	
+[INFO] 2024-06-06 01:26:54 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:33:15 > Train Loss 22.5225
+[INFO] 2024-06-06 01:33:15 > Step:     13 Progress: 13.0% Elapsed: 1:24:18 Loss: 22.52 
+[INFO] 2024-06-06 01:33:15 > Visualize fake poses.
+[INFO] 2024-06-06 01:33:19 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_13.gif
+[INFO] 2024-06-06 01:33:19 > Start Validation (13 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:33:21 > Test Loss 19.009395893027698	Test Loss 13.474135924068769
+[INFO] 2024-06-06 01:33:21 > Best MPJPE 13.474135924068769	Best Loss (Step: 13): 19.009395893027698	
+[INFO] 2024-06-06 01:33:21 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:39:43 > Train Loss 22.4881
+[INFO] 2024-06-06 01:39:43 > Step:     14 Progress: 14.0% Elapsed: 1:30:46 Loss: 22.49 
+[INFO] 2024-06-06 01:39:43 > Visualize fake poses.
+[INFO] 2024-06-06 01:39:46 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_14.gif
+[INFO] 2024-06-06 01:39:46 > Start Validation (14 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:39:48 > Test Loss 18.94982987106017	Test Loss 13.419824498567335
+[INFO] 2024-06-06 01:39:48 > Best MPJPE 13.419824498567335	Best Loss (Step: 14): 18.94982987106017	
+[INFO] 2024-06-06 01:39:48 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:46:11 > Train Loss 22.4595
+[INFO] 2024-06-06 01:46:11 > Step:     15 Progress: 15.0% Elapsed: 1:37:14 Loss: 22.46 
+[INFO] 2024-06-06 01:46:11 > Visualize fake poses.
+[INFO] 2024-06-06 01:46:14 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_15.gif
+[INFO] 2024-06-06 01:46:14 > Start Validation (15 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:46:16 > Test Loss 19.096191499522444	Test Loss 13.593482867717288
+[INFO] 2024-06-06 01:46:16 > Best MPJPE 13.419824498567335	Best Loss (Step: 14): 18.94982987106017	
+[INFO] 2024-06-06 01:46:16 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:52:38 > Train Loss 22.4392
+[INFO] 2024-06-06 01:52:38 > Step:     16 Progress: 16.0% Elapsed: 1:43:41 Loss: 22.44 
+[INFO] 2024-06-06 01:52:38 > Visualize fake poses.
+[INFO] 2024-06-06 01:52:41 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_16.gif
+[INFO] 2024-06-06 01:52:41 > Start Validation (16 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:52:44 > Test Loss 19.04702423591213	Test Loss 13.469855838108883
+[INFO] 2024-06-06 01:52:44 > Best MPJPE 13.419824498567335	Best Loss (Step: 14): 18.94982987106017	
+[INFO] 2024-06-06 01:52:44 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:59:06 > Train Loss 22.4183
+[INFO] 2024-06-06 01:59:06 > Step:     17 Progress: 17.0% Elapsed: 1:50:09 Loss: 22.42 
+[INFO] 2024-06-06 01:59:06 > Visualize fake poses.
+[INFO] 2024-06-06 01:59:09 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_17.gif
+[INFO] 2024-06-06 01:59:09 > Start Validation (17 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 01:59:12 > Test Loss 18.934360076408787	Test Loss 13.432930396370583
+[INFO] 2024-06-06 01:59:12 > Best MPJPE 13.432930396370583	Best Loss (Step: 17): 18.934360076408787	
+[INFO] 2024-06-06 01:59:12 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:05:34 > Train Loss 22.3868
+[INFO] 2024-06-06 02:05:34 > Step:     18 Progress: 18.0% Elapsed: 1:56:36 Loss: 22.39 
+[INFO] 2024-06-06 02:05:34 > Visualize fake poses.
+[INFO] 2024-06-06 02:05:37 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_18.gif
+[INFO] 2024-06-06 02:05:37 > Start Validation (18 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:05:40 > Test Loss 18.96195678127985	Test Loss 13.44593182903534
+[INFO] 2024-06-06 02:05:40 > Best MPJPE 13.432930396370583	Best Loss (Step: 17): 18.934360076408787	
+[INFO] 2024-06-06 02:05:40 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:12:02 > Train Loss 22.3768
+[INFO] 2024-06-06 02:12:02 > Step:     19 Progress: 19.0% Elapsed: 2:03:04 Loss: 22.38 
+[INFO] 2024-06-06 02:12:02 > Visualize fake poses.
+[INFO] 2024-06-06 02:12:05 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_19.gif
+[INFO] 2024-06-06 02:12:05 > Start Validation (19 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:12:07 > Test Loss 19.053280205348614	Test Loss 13.561861270296085
+[INFO] 2024-06-06 02:12:07 > Best MPJPE 13.432930396370583	Best Loss (Step: 17): 18.934360076408787	
+[INFO] 2024-06-06 02:12:07 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:18:29 > Train Loss 22.3474
+[INFO] 2024-06-06 02:18:29 > Step:     20 Progress: 20.0% Elapsed: 2:09:32 Loss: 22.35 
+[INFO] 2024-06-06 02:18:29 > Visualize fake poses.
+[INFO] 2024-06-06 02:18:32 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_20.gif
+[INFO] 2024-06-06 02:18:32 > Start Validation (20 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:18:35 > Test Loss 18.90150429799427	Test Loss 13.375319364851958
+[INFO] 2024-06-06 02:18:35 > Best MPJPE 13.375319364851958	Best Loss (Step: 20): 18.90150429799427	
+[INFO] 2024-06-06 02:18:35 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:24:56 > Train Loss 22.3328
+[INFO] 2024-06-06 02:24:56 > Step:     21 Progress: 21.0% Elapsed: 2:15:59 Loss: 22.33 
+[INFO] 2024-06-06 02:24:56 > Visualize fake poses.
+[INFO] 2024-06-06 02:25:00 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_21.gif
+[INFO] 2024-06-06 02:25:00 > Start Validation (21 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:25:02 > Test Loss 18.97557605062082	Test Loss 13.48539726599809
+[INFO] 2024-06-06 02:25:02 > Best MPJPE 13.375319364851958	Best Loss (Step: 20): 18.90150429799427	
+[INFO] 2024-06-06 02:25:02 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:31:24 > Train Loss 22.3174
+[INFO] 2024-06-06 02:31:24 > Step:     22 Progress: 22.0% Elapsed: 2:22:27 Loss: 22.32 
+[INFO] 2024-06-06 02:31:24 > Visualize fake poses.
+[INFO] 2024-06-06 02:31:27 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_22.gif
+[INFO] 2024-06-06 02:31:27 > Start Validation (22 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:31:29 > Test Loss 18.861550859598854	Test Loss 13.344972242120344
+[INFO] 2024-06-06 02:31:29 > Best MPJPE 13.344972242120344	Best Loss (Step: 22): 18.861550859598854	
+[INFO] 2024-06-06 02:31:29 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:37:51 > Train Loss 22.2994
+[INFO] 2024-06-06 02:37:51 > Step:     23 Progress: 23.0% Elapsed: 2:28:54 Loss: 22.3 
+[INFO] 2024-06-06 02:37:51 > Visualize fake poses.
+[INFO] 2024-06-06 02:37:54 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_23.gif
+[INFO] 2024-06-06 02:37:54 > Start Validation (23 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:37:56 > Test Loss 18.85607987106017	Test Loss 13.388995343839541
+[INFO] 2024-06-06 02:37:56 > Best MPJPE 13.388995343839541	Best Loss (Step: 23): 18.85607987106017	
+[INFO] 2024-06-06 02:37:56 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:44:18 > Train Loss 22.2879
+[INFO] 2024-06-06 02:44:18 > Step:     24 Progress: 24.0% Elapsed: 2:35:21 Loss: 22.29 
+[INFO] 2024-06-06 02:44:18 > Visualize fake poses.
+[INFO] 2024-06-06 02:44:21 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_24.gif
+[INFO] 2024-06-06 02:44:21 > Start Validation (24 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:44:24 > Test Loss 18.862347779369628	Test Loss 13.337480599331423
+[INFO] 2024-06-06 02:44:24 > Best MPJPE 13.388995343839541	Best Loss (Step: 23): 18.85607987106017	
+[INFO] 2024-06-06 02:44:24 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:50:46 > Train Loss 22.2663
+[INFO] 2024-06-06 02:50:46 > Step:     25 Progress: 25.0% Elapsed: 2:41:48 Loss: 22.27 
+[INFO] 2024-06-06 02:50:46 > Visualize fake poses.
+[INFO] 2024-06-06 02:50:49 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_25.gif
+[INFO] 2024-06-06 02:50:49 > Start Validation (25 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:50:51 > Test Loss 18.852925023877745	Test Loss 13.341656220152817
+[INFO] 2024-06-06 02:50:51 > Best MPJPE 13.341656220152817	Best Loss (Step: 25): 18.852925023877745	
+[INFO] 2024-06-06 02:50:51 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:57:13 > Train Loss 22.2527
+[INFO] 2024-06-06 02:57:13 > Step:     26 Progress: 26.0% Elapsed: 2:48:16 Loss: 22.25 
+[INFO] 2024-06-06 02:57:13 > Visualize fake poses.
+[INFO] 2024-06-06 02:57:16 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_26.gif
+[INFO] 2024-06-06 02:57:16 > Start Validation (26 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 02:57:19 > Test Loss 18.806990210124166	Test Loss 13.298722540592168
+[INFO] 2024-06-06 02:57:19 > Best MPJPE 13.298722540592168	Best Loss (Step: 26): 18.806990210124166	
+[INFO] 2024-06-06 02:57:19 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:03:40 > Train Loss 22.2320
+[INFO] 2024-06-06 03:03:40 > Step:     27 Progress: 27.0% Elapsed: 2:54:43 Loss: 22.23 
+[INFO] 2024-06-06 03:03:40 > Visualize fake poses.
+[INFO] 2024-06-06 03:03:44 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_27.gif
+[INFO] 2024-06-06 03:03:44 > Start Validation (27 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:03:46 > Test Loss 18.772606255969436	Test Loss 13.255208333333334
+[INFO] 2024-06-06 03:03:46 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:03:46 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:10:08 > Train Loss 22.2188
+[INFO] 2024-06-06 03:10:08 > Step:     28 Progress: 28.0% Elapsed: 3:01:11 Loss: 22.22 
+[INFO] 2024-06-06 03:10:08 > Visualize fake poses.
+[INFO] 2024-06-06 03:10:11 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_28.gif
+[INFO] 2024-06-06 03:10:11 > Start Validation (28 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:10:14 > Test Loss 18.832017072588346	Test Loss 13.338781936485196
+[INFO] 2024-06-06 03:10:14 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:10:14 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:16:35 > Train Loss 22.2077
+[INFO] 2024-06-06 03:16:35 > Step:     29 Progress: 29.0% Elapsed: 3:07:38 Loss: 22.21 
+[INFO] 2024-06-06 03:16:35 > Visualize fake poses.
+[INFO] 2024-06-06 03:16:39 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_29.gif
+[INFO] 2024-06-06 03:16:39 > Start Validation (29 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:16:41 > Test Loss 18.86537129894938	Test Loss 13.35320558739255
+[INFO] 2024-06-06 03:16:41 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:16:41 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:23:03 > Train Loss 22.1941
+[INFO] 2024-06-06 03:23:03 > Step:     30 Progress: 30.0% Elapsed: 3:14:06 Loss: 22.19 
+[INFO] 2024-06-06 03:23:03 > Visualize fake poses.
+[INFO] 2024-06-06 03:23:06 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_30.gif
+[INFO] 2024-06-06 03:23:06 > Start Validation (30 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:23:09 > Test Loss 18.816735315186246	Test Loss 13.318323185291309
+[INFO] 2024-06-06 03:23:09 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:23:09 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:29:31 > Train Loss 22.1695
+[INFO] 2024-06-06 03:29:31 > Step:     31 Progress: 31.0% Elapsed: 3:20:34 Loss: 22.17 
+[INFO] 2024-06-06 03:29:31 > Visualize fake poses.
+[INFO] 2024-06-06 03:29:34 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_31.gif
+[INFO] 2024-06-06 03:29:34 > Start Validation (31 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:29:36 > Test Loss 18.880841093600765	Test Loss 13.387893982808023
+[INFO] 2024-06-06 03:29:36 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:29:36 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:35:58 > Train Loss 22.1567
+[INFO] 2024-06-06 03:35:58 > Step:     32 Progress: 32.0% Elapsed: 3:27:01 Loss: 22.16 
+[INFO] 2024-06-06 03:35:58 > Visualize fake poses.
+[INFO] 2024-06-06 03:36:02 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_32.gif
+[INFO] 2024-06-06 03:36:02 > Start Validation (32 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:36:04 > Test Loss 18.775707378223494	Test Loss 13.269045487106018
+[INFO] 2024-06-06 03:36:04 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:36:04 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:42:26 > Train Loss 22.1432
+[INFO] 2024-06-06 03:42:26 > Step:     33 Progress: 33.0% Elapsed: 3:33:29 Loss: 22.14 
+[INFO] 2024-06-06 03:42:26 > Visualize fake poses.
+[INFO] 2024-06-06 03:42:29 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_33.gif
+[INFO] 2024-06-06 03:42:29 > Start Validation (33 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:42:31 > Test Loss 18.835249522445082	Test Loss 13.338731196275072
+[INFO] 2024-06-06 03:42:31 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:42:31 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:48:53 > Train Loss 22.1258
+[INFO] 2024-06-06 03:48:53 > Step:     34 Progress: 34.0% Elapsed: 3:39:56 Loss: 22.13 
+[INFO] 2024-06-06 03:48:53 > Visualize fake poses.
+[INFO] 2024-06-06 03:48:57 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_34.gif
+[INFO] 2024-06-06 03:48:57 > Start Validation (34 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:48:59 > Test Loss 18.805429202483285	Test Loss 13.31278653295129
+[INFO] 2024-06-06 03:48:59 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:48:59 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:55:36 > Train Loss 22.1145
+[INFO] 2024-06-06 03:55:36 > Step:     35 Progress: 35.0% Elapsed: 3:46:38 Loss: 22.11 
+[INFO] 2024-06-06 03:55:36 > Visualize fake poses.
+[INFO] 2024-06-06 03:55:39 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_35.gif
+[INFO] 2024-06-06 03:55:39 > Start Validation (35 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 03:55:41 > Test Loss 18.803623447946514	Test Loss 13.34171591451767
+[INFO] 2024-06-06 03:55:41 > Best MPJPE 13.255208333333334	Best Loss (Step: 27): 18.772606255969436	
+[INFO] 2024-06-06 03:55:41 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 04:02:06 > Train Loss 22.1065
+[INFO] 2024-06-06 04:02:06 > Step:     36 Progress: 36.0% Elapsed: 3:53:09 Loss: 22.11 
+[INFO] 2024-06-06 04:02:06 > Visualize fake poses.
+[INFO] 2024-06-06 04:02:10 > Save poses to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/figures/LSFB-depth_big-train-2024_06_06_00_08_54/generated_keypoints_36.gif
+[INFO] 2024-06-06 04:02:10 > Start Validation (36 Step): LSFB-depth_big-train-2024_06_06_00_08_54
+[INFO] 2024-06-06 04:02:12 > Test Loss 18.705832139446038	Test Loss 13.21993344078319
+[INFO] 2024-06-06 04:02:12 > Best MPJPE 13.21993344078319	Best Loss (Step: 36): 18.705832139446038	
+[INFO] 2024-06-06 04:02:12 > Save model to /mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-depth_big/checkpoints/LSFB-depth_big-train-2024_06_06_00_08_54

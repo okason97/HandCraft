@@ -1,0 +1,200 @@
+You have chosen a specific GPU. This will completely disable data parallelism.
+[INFO] 2024-06-06 00:05:12 > Run name : LSFB-loss_simple-train-2024_06_06_00_05_12
+[INFO] 2024-06-06 00:05:12 > cfgs.DATA =
+[INFO] 2024-06-06 00:05:12 > {
+  "name": "LSFB",
+  "input_size": [
+    16,
+    60,
+    3
+  ],
+  "num_classes": 610,
+  "min_samples": 20,
+  "max_len": 32,
+  "target_len": 16,
+  "oversample": true,
+  "poses": [
+    [
+      "pose",
+      [
+        12,
+        14,
+        16,
+        11,
+        13,
+        15
+      ]
+    ],
+    [
+      "right_hand",
+      "all"
+    ],
+    [
+      "left_hand",
+      "all"
+    ],
+    [
+      "face",
+      [
+        61,
+        0,
+        291,
+        17,
+        33,
+        159,
+        133,
+        145,
+        263,
+        386,
+        362,
+        374
+      ]
+    ]
+  ],
+  "num_keypoints": 60,
+  "flip_p": 0.0,
+  "scale": 0.0,
+  "random_crop": false,
+  "drop_frame": 0.0,
+  "drop_keypoint": 0.0,
+  "block_size": 5,
+  "rot": 0.0
+}
+[INFO] 2024-06-06 00:05:12 > cfgs.MODEL =
+[INFO] 2024-06-06 00:05:12 > {
+  "backbone": "siMLPe",
+  "apply_sn": false,
+  "act_fn": "ReLU",
+  "feature_norm": "slayernorm",
+  "apply_attn": true,
+  "apply_ema": false,
+  "ema_beta": 0.9999,
+  "ema_update_after_step": 10,
+  "ema_update_every": 1,
+  "ema_power": 0.9,
+  "nheads": 4,
+  "embed_size": 64,
+  "class_emb_size": 32,
+  "class_dropout_prob": 0.0,
+  "conv_dim": 64,
+  "k_size": 17,
+  "stride": 1,
+  "expand_ratio": 2,
+  "depth": 4,
+  "dropout": 0.8,
+  "drop_path": 0.2,
+  "late_dropout": null,
+  "late_drop_path": null,
+  "late_dropout_step": null,
+  "late_drop_path_step": null,
+  "init": "ortho",
+  "temporal_fc_in": false,
+  "temporal_fc_out": false,
+  "use_spatial_fc": false,
+  "apply_dw_conv": false
+}
+[INFO] 2024-06-06 00:05:12 > cfgs.LOSS =
+[INFO] 2024-06-06 00:05:12 > {
+  "loss_type": "motion",
+  "lecam_ema_start_iter": "N/A",
+  "lecam_ema_decay": "N/A",
+  "relative_motion": false
+}
+[INFO] 2024-06-06 00:05:12 > cfgs.OPTIMIZATION =
+[INFO] 2024-06-06 00:05:12 > {
+  "type_": "Adam",
+  "lrscheduler": null,
+  "batch_size": 128,
+  "lr": 1e-05,
+  "weight_decay": 0.0001,
+  "lookahead": false,
+  "momentum": "N/A",
+  "nesterov": false,
+  "alpha": "N/A",
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "total_steps": 100,
+  "world_size": 1
+}
+[INFO] 2024-06-06 00:05:12 > cfgs.PRE =
+[INFO] 2024-06-06 00:05:12 > {
+  "apply_rflip": true
+}
+[INFO] 2024-06-06 00:05:12 > cfgs.AUG =
+[INFO] 2024-06-06 00:05:12 > {}
+[INFO] 2024-06-06 00:05:12 > cfgs.RUN =
+[INFO] 2024-06-06 00:05:12 > {
+  "mixed_precision": true,
+  "guidance_scale": 1,
+  "entity": null,
+  "project": "handcraft-siMLPe",
+  "cfg_file": "./src/configs/LSFB/siMLPe/loss_simple.yaml",
+  "data_dir": "/mnt/sda2/datasets/isolated-cont-sl/LSFB/",
+  "save_dir": "/mnt/sda2/models/HandCraft/samples/LSFB/siMLPe-loss_simple/",
+  "ckpt_dir": null,
+  "load_best": false,
+  "seed": 1800,
+  "distributed_data_parallel": false,
+  "backend": "nccl",
+  "mode": "prediction",
+  "total_nodes": 1,
+  "current_node": 0,
+  "num_workers": 4,
+  "prefetch_factor": 2,
+  "synchronized_bn": false,
+  "train": true,
+  "test": false,
+  "save_sample": false,
+  "save_dataset": false,
+  "sd_num": 10,
+  "empty_cache": false,
+  "load_data_in_memory": false,
+  "print_every": 1,
+  "save_every": 1,
+  "dset_used": 1.0,
+  "fix_seed": false
+}
+[INFO] 2024-06-06 00:05:12 > Load LSFB train dataset.
+[INFO] 2024-06-06 00:05:13 > Train dataset size: 957700
+[INFO] 2024-06-06 00:05:13 > Valid dataset size: 5235
+[INFO] 2024-06-06 00:05:13 > Load LSFB test dataset.
+[INFO] 2024-06-06 00:05:13 > Test dataset size: 40059
+[INFO] 2024-06-06 00:05:13 > Build the model.
+[INFO] 2024-06-06 00:05:13 > Modules are located on './src/models.siMLPe'.
+[INFO] 2024-06-06 00:05:13 > Number of parameters: 67688
+[INFO] 2024-06-06 00:05:13 > Model(
+  (arr0): Rearrange('b n d -> b d n')
+  (arr1): Rearrange('b d n -> b n d')
+  (motion_mlp): TransMLP(
+    (mlps): Sequential(
+      (0): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (1): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (2): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+      (3): MLPblock(
+        (fc0): Temporal_FC(
+          (fc): Linear(in_features=16, out_features=16, bias=True)
+        )
+        (norm0): SLayerNorm()
+      )
+    )
+  )
+  (motion_fc_in): Linear(in_features=180, out_features=180, bias=True)
+  (motion_fc_out): Linear(in_features=180, out_features=180, bias=True)
+)
+[INFO] 2024-06-06 00:05:15 > Start training!
+[INFO] 2024-06-06 00:05:15 > Visualize real poses.

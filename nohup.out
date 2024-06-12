@@ -88,3 +88,85 @@ requests.exceptions.ConnectionError: HTTPSConnectionPool(host='discord.com', por
 Terminated
 ./script.sh: line 10: ./logs/LSFB/CsiMLPe-vanilla/run0.out: No such file or directory
 ./script.sh: line 10: ./logs/LSFB/CsiMLPe-vanilla/run0.out: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+run: line 1: ./script: No such file or directory
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+sh: 0: cannot open ./script: No such file
+./multiscript.sh: line 4: ./script: No such file or directory
+./multiscript.sh: line 5: ./script: No such file or directory
+./multiscript.sh: line 6: ./script: No such file or directory
+./multiscript.sh: line 7: ./script: No such file or directory
+./multiscript.sh: line 8: ./script: No such file or directory
+./multiscript.sh: line 9: ./script: No such file or directory
+making dir depth_big
+Training depth_big
+making dir depth_medium
+Training depth_medium
+Terminated
+making dir depth_small
+Training depth_small
+Terminated
+making dir loss_simple
+Training loss_simple
+Terminated
+making dir target_long
+Training target_long
+Terminated
+making dir target_short
+Training target_short
+Terminated
+making dir depth_big
+Training depth_big
+making dir depth_medium
+Training depth_medium
+Terminated
+making dir depth_small
+Training depth_small
+Terminated
+making dir loss_simple
+Training loss_simple
+Terminated
+making dir target_long
+Training target_long
+Terminated
+making dir target_short
+Training target_short
+Terminated
+making dir CsiMLPe-depth_big
+Training
+making dir CsiMLPe-depth_big
+Training
+making dir CsiMLPe-depth_big
+Training

@@ -19,7 +19,7 @@ LOSS:
   relative_motion: True
 OPTIMIZATION:
   type_: "Adam"
-  batch_size: 128
+  batch_size: 256
   lr: 0.00001
   weight_decay: 0.0001
   beta1: 0.9
