@@ -1,0 +1,6 @@
+logs/
+src/logs/
+analisys.ipynb
+nohup.out
+src/*.ipynb
+**/__pycache__

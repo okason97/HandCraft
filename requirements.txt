@@ -1,0 +1,14 @@
+lsfb-dataset
+torch --find-links https://download.pytorch.org/whl/cu121
+torchvision --find-links https://download.pytorch.org/whl/cu121
+torchaudio --find-links https://download.pytorch.org/whl/cu121
+pyyaml
+matplotlib
+einops
+pytorch-ignite
+wandb
+scikit-learn
+polars
+ema-pytorch
+ipympl
+torchinfo
