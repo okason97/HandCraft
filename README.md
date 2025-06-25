@@ -82,11 +82,12 @@ Clone the repo
 
 1. Create a config file. Examples in /src/configs
 2. Use /script.sh to use the models. 
+  Sign Language Recognition
    ```sh
-  # Sign Language Recognition
    ./script.sh classification mamba original128-pad LSFB
-
-  # Sign Language Generation
+   ```
+  Sign Language Generation
+   ```sh
    ./script.sh cond_prediction CsiMLPe depth_big_noise_0.1
    ```
   Example of a generated sequence:
