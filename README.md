@@ -46,7 +46,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]]
+![Product Name Screen Shot][product-screenshot]
 
 Sign language generation and recognition using synthetic data augmentation. Repository for the models and experiments used in the paper **Sign Generation for Data Augmentation**.
 
