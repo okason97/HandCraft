@@ -86,7 +86,7 @@ Clone the repo
    ./script.sh classification mamba original128-pad LSFB
    ```
 
-[![Example][example]]
+![Example][example]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
