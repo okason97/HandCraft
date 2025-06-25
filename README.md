@@ -46,7 +46,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-![Product Name Screen Shot][product-screenshot]
+[![Product Name Screen Shot][product-screenshot]]
 
 Sign language generation and recognition using synthetic data augmentation. Repository for the models and experiments used in the paper **Sign Generation for Data Augmentation**.
 
@@ -89,7 +89,7 @@ Clone the repo
   # Sign Language Generation
    ./script.sh cond_prediction CsiMLPe depth_big_noise_0.1
    ```
-  Example of generated sequence:
+  Example of a generated sequence:
 ![Example][example]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
