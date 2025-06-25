@@ -46,7 +46,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]]
+![Product Name Screen Shot][product-screenshot]
 
 Sign language generation and recognition using synthetic data augmentation. Repository for the models and experiments used in the paper **Sign Generation for Data Augmentation**.
 
@@ -82,6 +82,7 @@ Clone the repo
 
 1. Create a config file. Examples in /src/configs
 2. Use /script.sh to use the models. 
+
   Sign Language Recognition
    ```sh
    ./script.sh classification mamba original128-pad LSFB
