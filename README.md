@@ -89,7 +89,7 @@ Clone the repo
    ```
   Sign Language Generation
    ```sh
-   ./script.sh cond_prediction CsiMLPe depth_big_noise_0.1
+   ./script.sh cond_prediction CsiMLPe depth_big_noise_0.1 LSFB
    ```
   Example of a generated sequence:
 ![Example][example]
