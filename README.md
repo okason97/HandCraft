@@ -86,6 +86,8 @@ Clone the repo
    ./script.sh classification mamba original128-pad LSFB
    ```
 
+[![Example][example]]
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -125,6 +127,7 @@ Project Link: [https://github.com/okason97/HandCraft](https://github.com/okason9
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/gaston-gustavo-rios/
 [product-screenshot]: images/graphical_abstract.png
+[example]: images/value_keypoints_0.gif
 [Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
 [Next-url]: https://nextjs.org/
 [React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
