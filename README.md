@@ -112,7 +112,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Gaston Rios - okason1997@hotmail.com
 
-Project Link: [https://github.com/okason97/HandCraft](https://github.com/okason97/HandCraft)
+Publication Link: [https://arxiv.org/abs/2508.14345](https://arxiv.org/abs/2508.14345)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
