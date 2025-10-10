@@ -96,14 +96,15 @@ Clone the repo
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- CONTACT -->
-## Publication
+<!-- Publication -->
+## 📄 Publication
 
-Publication Link: [https://arxiv.org/abs/2508.14345](https://arxiv.org/abs/2508.14345)
+**Paper**: [HandCraft: Dynamic Sign Generation for Synthetic Data Augmentation](https://arxiv.org/abs/2508.14345)
 
-Cite with:
+### Citation
 
----
+If you use this work in your research, please cite:
+```bibtex
 @misc{rios2025handcraftdynamicsigngeneration,
       title={HandCraft: Dynamic Sign Generation for Synthetic Data Augmentation}, 
       author={Gaston Gustavo Rios and Pedro Dal Bianco and Franco Ronchetti and Facundo Quiroga and Oscar Stanchi and Santiago Ponte Ahón and Waldo Hasperué},
@@ -113,7 +114,7 @@ Cite with:
       primaryClass={cs.CV},
       url={https://arxiv.org/abs/2508.14345}, 
 }
----
+```
 
 <!-- LICENSE -->
 ## License
