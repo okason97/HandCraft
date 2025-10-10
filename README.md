@@ -97,7 +97,7 @@ Clone the repo
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- Publication -->
-## 📄 Publication
+## Publication
 
 **Paper**: [HandCraft: Dynamic Sign Generation for Synthetic Data Augmentation](https://arxiv.org/abs/2508.14345)
 
