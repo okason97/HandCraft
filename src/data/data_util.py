@@ -210,6 +210,109 @@ class RandomAffine(torch.nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(flip_p={self.flip_p},scale={self.scale},rot={self.rot})"
 
+class UniformSampleFrames(torch.nn.Module):
+    """
+    Samples `size` frames evenly spaced over the whole clip (repeating frames for short clips).
+    If `speed` is set, a random sub-window covering [speed, 1] of the clip is sampled instead,
+    simulating different signing speeds and inaccurate start/end boundaries.
+    """
+
+    def __init__(self, size, speed=None):
+        super().__init__()
+        self.size = size
+        self.speed = speed
+
+    def forward(self, img):
+        n = img.shape[0]
+        start, length = 0, n
+        if self.speed:
+            length = max(1, round(n*random.uniform(self.speed, 1.0)))
+            start = random.randint(0, n-length)
+        indexes = np.round(np.linspace(start, start+length-1, self.size)).astype(int)
+        return img[indexes]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(size={self.size},speed={self.speed})"
+
+class RandomShearRotate(torch.nn.Module):
+    """
+    Random 2D shear and rotation of the x,y coordinates, both sampled from normal distributions.
+    """
+
+    def __init__(self, shear_std=0.0, rot_std=0.0):
+        super().__init__()
+        self.shear_std = shear_std
+        self.rot_std = rot_std
+
+    def forward(self, sample):
+        sx, sy = np.random.normal(0, self.shear_std, 2) if self.shear_std else (0.0, 0.0)
+        theta = np.random.normal(0, self.rot_std) if self.rot_std else 0.0
+        shear = np.array([[1, sx], [sy, 1]])
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        mat = torch.eye(sample.shape[-1])
+        mat[:2, :2] = torch.tensor(rot @ shear, dtype=torch.float32)
+        new_sample = sample.flatten(0,1).type(torch.float32) @ mat.T
+        return torch.reshape(new_sample, sample.shape)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(shear_std={self.shear_std},rot_std={self.rot_std})"
+
+class Mirror(torch.nn.Module):
+    """
+    Horizontal flip with probability p: negates x and swaps left/right keypoints using `perm`.
+    Assumes x is centred on the body (use with norm='shoulder').
+    """
+
+    def __init__(self, p, perm):
+        super().__init__()
+        self.p = p
+        self.perm = torch.tensor(perm)
+
+    def forward(self, sample):
+        if random.random() < self.p:
+            sample = sample[:, self.perm].clone()
+            sample[..., 0] = -sample[..., 0]
+        return sample
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(p={self.p})"
+
+# MediaPipe left/right keypoint pairs, used to build the mirror permutation
+MIRROR_PAIRS = {
+    'pose': [(1,4),(2,5),(3,6),(7,8),(9,10),(11,12),(13,14),(15,16),(17,18),(19,20),(21,22),(23,24),(25,26),(27,28),(29,30),(31,32)],
+    'face': [(61,291),(33,263),(159,386),(133,362),(145,374)],
+}
+
+def mirror_permutation(poses):
+    """
+    Index permutation over the concatenated keypoints of `poses` that swaps left and right.
+    """
+    offsets, sizes = {}, {}
+    total = 0
+    for pose, keypoints in poses:
+        size = 21 if keypoints == 'all' and 'hand' in pose else len(keypoints)
+        offsets[pose], sizes[pose] = total, size
+        total += size
+    perm = list(range(total))
+    if 'right_hand' in offsets and 'left_hand' in offsets:
+        r, l = offsets['right_hand'], offsets['left_hand']
+        for i in range(21):
+            perm[r+i], perm[l+i] = l+i, r+i
+    for pose, keypoints in poses:
+        if 'hand' in pose:
+            continue
+        if keypoints == 'all':
+            raise NotImplementedError("mirror needs an explicit keypoint list for '{}'".format(pose))
+        mirror = {}
+        for a, b in MIRROR_PAIRS.get(pose, []):
+            mirror[a], mirror[b] = b, a
+        for i, k in enumerate(keypoints):
+            m = mirror.get(k, k)
+            if m not in keypoints:
+                raise ValueError("mirror of keypoint {} of '{}' is not selected".format(k, pose))
+            perm[offsets[pose]+i] = offsets[pose]+keypoints.index(m)
+    return perm
+
 class Dataset_(Dataset):
     def __init__(self,
                  data_dir,
@@ -230,6 +333,13 @@ class Dataset_(Dataset):
                  flip_p=0.0,
                  scale=0.0,
                  rot=0.0,
+                 temporal_sampling="crop",
+                 speed=None,
+                 norm="dataset",
+                 shear_std=0.0,
+                 rot_std=0.0,
+                 mirror_p=0.0,
+                 coords=3,
                  mode="classification"):
         super(Dataset_, self).__init__()
         self.mode = mode
@@ -243,6 +353,8 @@ class Dataset_(Dataset):
         self.map_classes = map_classes
         self.min_samples = min_samples
         self.max_len = max_len
+        self.norm = norm
+        self.coords = coords
         self.centers = []
 
         self.load_dataset()
@@ -252,7 +364,8 @@ class Dataset_(Dataset):
         self.trsf_list += [transforms.ToTensor()]
         self.trsf_list += [Permute([1,2,0])]
         self.trsf_list += [Half()]
-        if pad_frames:
+        # uniform sampling always returns max_len frames, so no padding is needed
+        if pad_frames and temporal_sampling == "crop":
             self.trsf_list += [PadFrames(self.max_len, pad_mode)]
 
         if self.load_data_in_memory:
@@ -266,12 +379,18 @@ class Dataset_(Dataset):
                 self.pose_data.append(self.pre_trsf(value))
                 self.labels.append(label)
 
-        if random_crop:
+        if temporal_sampling == "uniform":
+            self.trsf_list += [UniformSampleFrames(self.max_len, speed)]
+        elif random_crop:
             self.trsf_list += [RandomCropFrames(self.max_len)]
         else:
             self.trsf_list += [CropFrames(self.max_len)]
         if flip_p > 0 or scale > 0 or rot > 0:
             self.trsf_list += [RandomAffine(flip_p, scale, rot)]
+        if shear_std > 0 or rot_std > 0:
+            self.trsf_list += [RandomShearRotate(shear_std, rot_std)]
+        if mirror_p > 0:
+            self.trsf_list += [Mirror(mirror_p, mirror_permutation(self.poses))]
         if drop_frame>0:
             self.trsf_list += [DropFrames(drop_frame)]
         if drop_keypoint>0:
@@ -325,7 +444,34 @@ class Dataset_(Dataset):
         if not self.map_classes:
             self.map_classes = {i:j for i,j in zip(self.classes, range(len(self.classes)))}
 
+    def load_shoulder_normalized(self, index):
+        """
+        Centre every frame on the shoulder midpoint and scale by the mean shoulder width of the clip.
+        """
+        sample_id = str(self.data[index]['id'].item())
+        body = np.load(os.path.join(self.data_dir, 'poses', 'pose', sample_id+'.npy'))
+        center = (body[:,11] + body[:,12]) / 2
+        width = np.linalg.norm(body[:,11,:2] - body[:,12,:2], axis=-1).mean() + 1e-6
+        poses_data = []
+        for pose, keypoints in self.poses:
+            pose_data = np.load(os.path.join(self.data_dir, 'poses', pose, sample_id+'.npy'))
+            if keypoints != 'all':
+                pose_data = pose_data[:,keypoints,:]
+            pose_data = (pose_data - center[:,None,:]) / width
+            if 'hand' in pose:
+                pose_data[:,:,2] = 0
+            poses_data.append(pose_data)
+        value = np.concatenate(poses_data,axis=1)
+        label = self.data[index, 'sign']
+        return value, self.map_classes[label]
+
     def load(self, index):
+        value, label = self.load_all_coords(index)
+        return value[..., :self.coords], label
+
+    def load_all_coords(self, index):
+        if self.norm == "shoulder":
+            return self.load_shoulder_normalized(index)
         poses_data = []
         take_center = True
         for pose, keypoints in self.poses:

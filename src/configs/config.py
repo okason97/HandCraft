@@ -67,6 +67,19 @@ class Configurations(object):
         self.DATA.flip_p = 0.0
         self.DATA.scale = 0.0
         self.DATA.rot = 0.0
+        # random shear and rotation (radians), sampled from normal distributions with these stds
+        self.DATA.shear_std = 0.0
+        self.DATA.rot_std = 0.0
+        # probability of a horizontal flip that also swaps left/right keypoints (use with norm "shoulder")
+        self.DATA.mirror_p = 0.0
+        # how max_len frames are taken from a clip \in ["crop", "uniform"]
+        self.DATA.temporal_sampling = "crop"
+        # for uniform sampling: minimum fraction of the clip covered by the random training window (None = whole clip)
+        self.DATA.speed = None
+        # keypoint normalization \in ["dataset", "shoulder"]
+        self.DATA.norm = "dataset"
+        # number of coordinates per keypoint used as input (2 = x,y; 3 = x,y,z), must match input_size[2]
+        self.DATA.coords = 3
         # encode the data by applying a transformation ["DCT","DWT",None]
         self.DATA.transform = None
         self.DATA.batch_size = 128
@@ -162,6 +175,8 @@ class Configurations(object):
         self.LOSS.lecam_ema_decay = "N/A"
         # use relative motion for motion loss
         self.LOSS.relative_motion = True
+        # label smoothing for the CCE loss
+        self.LOSS.label_smoothing = 0.0
 
         # -----------------------------------------------------------------------------
         # optimizer settings
@@ -255,7 +270,7 @@ class Configurations(object):
 
     def define_losses(self):
         losses_dic = {
-            "CCE": nn.CrossEntropyLoss(),
+            "CCE": nn.CrossEntropyLoss(label_smoothing=self.LOSS.label_smoothing),
             "motion": losses.MotionLoss(relative_motion=self.LOSS.relative_motion),
         }
 

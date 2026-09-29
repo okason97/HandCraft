@@ -101,3 +101,97 @@ Conclusions:
 - **The official split is no harder than a random stratified split of the same size.** It is not a signer- or session-independent benchmark, so it isn't harder in that way.
 - Expect higher numbers on the official split than on ours for the same model. With a simple baseline the difference is about 5 points; with stronger models it may differ in size, but it should go the same way.
 - **Don't evaluate a model trained on our split on the official test set.** 577 of the 816 official test videos are in our training set, and 1039 of our test videos are in the official train or val sets. To report official numbers, retrain on the official train/val lists.
+
+## Transformer-SL results on the official split
+
+### Setting up the official split
+
+`format.py` writes our random split. To train on the official split, create a second data directory that reuses the keypoints and only replaces the split files:
+
+```bash
+mkdir -p <official_dir>/metadata/splits
+ln -s <data_dir>/poses <official_dir>/poses
+ln -s <data_dir>/instances.csv <official_dir>/instances.csv
+ln -s <data_dir>/metadata/sign_to_index.csv <official_dir>/metadata/sign_to_index.csv
+```
+
+Then write `<official_dir>/metadata/splits/train.json` (official `include_train.txt` + `include_val.txt`) and `test.json` (`include_test.txt`) as lists of ids, converting each path `<Category>/<N>. <sign>/[Extra/]<video>.<ext>` to `<Category>_<sign>#<video>` the same way `format.py` does. Keep only ids that have keypoints. On `/disco2` this is `/disco2/datasets/INCLUDE_official` (3441 train+val / 816 test).
+
+Train and evaluate with `--test`, so the best checkpoint (lowest validation loss) is evaluated on the test set:
+
+```bash
+python src/main.py --mode classification -t --test -data <official_dir>/ \
+    -cfg ./src/configs/INCLUDE/ViT/official-all.yaml -save <save_dir>/ --seed 42 -mpc
+```
+
+### Evaluation protocol
+
+- The pipeline carves a stratified 10% validation set out of `train.json`; it doesn't use the official validation list.
+- Signs with fewer than 5 training videos are dropped (`min_samples: 5`), and the test loader drops the last incomplete batch. Together this leaves out 16 of the 816 official test videos, so 800 are evaluated.
+- The "Best Top 1-acc" printed during training is **validation** accuracy. Only the `Test Top 1-acc` printed after "End of training" is test accuracy. The INCLUDE numbers in the HandCraft paper (86.4% and 87.1% for Transformer-SL) match validation accuracies in `logs/INCLUDE`, not test accuracies.
+
+### Baseline: official split vs. ours
+
+`original-pad-128x2` (the paper's Transformer-SL config without synthetic data), seed 42:
+
+| | Official split | Our split |
+|---|---|---|
+| Test top-1 | 84.8% (800 videos) | 81.0% (1232 videos) |
+| Test top-10 | 97.4% | 97.0% |
+| Validation top-1 | 84.8% | 86.1% |
+
+### Closing the gap with published results
+
+The papers that beat us on INCLUDE use the same kind of Transformer but a different data pipeline: their plain Transformer baselines reach 90.4% ([OpenHands](https://arxiv.org/abs/2110.05877)) and 94.9% ([HWGAT](https://arxiv.org/abs/2407.14224)) on the official split. These configs test their main differences one at a time. Each changes only the listed options from `original-pad-128x2`; the options are documented in [config.py](../../configs/config.py).
+
+| Config | Change | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|---|
+| `official-base` | none | 82.0 | 84.3 | 83.1 |
+| `official-shoulder` | `norm: shoulder`: centre each frame on the shoulder midpoint, scale by shoulder width | 84.0 | 84.6 | 84.3 |
+| `official-uniform` | `temporal_sampling: uniform`: 32 frames evenly spaced over the whole clip instead of a random 32-frame crop | 87.3 | 84.8 | 86.0 |
+| `official-aug` | `shear_std: 0.1`, `rot_std: 0.1`, `mirror_p: 0.5` (flip that swaps left/right keypoints) | 79.1 | 79.5 | 79.3 |
+| `official-all` | all of the above, plus `speed: 0.8` (random 80–100% sub-window during training) and `label_smoothing: 0.1` | **90.8** | **91.6** | **91.2** |
+
+Test top-1 accuracy (%) on the official test set.
+
+- **The combination matters more than any single change:** together they add 8 points.
+- **Uniform sampling is the largest single gain.** The random crop sees about half of a typical clip (median 63 frames), and with `crop` the window is random at test time too, so crop-mode scores vary by about ±1.5 points between runs. Uniform sampling is deterministic at test time.
+- **Augmentation only helps with shoulder normalization.** On its own it costs about 4 points in both seeds, likely because flip, shear and rotation pivot around the first frame's nose rather than the body. The ablations below show the flip itself hurts even with shoulder normalization.
+- The existing `flip_p` option only negates x and doesn't swap left/right keypoints; use `mirror_p` instead.
+
+Compared with published test accuracy on the official split:
+
+| Model | Top-1 |
+|---|---|
+| HWGAT | 97.7 |
+| HWGAT's Transformer baseline | 94.9 |
+| SL-GCN (OpenHands) | 93.5 |
+| **Transformer-SL, `official-all-nomirror`** | **92.3** |
+| Transformer-SL, `official-all` | 91.2 |
+| OpenHands Transformer | 90.4 |
+| LSTM (Khartheesvar et al., 2024) | 87.4 |
+| Transformer-SL, `official-base` | 83.1 |
+
+OpenHands selects checkpoints on the test set, so its numbers are somewhat optimistic. HWGAT uses a 10% validation split like ours. Remaining differences with HWGAT's Transformer: random keypoint masking, hand interpolation, a different optimizer and schedule (AdamW, cosine, 500 epochs, batch size 4) and a larger model. The ablations below found no reliable gain from 64 frames or 2D keypoints, which HWGAT also uses.
+
+### Ablations of `official-all`
+
+Each config changes one thing from `official-all`:
+
+| Config | Change | Seed 42 | Seed 43 | Mean | vs `all` |
+|---|---|---|---|---|---|
+| `official-all` | – | 90.8 | 91.6 | 91.2 | – |
+| `official-all-nospeed` | no `speed` (whole clip, deterministic sampling in training too) | 85.6 | 85.8 | 85.7 | −5.5 |
+| `official-all-2d` | `coords: 2` (x, y only; `input_size[2]: 2`) | 89.4 | 89.0 | 89.2 | −2.0 |
+| `official-all-nols` | no `label_smoothing` | 90.3 | 89.1 | 89.7 | −1.5 |
+| `official-all-64` | `max_len: 64` (`input_size[0]: 64`) | 92.0 | 89.3 | 90.6 | −0.6 |
+| `official-all-big` | `depth: 4`, `hidden_dim: 128`, `mlp_dim: 256` | 91.6 | 91.1 | 91.4 | +0.2 |
+| **`official-all-nomirror`** | no `mirror_p` | **92.6** | **91.9** | **92.3** | **+1.1** |
+
+Test top-1 accuracy (%) on the official test set.
+
+- **The speed sub-window is the most important component** (−5.5 without it). Without it, the combined config is no better than uniform sampling alone: the model sees the same 32 frames of each clip every epoch, so the random windows are the main source of temporal variety.
+- **The left/right flip hurts** (+1.1 without it, both seeds). A mirrored sign is performed with the other dominant hand, which likely isn't a faithful sample of the same sign in INCLUDE. Use `official-all-nomirror`.
+- **Label smoothing and depth both help** (−1.5 and −2.0 without them).
+- **64 frames and the bigger model give no reliable gain.** The spread between seeds (up to 2.7 points for `all-64`) is larger than the differences.
+- With two seeds per config, differences under about 1 point aren't meaningful.

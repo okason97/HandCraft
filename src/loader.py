@@ -98,6 +98,13 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                  flip_p=cfgs.DATA.flip_p,
                                  scale=cfgs.DATA.scale,
                                  rot=cfgs.DATA.rot,
+                                 temporal_sampling=cfgs.DATA.temporal_sampling,
+                                 speed=cfgs.DATA.speed,
+                                 norm=cfgs.DATA.norm,
+                                 shear_std=cfgs.DATA.shear_std,
+                                 rot_std=cfgs.DATA.rot_std,
+                                 mirror_p=cfgs.DATA.mirror_p,
+                                 coords=cfgs.DATA.coords,
                                  mode=cfgs.RUN.mode)
 
         cfgs.DATA.num_classes = len(train_dataset.classes)
@@ -161,6 +168,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                             pad_frames=cfgs.DATA.pad_frames,
                             pad_mode=cfgs.DATA.pad_mode,
                             poses=cfgs.DATA.poses,
+                            temporal_sampling=cfgs.DATA.temporal_sampling,
+                            norm=cfgs.DATA.norm,
+                            coords=cfgs.DATA.coords,
                             mode=cfgs.RUN.mode)
     if local_rank == 0:
         logger.info("Test dataset size: {dataset_size}".format(dataset_size=len(test_dataset)))
