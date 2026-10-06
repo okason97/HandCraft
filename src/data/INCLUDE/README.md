@@ -165,8 +165,9 @@ Compared with published test accuracy on the official split:
 |---|---|
 | HWGAT | 97.7 |
 | HWGAT's Transformer baseline | 94.9 |
+| **ST-GCN, `stgcn/official-lr5`** | **94.3** |
 | SL-GCN (OpenHands) | 93.5 |
-| **Transformer-SL, `official-nm-nodct`** | **93.2** |
+| Transformer-SL, `official-nm-nodct` | 93.2 |
 | Transformer-SL, `official-all-nomirror` | 92.3 |
 | Transformer-SL, `official-all` | 91.2 |
 | OpenHands Transformer | 90.4 |
@@ -213,7 +214,29 @@ HWGAT's Transformer baseline (94.9%) differs from ours in more ways than the cha
 
 Test top-1 accuracy (%) on the official test set.
 
-- **Removing the DCT helps** (+0.9, both seeds agree). `official-nm-nodct` is the best config so far at 93.2%, 0.3 points behind SL-GCN (93.5%).
+- **Removing the DCT helps** (+0.9, both seeds agree). `official-nm-nodct` is the best Transformer config at 93.2%.
 - **None of the other HWGAT differences help here.** The wide model, per-clip normalization, hand masking and HWGAT's temporal pipeline are all within noise of the baseline or slightly below it.
 - **The high learning rate is right for the small model:** 1e-3 costs 1.4 points.
-- These were tested one at a time on our pipeline. They might still help in combination, or with HWGAT's 29 keypoints and longer schedule, which weren't tested.
+- These were tested one at a time on our pipeline. They might still help in combination, or with HWGAT's longer schedule, which weren't tested.
+
+### ST-GCN
+
+[stgcn.py](../../models/stgcn.py) is the ST-GCN implementation from the [sl-hwgat](https://github.com/suvajit-patra/sl-hwgat) repository (MIT), wrapped to fit our model interface (`backbone: "stgcn"`). It uses HWGAT's 29-keypoint skeleton: nose, eyes, shoulders, elbows and wrists, plus 10 keypoints per hand (wrist, fingertips and finger bases). The configs are in `src/configs/INCLUDE/stgcn/` and use the same data pipeline as `official-nm-nodct`.
+
+| Config | Change | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|---|
+| **`stgcn/official-lr5`** | ST-GCN, 2D keypoints, learning rate 5e-3 | **94.0** | **94.6** | **94.3** |
+| `stgcn/official-64` | learning rate 1e-3, 64 frames | 92.1 | 91.9 | 92.0 |
+| `stgcn/official` | learning rate 1e-3 | 91.3 | 91.3 | 91.3 |
+| `stgcn/official-3d` | learning rate 1e-3, with the depth coordinate | 87.5 | 90.3 | 88.9 |
+| `ViT/official-kp29` | Transformer (`official-nm-nodct`) on the 29 keypoints | 91.1 | 92.8 | 91.9 |
+| `ViT/official-nm-nodct` | Transformer on our 60 keypoints, for reference | 93.1 | 93.3 | 93.2 |
+
+Test top-1 accuracy (%) on the official test set.
+
+- **ST-GCN with a learning rate of 5e-3 is the best model so far: 94.3%**, 1.1 points above the best Transformer and above the published SL-GCN result (93.5%).
+- **The learning rate matters a lot:** 5e-3 is 3 points better than 1e-3, the value OpenHands uses. Higher values and the combination with 64 frames weren't tested.
+- **The gain comes from the graph model, not the keypoints.** On the same 29 keypoints the Transformer scores 91.9%, 1.3 points below its result on our 60 keypoints.
+- **Depth hurts ST-GCN** (−2.4 at the same learning rate), the opposite of the Transformer.
+- 64 frames gives a small gain at learning rate 1e-3 (+0.7).
+- HWGAT reports 96.7% for ST-GCN on INCLUDE, so a gap of about 2.4 points to their training setup remains.
