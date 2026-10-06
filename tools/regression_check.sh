@@ -22,7 +22,7 @@ mk $C/CsiMLPe/depth_big_noise_0.1-reversed.yaml gen_rev 2
 mk $C/ViT/original-pad-synth25-425.yaml vit_synth 3
 run(){ # name, data, extra args...
   n=$1; d=$2; shift 2
-  uv run python src/main.py -data $d -cfg $OUT/cfg/$n.yaml -save $OUT/$n/ --project ref --num_workers 2 --prefetch_factor 2 -every 1 --print_every 1 -mpc --seed 42 "$@" > $OUT/$n.out 2> $OUT/$n.err
+  python src/main.py -data $d -cfg $OUT/cfg/$n.yaml -save $OUT/$n/ --project ref --num_workers 2 --prefetch_factor 2 -every 1 --print_every 1 -mpc --seed 42 "$@" > $OUT/$n.out 2> $OUT/$n.err
   echo "== $n (exit $?)" >> $OUT/metrics.txt
   grep -E "Test Top 1-acc|Test Loss|Best Top|Best MPJPE|dataset size|Dataset saved" $OUT/$n.out | sed -E 's/^\[INFO\] [0-9-]+ [0-9:]+ > //' >> $OUT/metrics.txt
 }
@@ -33,7 +33,7 @@ run conv1d $ORI --mode classification -t --test
 run gen_fwd $ORI --mode cond_prediction -t
 run gen_rev $ORI --mode cond_prediction -t --reverse
 F=$(ls -d $OUT/gen_fwd/checkpoints/*/ | head -1); R=$(ls -d $OUT/gen_rev/checkpoints/*/ | head -1)
-n=gen_rev; uv run python src/main.py --mode cond_prediction -sd -data $ORI -cfg $OUT/cfg/gen_rev.yaml -save $OUT/gen_data/ -best --project ref --num_workers 2 --prefetch_factor 2 -mpc --seed 42 -ckpt $F -tg -r_ckpt $R --sd_num 2 > $OUT/gen_data.out 2> $OUT/gen_data.err
+n=gen_rev; python src/main.py --mode cond_prediction -sd -data $ORI -cfg $OUT/cfg/gen_rev.yaml -save $OUT/gen_data/ -best --project ref --num_workers 2 --prefetch_factor 2 -mpc --seed 42 -ckpt $F -tg -r_ckpt $R --sd_num 2 > $OUT/gen_data.out 2> $OUT/gen_data.err
 echo "== gen_data (exit $?)" >> $OUT/metrics.txt
 G=$(ls -d $OUT/gen_data/generated_datasets/*/ 2>/dev/null | head -1)
 ( cd "$G" 2>/dev/null && echo "files: $(find poses -name '*.npy' | wc -l) rows: $(wc -l < instances.csv)" && find poses -name '*.npy' | sort | head -40 | xargs md5sum | md5sum ) >> $OUT/metrics.txt

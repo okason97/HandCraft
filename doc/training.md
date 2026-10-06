@@ -93,10 +93,11 @@ Best Top 1-acc 84.8214    Best Top 10-acc 97.9167    Best Loss (Step: 330): 0.60
 
 With `--test` (`test_script.sh` and `eval_script.sh`), the best checkpoint is loaded after training and evaluated on `test.json`. Its result is the `Test ...` line **after** `End of training!` in the log; `test_script.sh` prints it when it finishes.
 
-Two details of the evaluation:
+Three details of the evaluation:
 
 - Signs with fewer than `DATA.min_samples` clips in the training split are removed from training, validation and test.
 - The test loader drops the last incomplete batch, so up to `batch_size - 1` test clips are not evaluated.
+- With `DATA.temporal_sampling: "crop"` (the default, used by the configs of the paper), clips longer than `max_len` are cropped at a random position at test time too, so the test accuracy changes slightly between evaluations of the same checkpoint. `"uniform"` and `"pad"` are deterministic: `eval_script.sh` then reproduces the test result of the training run exactly.
 
 ## Outputs
 

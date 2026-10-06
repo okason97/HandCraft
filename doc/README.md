@@ -12,4 +12,4 @@
 | [reproducibility.md](reproducibility.md) | Seeds, what is deterministic, and known issues in the data and in earlier results |
 | [development.md](development.md) | Linting, type checking, and how changes are checked for regressions |
 
-The shortest path from a fresh clone to a trained and tested model is in the [README](../README.md#reproducing-the-results).
+The shortest path from a fresh clone to a trained and tested model is in the [README](../README.md#getting-started).

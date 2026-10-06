@@ -37,10 +37,10 @@ Each run writes its checkpoints to `$HANDCRAFT_SAVE/INCLUDE/CsiMLPe-<config>/che
 and the two generated halves are joined into one fully synthetic clip. The result is written in the standard dataset layout to
 
 ```
-$HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/<forward run name>/
+$HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/<generated dataset>/
 ```
 
-with `sd_num × batch_size` clips per sign (1,600 with the values above).
+with `sd_num × batch_size` clips per sign (1,600 with the values above). The directory is named `<reversed config>-train-<timestamp of the forward run>`; it is the only entry of `generated_datasets/` after one generation.
 
 ## 4. Pretrain and train the classifier
 
@@ -48,7 +48,7 @@ Pass the generated dataset with `-s_data` and use a config that sets `OPTIMIZATI
 
 ```bash
 ./test_script.sh classification ViT original-pad-synth75-475 INCLUDE \
-    -s_data $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/<forward run name> --seed 42
+    -s_data $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/<generated dataset> --seed 42
 ```
 
 The model is trained for `synth_total_steps` epochs on the synthetic clips, the optimizer and the learning rate schedule are reset, and it is then trained for `total_steps` epochs on the real clips as usual.
