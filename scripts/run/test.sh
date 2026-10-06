@@ -3,10 +3,10 @@
 
 # $1 = mode (prediction, cond_prediction, classification), $2 = model (conv1d/siMLPe/CsiMLPe/ViT/mamba/stgcn), $3 = config, $4 = dataset
 # Any other argument is passed to src/main.py (--seed 42, -data <dir>, -s_data <dir>, ...)
-# HANDCRAFT_DATA: directory with the datasets (default /disco1/datasets)
-# HANDCRAFT_SAVE: directory for checkpoints and generated datasets (default /disco1/models/HandCraft/samples)
-DATA_DIR=${HANDCRAFT_DATA:-/disco1/datasets}
-SAVE_DIR=${HANDCRAFT_SAVE:-/disco1/models/HandCraft/samples}
+# HANDCRAFT_DATA: directory with the datasets
+# HANDCRAFT_SAVE: directory for checkpoints and generated datasets
+DATA_DIR=${HANDCRAFT_DATA:?Set HANDCRAFT_DATA to the directory with the datasets}
+SAVE_DIR=${HANDCRAFT_SAVE:?Set HANDCRAFT_SAVE to the directory for checkpoints and generated datasets}
 
 # Create folder
 echo making dir $2-$3

@@ -64,15 +64,15 @@ Then train as with any other dataset (see [doc/training.md](../../../doc/trainin
 
 What this means in practice:
 - **Results are not comparable to published INCLUDE / INCLUDE-50 numbers.** Those numbers use the official test set, and our test set is a different, larger random sample.
-- The split is not stratified, so the number of test samples per sign varies and a sign can be missing from one side. In the split currently at `/disco2/datasets/INCLUDE`, 2 of the 262 signs have no test samples.
+- The split is not stratified, so the number of test samples per sign varies and a sign can be missing from one side. In the split used for the published results, 2 of the 262 signs have no test samples.
 - There is no INCLUDE-50 subset and no validation set.
-- The split currently at `/disco2/datasets/INCLUDE` (2979 train / 1278 test) was made by an earlier version of `format.py`. That version didn't sort the file list or the classes, so running the current script again produces a **different** split and a different `sign_to_index.csv`. To keep results comparable with existing checkpoints, keep the existing `metadata/` files.
+- The split used for the published results (2979 train / 1278 test) was made by an earlier version of `format.py`. That version didn't sort the file list or the classes, so running the current script again produces a **different** split and a different `sign_to_index.csv`. To keep results comparable with existing checkpoints, keep the existing `metadata/` files.
 - That earlier version also mishandled videos in `Extra/` subfolders: they were written to `raw/` as `<sign>#Extra` without an extension, so they overwrote each other and were never processed. The official lists contain 27 such videos; only 16 files survived in `raw/`, and none of them are in the existing split. The current `format.py` keeps them.
-- The 8 videos of `Days_and_Time/Second (Number)` are missing from `/disco2/datasets/INCLUDE`, which is why it has 262 signs instead of 263. That folder has no `<N>. ` prefix; `format.py` now names it `Days_and_Time_Second_(Number)` (the earlier version would have produced `Days_and_Time_econd_(Number)`).
+- The 8 videos of `Days_and_Time/Second (Number)` are missing from the data used for the published results, which is why it has 262 signs instead of 263. That folder has no `<N>. ` prefix; `format.py` now names it `Days_and_Time_Second_(Number)` (the earlier version would have produced `Days_and_Time_econd_(Number)`).
 
 ### Difficulty: official split vs. ours
 
-Measured on the split currently at `/disco2/datasets/INCLUDE` (4257 videos with keypoints) and the official lists mapped to the same ids. In the official lists, 35 videos have no keypoints here: 25 `Extra/` videos, the 8 `Second (Number)` videos and 2 others. Only one of them is in the official test set, so it has 816 test videos here instead of 817.
+Measured on the data used for the published results (4257 videos with keypoints) and the official lists mapped to the same ids. In the official lists, 35 videos have no keypoints here: 25 `Extra/` videos, the 8 `Second (Number)` videos and 2 others. Only one of them is in the official test set, so it has 816 test videos here instead of 817.
 
 **How the samples are distributed**
 

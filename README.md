@@ -93,7 +93,7 @@ Models are trained on keypoints. LSFB provides them; for INCLUDE and DiSPLaY the
 
   LSFB
    ```sh
-   python scripts/data/LSFB/setup_lsfb.py -data_dir $HANDCRAFT_DATA/
+   python scripts/data/LSFB/setup_lsfb.py -data_dir $HANDCRAFT_DATA
    ```
   INCLUDE (57 GB of videos; the keypoint extraction takes several hours)
    ```sh

@@ -10,13 +10,13 @@ from lsfb_dataset import Downloader
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-parser = argparse.ArgumentParser(description="A simple argument parser example.")
+parser = argparse.ArgumentParser(description="Download the isolated LSFB poses and filter the splits")
 
-parser.add_argument("-data_dir", type=str, default="./src/data/", help="Data root directory")
+parser.add_argument("-data_dir", type=str, required=True, help="Directory with the datasets; LSFB is downloaded into <data_dir>/LSFB")
 
 args = parser.parse_args()
 
-lsfb_dir = args.data_dir + 'LSFB'
+lsfb_dir = os.path.join(args.data_dir, 'LSFB')
 
 print('Downloading LSFB')
 

@@ -39,12 +39,12 @@ uv pip install mamba-ssm
 
 ## Paths
 
-The run scripts read two environment variables:
+The run scripts need two environment variables and stop with a message if one is not set:
 
-| Variable | Default | Contents |
-|---|---|---|
-| `HANDCRAFT_DATA` | `/disco1/datasets` | one directory per dataset (`LSFB`, `INCLUDE`, `DiSPLaY`, ...) |
-| `HANDCRAFT_SAVE` | `/disco1/models/HandCraft/samples` | checkpoints, statistics and generated datasets |
+| Variable | Contents |
+|---|---|
+| `HANDCRAFT_DATA` | one directory per dataset (`LSFB`, `INCLUDE`, `DiSPLaY`, ...) |
+| `HANDCRAFT_SAVE` | checkpoints, statistics and generated datasets |
 
 ```bash
 export HANDCRAFT_DATA=/path/to/datasets
@@ -61,13 +61,13 @@ export WANDB_MODE=offline
 
 ## Docker
 
-The `Dockerfile` installs the same locked environment. Mount the datasets and the output directory at the default paths:
+The `Dockerfile` installs the same locked environment. The image sets `HANDCRAFT_DATA=/data` and `HANDCRAFT_SAVE=/outputs`; mount the datasets and the output directory there:
 
 ```bash
 docker build -t handcraft .
 docker run --gpus all -it \
-    -v /path/to/datasets:/disco1/datasets \
-    -v /path/to/outputs:/disco1/models/HandCraft/samples \
+    -v /path/to/datasets:/data \
+    -v /path/to/outputs:/outputs \
     handcraft bash
 ```
 

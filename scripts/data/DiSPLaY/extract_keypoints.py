@@ -65,7 +65,7 @@ def extract_all(data_dir, model_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Extract MediaPipe keypoints from the DiSPLaY clips in <data_dir>/original")
     parser.add_argument("-data_dir", type=str, default=".", help="DiSPLaY dataset root (contains original/)")
-    parser.add_argument("-model_dir", type=str, default="/disco1/models/mediapipe", help="Directory with the MediaPipe .task models")
+    parser.add_argument("-model_dir", type=str, required=True, help="Directory with the MediaPipe .task models (see download_mediapipe_models.sh)")
     args = parser.parse_args()
 
     extract_all(args.data_dir, args.model_dir)

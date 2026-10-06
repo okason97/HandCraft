@@ -3,10 +3,10 @@
 # Runs a short seeded version of every flow and writes the metrics to <out_dir>/metrics.txt.
 # Seeded runs are deterministic, so two metrics files can be compared with diff to check
 # that a change did not alter the behaviour (see doc/development.md).
-# Needs the INCLUDE and INCLUDE_official datasets in HANDCRAFT_DATA (default /disco1/datasets).
+# Needs the INCLUDE and INCLUDE_official datasets in HANDCRAFT_DATA.
 set -u
 OUT=$(realpath -m "$1"); REPO=$(cd "$(dirname "$0")/../.." && pwd); C=$REPO/src/configs/INCLUDE
-DATA_DIR=${HANDCRAFT_DATA:-/disco1/datasets}
+DATA_DIR=${HANDCRAFT_DATA:?Set HANDCRAFT_DATA to the directory with the datasets}
 export WANDB_MODE=offline CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 rm -rf $OUT; mkdir -p $OUT/cfg; cd $REPO
 mk(){ sed -E "s/total_steps: [0-9]+/total_steps: $3/; s/synth_total_steps: [0-9]+/synth_total_steps: 1/" $1 > $OUT/cfg/$2.yaml; }

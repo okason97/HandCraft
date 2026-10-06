@@ -120,8 +120,8 @@ Flags of `src/main.py`. The run scripts set `--mode`, `-t`, `-data`, `-cfg`, `-s
 |---|---|---|
 | `--entity` | `None` | Weights & Biases entity |
 | `--project` | `None` | Weights & Biases project name |
-| `-cfg, --cfg_file` | `"./src/configs/CIFAR10/ContraGAN.yaml"` | Config file |
-| `-data, --data_dir` | `None` | Dataset directory |
+| `-cfg, --cfg_file` | required | Config file |
+| `-data, --data_dir` | required | Dataset directory |
 | `-s_data, --synth_dir` | `None` | Synthetic dataset to pretrain on (classification) |
 | `-save, --save_dir` | `"./"` | Output directory |
 | `-ckpt, --ckpt_dir` | `None` | Checkpoint directory to load |

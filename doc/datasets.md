@@ -38,10 +38,10 @@ The script checks the files against the checksums of the models used for the pub
 
 ```bash
 uv sync --extra lsfb
-uv run python scripts/data/LSFB/setup_lsfb.py -data_dir $HANDCRAFT_DATA/
+uv run python scripts/data/LSFB/setup_lsfb.py -data_dir $HANDCRAFT_DATA
 ```
 
-Note the trailing slash. The script downloads the isolated-sign poses (no video) into `$HANDCRAFT_DATA/LSFB` with the [`lsfb-dataset`](https://github.com/lsfb-team/lsfb-dataset) package, then removes from both splits the clips that are empty or longer than 60 frames.
+The script downloads the isolated-sign poses (no video) into `$HANDCRAFT_DATA/LSFB` with the [`lsfb-dataset`](https://github.com/lsfb-team/lsfb-dataset) package, then removes from both splits the clips that are empty or longer than 60 frames.
 
 ## INCLUDE
 

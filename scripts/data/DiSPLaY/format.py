@@ -9,7 +9,7 @@ from extract_keypoints import clip_id, extract_all, frame_number, list_clips, li
 
 parser = argparse.ArgumentParser(description="Convert the extracted DiSPLaY dataset into the HandCraft data layout")
 parser.add_argument("-data_dir", type=str, default=".", help="DiSPLaY dataset root (contains original/)")
-parser.add_argument("-model_dir", type=str, default="/disco1/models/mediapipe", help="Directory with the MediaPipe .task models")
+parser.add_argument("-model_dir", type=str, required=True, help="Directory with the MediaPipe .task models (see download_mediapipe_models.sh)")
 parser.add_argument("-test_size", type=float, default=0.3, help="Fraction of clips used for the random test split")
 parser.add_argument("-seed", type=int, default=42, help="Random seed for the train/test split")
 args = parser.parse_args()

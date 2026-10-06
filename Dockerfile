@@ -20,8 +20,8 @@ RUN uv sync --frozen --no-dev --all-extras
 COPY . /HandCraft
 ENV PATH="/HandCraft/.venv/bin:$PATH"
 
-# Datasets and outputs are expected to be mounted, by default at
-# /disco1/datasets and /disco1/models/HandCraft/samples (see HANDCRAFT_DATA and HANDCRAFT_SAVE in scripts/run/train.sh):
-# docker run --gpus all -v <datasets>:/disco1/datasets -v <outputs>:/disco1/models/HandCraft/samples -it handcraft
+# Datasets and outputs are expected to be mounted at /data and /outputs:
+# docker run --gpus all -v <datasets>:/data -v <outputs>:/outputs -it handcraft
+ENV HANDCRAFT_DATA=/data HANDCRAFT_SAVE=/outputs
 
 # wandb login
