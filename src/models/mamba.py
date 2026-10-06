@@ -1,13 +1,16 @@
 import math
 from collections import OrderedDict
 from functools import partial
+from typing import Any
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mamba_ssm.models.config_mamba import MambaConfig
-from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights
-from mamba_ssm.utils.generation import GenerationMixin
+
+# mamba-ssm is an optional dependency, built against the local CUDA toolkit
+from mamba_ssm.models.config_mamba import MambaConfig  # ty: ignore[unresolved-import]
+from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights  # ty: ignore[unresolved-import]
+from mamba_ssm.utils.generation import GenerationMixin  # ty: ignore[unresolved-import]
 
 import utils.misc as misc
 
@@ -16,10 +19,10 @@ class Model(nn.Module, GenerationMixin):
         
     def __init__(
         self,
-        DATA: object,
-        RUN: object,
-        MODULES: object,
-        MODEL: object,
+        DATA: Any,
+        RUN: Any,
+        MODULES: Any,
+        MODEL: Any,
         initializer_cfg=None,
         device=None,
         dtype=None,
@@ -98,7 +101,9 @@ class Model(nn.Module, GenerationMixin):
         """
         n = x.shape[0]
 
-        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
+        # mixed precision is applied by the worker, which runs the model inside torch.autocast
+
+        with misc.dummy_context_mgr():
             if masks is not None:
                 batch_class_mask = self.class_mask.expand(n, -1, -1)
                 masks = torch.cat([masks, batch_class_mask], dim=1)

@@ -8,6 +8,7 @@ import json
 import math
 import os
 import random
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -421,14 +422,14 @@ class Dataset_(Dataset):
                  mode="classification"):
         super(Dataset_, self).__init__()
         self.mode = mode
-        self.target_len = target_len
+        self.target_len: Any = target_len
         self.data_dir = data_dir
         self.train = train
         self.load_data_in_memory = load_data_in_memory
         self.trsf_list = []
-        self.poses = poses
+        self.poses: Any = poses
         self.filter_classes = filter_classes
-        self.map_classes = map_classes
+        self.map_classes: Any = map_classes
         self.min_samples = min_samples
         self.max_len = max_len
         self.norm = norm
@@ -488,13 +489,13 @@ class Dataset_(Dataset):
             data_ids = json.load(f)
 
         # load all instances
-        self.data = pl.read_csv(os.path.join(self.data_dir, 'instances.csv'), dtypes = {"sign": pl.Utf8})
+        self.data = pl.read_csv(os.path.join(self.data_dir, 'instances.csv'), schema_overrides = {"sign": pl.Utf8})
 
         # filter to only use train/valid predefined samples
         self.data = self.data.filter(pl.col('id').cast(pl.String).is_in(data_ids))
 
         # map signs to transform them to their numeric representations
-        t_si = pl.read_csv(os.path.join(self.data_dir, 'metadata', 'sign_to_index.csv'), dtypes = {"sign": pl.Utf8}).transpose()
+        t_si = pl.read_csv(os.path.join(self.data_dir, 'metadata', 'sign_to_index.csv'), schema_overrides = {"sign": pl.Utf8}).transpose()
         mapping = t_si.rename(t_si.head(1).to_dicts().pop()).slice(1).to_dict(as_series=False)
         mapping = {k: v[0] for k, v in mapping.items()}
         self.data = self.data.with_columns(pl.col('sign').replace(mapping).cast(pl.Int64))

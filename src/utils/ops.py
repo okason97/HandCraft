@@ -320,7 +320,7 @@ class Conv1dNormActivation(nn.Sequential):
         bias: Optional[bool] = None,
     ) -> None:
         if padding is None:
-            padding = (kernel_size - 1) // 2 * dilation
+            padding = (kernel_size - 1) // 2 * dilation  # ty: ignore[unsupported-operator]  (only called with int sizes)
         
         if bias is None:
             bias = norm_layer is None

@@ -5,6 +5,7 @@
 # src/models/stgcn.py
 
 import math
+from typing import Any, Optional
 
 import torch
 import torch.nn as nn
@@ -162,9 +163,9 @@ class FC(nn.Module):
     def __init__(self, n_features, num_class, dropout_ratio=0.2, batch_norm=False):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout_ratio)
-        self.bn = batch_norm
+        self.bn = None
         if batch_norm:
-            self.bn = nn.BatchNorm1d(self.n_features)
+            self.bn = nn.BatchNorm1d(n_features)
             self.bn.weight.data.fill_(1)
             self.bn.bias.data.zero_()
         self.classifier = nn.Linear(n_features, num_class)
@@ -180,7 +181,7 @@ class FC(nn.Module):
         """
 
         x = self.dropout(x)
-        if self.bn:
+        if self.bn is not None:
             x = self.bn(x)
         x = self.classifier(x)
         return x
@@ -205,7 +206,7 @@ class Model(nn.Module):
     Expects DATA.poses to be HWGAT29_POSES. The input is a sequence of raw frames, so it
     should be used with DATA.transform "none" and a sampling that returns no padded frames.
     """
-    def __init__(self, DATA: object, RUN: object, MODULES: object, MODEL: object):
+    def __init__(self, DATA: Any, RUN: Any, MODULES: Any, MODEL: Any):
         super().__init__()
         self.num_nodes = DATA.input_size[1]
         self.in_channels = DATA.input_size[2]
@@ -241,7 +242,7 @@ class Model(nn.Module):
 
         self.head = FC(self.n_out_features, DATA.num_classes, MODEL.dropout)
 
-    def forward(self, x: torch.Tensor, masks: torch.Tensor = None):
+    def forward(self, x: torch.Tensor, masks: Optional[torch.Tensor] = None):
         """
         Args:
             x (torch.Tensor): Input tensor of shape (N, T, V*C)

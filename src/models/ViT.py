@@ -1,7 +1,7 @@
 import math
 from collections import OrderedDict
 from functools import partial
-from typing import Callable
+from typing import Any, Callable, Optional
 
 import torch
 import torch.nn as nn
@@ -125,7 +125,7 @@ class Encoder(nn.Module):
         self.layers = nn.Sequential(layers)
         self.ln = norm_layer(hidden_dim)
 
-    def forward(self, input: torch.Tensor, masks: torch.Tensor = None):
+    def forward(self, input: torch.Tensor, masks: Optional[torch.Tensor] = None):
         torch._assert(input.dim() == 3, f"Expected (batch_size, seq_length, hidden_dim) got {input.shape}")
         input = input + self.pos_embedding
         return self.ln(self.layers((self.dropout(input), masks))[0])
@@ -136,10 +136,10 @@ class Model(nn.Module):
 
     def __init__(
         self,
-        DATA: object,
-        RUN: object,
-        MODULES: object,
-        MODEL: object,
+        DATA: Any,
+        RUN: Any,
+        MODULES: Any,
+        MODEL: Any,
     ):
         super().__init__()
         _log_api_usage_once(self)
@@ -187,8 +187,9 @@ class Model(nn.Module):
 
         self.register_buffer('class_mask', class_mask, persistent=False)
 
-    def forward(self, x: torch.Tensor, masks: torch.Tensor = None):
-        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
+    def forward(self, x: torch.Tensor, masks: Optional[torch.Tensor] = None):
+        # mixed precision is applied by the worker, which runs the model inside torch.autocast
+        with misc.dummy_context_mgr():
             n = x.shape[0]
 
             if masks is not None:

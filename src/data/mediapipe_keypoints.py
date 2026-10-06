@@ -3,7 +3,7 @@ import os
 import cv2
 import mediapipe as mp
 import numpy as np
-from mediapipe.tasks.python import vision
+from mediapipe.tasks.python import BaseOptions, vision
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 
@@ -71,9 +71,8 @@ def savgol(landmarks, window_length=15, polyorder=3):
     return smoothed_landmarks
 
 def get_face_options(model_path):
-    BaseOptions = mp.tasks.BaseOptions
-    FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
-    VisionRunningMode = mp.tasks.vision.RunningMode
+    FaceLandmarkerOptions = vision.FaceLandmarkerOptions
+    VisionRunningMode = vision.RunningMode
 
     # Create a face landmarker instance with the video mode:
     face_options = FaceLandmarkerOptions(
@@ -83,9 +82,8 @@ def get_face_options(model_path):
     return face_options
 
 def get_pose_options(model_path):
-    BaseOptions = mp.tasks.BaseOptions
-    PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-    VisionRunningMode = mp.tasks.vision.RunningMode
+    PoseLandmarkerOptions = vision.PoseLandmarkerOptions
+    VisionRunningMode = vision.RunningMode
 
     # Create a pose landmarker instance with the video mode:
     pose_options = PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path=model_path),
@@ -94,9 +92,8 @@ def get_pose_options(model_path):
     return pose_options
 
 def get_hand_options(model_path):
-    BaseOptions = mp.tasks.BaseOptions
-    HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-    VisionRunningMode = mp.tasks.vision.RunningMode
+    HandLandmarkerOptions = vision.HandLandmarkerOptions
+    VisionRunningMode = vision.RunningMode
 
     # Create a hand landmarker instance with the video mode:
     hand_options = HandLandmarkerOptions(base_options=BaseOptions(model_asset_path=model_path),

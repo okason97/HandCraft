@@ -21,7 +21,8 @@ lsfb_dir = args.data_dir + 'LSFB'
 print('Downloading LSFB')
 
 # downloader = Downloader(dataset='isol', destination=args.data_dir, include_videos=False, timeout=None, check_ssl=False)
-downloader = Downloader(dataset='isol', destination=lsfb_dir, include_videos=False, timeout=None)
+# timeout=None disables the download timeout
+downloader = Downloader(dataset='isol', destination=lsfb_dir, include_videos=False, timeout=None)  # ty: ignore[invalid-argument-type]
 
 downloader.download()
 

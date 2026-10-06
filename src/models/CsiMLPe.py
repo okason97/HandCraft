@@ -136,7 +136,8 @@ class Model(nn.Module):
         nn.init.constant_(self.motion_fc_out.bias, 0)
 
     def forward(self, x, y):
-        with torch.cuda.amp.autocast() if self.mixed_precision and not eval else misc.dummy_context_mgr():
+        # mixed precision is applied by the worker, which runs the model inside torch.autocast
+        with misc.dummy_context_mgr():
             y = self.y_embedder(y, self.training)
 
             if self.temporal_fc_in:

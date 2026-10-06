@@ -347,7 +347,7 @@ class Configurations(object):
                                                                 momentum=self.OPTIMIZATION.momentum,
                                                                 alpha=self.OPTIMIZATION.alpha)
         elif self.OPTIMIZATION.type_ == "Adam":
-            betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
+            betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
             eps_ = 1e-6
 
             self.OPTIMIZATION.optimizer = torch.optim.Adam(params=params,
@@ -356,7 +356,7 @@ class Configurations(object):
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
         elif self.OPTIMIZATION.type_ == "RAdam":
-            betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
+            betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
             eps_ = 1e-6
 
             self.OPTIMIZATION.optimizer = torch.optim.RAdam(params=params,
@@ -365,7 +365,7 @@ class Configurations(object):
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
         elif self.OPTIMIZATION.type_ == "AdamW":
-            betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
+            betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
 
             self.OPTIMIZATION.optimizer = torch.optim.AdamW(params=params,
                                                             lr=self.OPTIMIZATION.lr,

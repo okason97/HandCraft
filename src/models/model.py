@@ -5,6 +5,7 @@
 # src/models/model.py
 
 import torch
+import torch.distributed
 from ema_pytorch import EMA
 from torch.nn import DataParallel
 from torch.nn.parallel import DistributedDataParallel as DDP

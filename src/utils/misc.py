@@ -12,6 +12,7 @@ import shutil
 import sys
 from datetime import datetime
 from os.path import dirname, exists, isfile, join
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -28,7 +29,13 @@ import utils.ckpt as ckpt
 
 
 class make_empty_object(object):
-    pass
+    """
+    Empty namespace for the configuration groups (cfgs.DATA, cfgs.MODEL, ...).
+    """
+    if TYPE_CHECKING:
+        # the attributes are set dynamically from the config files
+        def __getattr__(self, name: str) -> Any: ...
+        def __setattr__(self, name: str, value: Any) -> None: ...
 
 
 class dummy_context_mgr():
@@ -634,7 +641,7 @@ def animate_all_keypoints(pose_keypoints, rhand_keypoints, lhand_keypoints, face
 
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_zticks([])
+        ax.set_zticks([])  # ty: ignore[call-non-callable]  (3D axes, typed as 2D by matplotlib)
 
         ax.view_init(-90, -90)
 

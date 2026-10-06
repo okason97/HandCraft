@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -34,10 +35,10 @@ from einops import einsum, rearrange, repeat
 
 @dataclass
 class ModelArgs:
-    DATA: object
-    RUN: object
-    MODULES: object
-    MODEL: object
+    DATA: Any
+    RUN: Any
+    MODULES: Any
+    MODEL: Any
     
     def __post_init__(self):
         self.d_inner = int(self.MODEL.expand_ratio * self.MODEL.hidden_dim)

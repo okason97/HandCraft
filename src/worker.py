@@ -125,7 +125,7 @@ class WORKER(object):
     def reset_optimizer(self, OPTIMIZATION):
         self.OPTIMIZATION = OPTIMIZATION
         if self.RUN.mixed_precision:
-            self.scaler = torch.cuda.amp.GradScaler()
+            self.scaler = torch.amp.GradScaler('cuda')
 
     # -----------------------------------------------------------------------------
     # train model
