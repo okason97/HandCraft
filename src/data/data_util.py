@@ -499,8 +499,8 @@ class Dataset_(Dataset):
         mapping = {k: v[0] for k, v in mapping.items()}
         self.data = self.data.with_columns(pl.col('sign').replace(mapping).cast(pl.Int64))
 
-        # get unique classes
-        self.classes = self.data.unique('sign')['sign'].to_list()       
+        # get unique classes, sorted so every run maps the classes to the same indexes
+        self.classes = sorted(self.data.unique('sign')['sign'].to_list())
 
         # only keep classes with a number of samples >= min_samples
         if self.min_samples:
@@ -515,7 +515,7 @@ class Dataset_(Dataset):
         if self.filter_classes or self.min_samples:
             if self.filter_classes:
                 if self.min_samples:
-                    selected_classes = list(set(self.filter_classes) & set(meet_min))
+                    selected_classes = sorted(set(self.filter_classes) & set(meet_min))
                 else:
                     selected_classes = self.filter_classes
             else:
