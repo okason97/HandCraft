@@ -16,7 +16,6 @@ import uuid
 
 import torch
 import torch.utils.cpp_extension
-from torch.utils.file_baton import FileBaton
 
 #----------------------------------------------------------------------------
 # Global options.
@@ -129,7 +128,8 @@ def get_plugin(module_name, sources, headers=None, source_dir=None, **build_kwar
                 except OSError:
                     # source directory already exists, delete tmpdir and its contents.
                     shutil.rmtree(tmpdir)
-                    if not os.path.isdir(cached_build_dir): raise
+                    if not os.path.isdir(cached_build_dir):
+                        raise
 
             # Compile.
             cached_sources = [os.path.join(cached_build_dir, os.path.basename(fname)) for fname in sources]

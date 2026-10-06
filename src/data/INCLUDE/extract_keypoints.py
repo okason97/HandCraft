@@ -1,10 +1,11 @@
+import argparse
+import glob
 import os
 import sys
-import glob
-import argparse
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from mediapipe_keypoints import extract_keypoints, load_options, make_pose_dirs, video_frames
+
 
 def list_videos(raw_dir):
     return sorted(glob.glob(os.path.join(raw_dir, '*.MOV'))+glob.glob(os.path.join(raw_dir, '*.MP4')))

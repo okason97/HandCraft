@@ -4,24 +4,24 @@
 
 # src/loader.py
 
-from os.path import join
 import json
 import os
+from os.path import join
 
-from torch.backends import cudnn
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 import torch
 import torch.distributed as dist
 import wandb
+from torch.backends import cudnn
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
-from data.data_util import Dataset_, train_val_dataset, OversamplingWrapper
-from worker import WORKER
-import utils.log as log
-import utils.ckpt as ckpt
-import utils.misc as misc
-import utils.custom_ops as custom_ops
 import models.model as model_generator
+import utils.ckpt as ckpt
+import utils.custom_ops as custom_ops
+import utils.log as log
+import utils.misc as misc
+from data.data_util import Dataset_, OversamplingWrapper, train_val_dataset
+from worker import WORKER
 
 
 def load_worker(local_rank, cfgs, gpus_per_node, run_name):
@@ -111,7 +111,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
 
         cfgs.DATA.num_classes = len(train_dataset.classes)
 
-        train_dataset, valid_dataset = train_val_dataset(dataset = train_dataset, val_split=0.1, random_state = cfgs.RUN.seed, stratify=train_dataset.data['sign'].to_list())
+        train_dataset, valid_dataset = train_val_dataset(
+            dataset=train_dataset, val_split=0.1, random_state=cfgs.RUN.seed, stratify=train_dataset.data['sign'].to_list()
+        )
 
         if cfgs.RUN.dset_used > 1:
             dset_used = int(cfgs.RUN.dset_used)
@@ -327,7 +329,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                       backbone=cfgs.MODEL.backbone)
 
         if topk == "initialize":
-            topk == cfgs.OPTIMIZATION.batch_size
+            topk = cfgs.OPTIMIZATION.batch_size
 
     if cfgs.RUN.ckpt_dir is None:
         if local_rank == 0:

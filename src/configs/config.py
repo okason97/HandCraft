@@ -4,21 +4,15 @@
 
 # src/config.py
 
-from itertools import chain
-import json
-import os
-import random
-import sys
-import yaml
-
 import torch
 import torch.nn as nn
+import yaml
 
-import utils.misc as misc
 import utils.losses as losses
+import utils.misc as misc
 import utils.ops as ops
 import utils.optimizers as optimizers
-from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup
+
 
 class make_empty_object(object):
     pass
@@ -381,7 +375,14 @@ class Configurations(object):
             raise NotImplementedError
         
         if self.OPTIMIZATION.lrscheduler == "OneCycle":
-            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.OPTIMIZATION.optimizer, max_lr=self.OPTIMIZATION.max_lr, pct_start=self.OPTIMIZATION.pct_start, three_phase=False, steps_per_epoch=len_dataloader, epochs=epochs)
+            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                self.OPTIMIZATION.optimizer,
+                max_lr=self.OPTIMIZATION.max_lr,
+                pct_start=self.OPTIMIZATION.pct_start,
+                three_phase=False,
+                steps_per_epoch=len_dataloader,
+                epochs=epochs,
+            )
         else:
             self.OPTIMIZATION.scheduler = None
 
@@ -400,9 +401,12 @@ class Configurations(object):
             'cutout': dict(cutout=1),
             'bg':     dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1),
             'bgc':    dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1),
-            'bgcf':   dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1),
-            'bgcfn':  dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1),
-            'bgcfnc': dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1, cutout=1),
+            'bgcf':   dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1,
+                           brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1),
+            'bgcfn':  dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1,
+                           brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1),
+            'bgcfnc': dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1,
+                           brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1, cutout=1),
         }
         if self.AUG.apply_diffaug:
             assert self.AUG.diffaug_type != "W/O", "Please select diffentiable augmentation type!"

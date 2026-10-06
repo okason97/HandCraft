@@ -41,10 +41,10 @@ def edge2mat(link, num_node):
     return A
 
 def get_spatial_graph(num_node, self_link, inward, outward):
-    I = edge2mat(self_link, num_node)
+    identity = edge2mat(self_link, num_node)
     In = normalize_digraph(edge2mat(inward, num_node))
     Out = normalize_digraph(edge2mat(outward, num_node))
-    A = np.stack((I, In, Out))
+    A = np.stack((identity, In, Out))
     return A
 
 class GraphWithPartition:  # Unidirected, connections with hop limit

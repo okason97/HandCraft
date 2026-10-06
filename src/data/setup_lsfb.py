@@ -1,11 +1,12 @@
 # Download dataset
 
-from lsfb_dataset import Downloader
-import os
-import numpy as np
-import json
 import argparse
+import json
+import os
+
+import numpy as np
 import urllib3
+from lsfb_dataset import Downloader
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 

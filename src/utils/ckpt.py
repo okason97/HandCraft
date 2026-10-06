@@ -4,14 +4,15 @@
 
 # src/utils/ckpt.py
 
-from os.path import join
-import os
 import glob
+import os
+from os.path import join
 
-import torch
 import numpy as np
+import torch
 
 import utils.log as log
+
 
 def make_ckpt_dir(ckpt_dir):
     if not os.path.exists(ckpt_dir):
@@ -20,7 +21,6 @@ def make_ckpt_dir(ckpt_dir):
 
 
 def load_ckpt(model, optimizer, ckpt_path, load_model=False, load_opt=False, load_misc=False):
-    import utils.misc as misc
     ckpt = torch.load(ckpt_path, map_location=lambda storage, loc: storage)
     if load_model:
         model.load_state_dict(ckpt["state_dict"], strict=False)
@@ -44,11 +44,11 @@ def load_ckpt(model, optimizer, ckpt_path, load_model=False, load_opt=False, loa
 
         try:
             epoch = ckpt["epoch"]
-        except:
+        except KeyError:
             epoch = 0
         try:
             topk = ckpt["topk"]
-        except:
+        except KeyError:
             topk = "initialize"
         return seed, run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc
 

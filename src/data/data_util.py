@@ -4,19 +4,19 @@
 
 # src/data_util.py
 
-import os
-from sklearn.model_selection import train_test_split
-
-from torch.utils.data import Dataset, Subset
-import torch
-import torchvision.transforms as transforms
-import numpy as np
 import json
-import polars as pl
 import math
+import os
 import random
+
+import numpy as np
+import polars as pl
+import torch
 import torch.nn.functional as F
-import math
+import torchvision.transforms as transforms
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset, Subset
+
 
 def normalize(data, pose):
     MEAN = {
@@ -371,9 +371,9 @@ def mirror_permutation(poses):
         total += size
     perm = list(range(total))
     if 'right_hand' in offsets and 'left_hand' in offsets:
-        r, l = offsets['right_hand'], offsets['left_hand']
+        right, left = offsets['right_hand'], offsets['left_hand']
         for i in range(21):
-            perm[r+i], perm[l+i] = l+i, r+i
+            perm[right+i], perm[left+i] = left+i, right+i
     for pose, keypoints in poses:
         if 'hand' in pose:
             continue
@@ -480,7 +480,7 @@ class Dataset_(Dataset):
         self.trsf = transforms.Compose(self.trsf_list)
 
     def load_dataset(self):
-        mode = "train" if self.train == True else "test"
+        mode = "train" if self.train is True else "test"
 
         # get train/valid sample names
         self.root_ids = os.path.join(self.data_dir, 'metadata', 'splits', mode+'.json')
@@ -524,7 +524,7 @@ class Dataset_(Dataset):
             self.classes = selected_classes
         
         if not self.map_classes:
-            self.map_classes = {i:j for i,j in zip(self.classes, range(len(self.classes)))}
+            self.map_classes = {i:j for i,j in zip(self.classes, range(len(self.classes)), strict=True)}
 
     def load_shoulder_normalized(self, index):
         """

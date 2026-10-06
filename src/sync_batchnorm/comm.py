@@ -32,8 +32,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import queue
 import collections
+import queue
 import threading
 
 __all__ = ['FutureResult', 'SlavePipe', 'SyncMaster']
@@ -137,7 +137,7 @@ class SyncMaster(object):
         self._activated = True
 
         intermediates = [(0, master_msg)]
-        for i in range(self.nr_slaves):
+        for _ in range(self.nr_slaves):
             intermediates.append(self._queue.get())
 
         results = self._master_callback(intermediates)
@@ -148,7 +148,7 @@ class SyncMaster(object):
                 continue
             self._registry[i].result.put(res)
 
-        for i in range(self.nr_slaves):
+        for _ in range(self.nr_slaves):
             assert self._queue.get() is True
 
         return results[0][1]

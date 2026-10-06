@@ -1,13 +1,15 @@
 # src/utils/op.py
 
-from torch.nn.utils import spectral_norm
-from torch.nn import init
+from typing import Callable, Optional, Tuple, Union
+
 import torch
 import torch.nn as nn
-from torchvision.ops.stochastic_depth import StochasticDepth
-import numpy as np
+import torch.nn.functional as F
 from einops.layers.torch import Rearrange
-from typing import Callable, Optional, Union, Tuple
+from torch.nn import init
+from torch.nn.utils import spectral_norm
+from torchvision.ops.stochastic_depth import StochasticDepth
+
 
 class eca(nn.Module):
     """Constructs a ECA module. by BangguWu
@@ -80,10 +82,26 @@ def drop_path(p,mode):
     return StochasticDepth(p,mode)
 
 def conv1dbasic(in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
-    return nn.Conv1d(in_channels, out_channels, kernel_size=k_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias, padding_mode=padding_mode) 
+    return nn.Conv1d(
+        in_channels, out_channels, kernel_size=k_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias, padding_mode=padding_mode
+    )
+
 
 def snconv1dbasic(in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
-    return spectral_norm(nn.Conv1d(in_channels, out_channels, kernel_size=k_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias, padding_mode=padding_mode))
+    return spectral_norm(
+        nn.Conv1d(
+            in_channels,
+            out_channels,
+            kernel_size=k_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            bias=bias,
+            padding_mode=padding_mode,
+        )
+    )
+
 
 class conv1d(nn.Module):
     def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
@@ -135,8 +153,28 @@ class dwsepconv1d(nn.Module):
     def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
         super(dwsepconv1d, self).__init__() 
         self.pad = nn.ConstantPad1d((dilation*(k_size-1),0),0)
-        self.depthwise = conv1dbasic(in_channels=in_channels, out_channels=in_channels, k_size=k_size, stride=stride, padding=padding, dilation=dilation, groups=in_channels, bias=bias, padding_mode=padding_mode)
-        self.pointwise = conv1dbasic(in_channels=in_channels, out_channels=out_channels, k_size=1, stride=stride, padding=padding, dilation=dilation, bias=bias, padding_mode=padding_mode)
+        self.depthwise = conv1dbasic(
+            in_channels=in_channels,
+            out_channels=in_channels,
+            k_size=k_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=in_channels,
+            bias=bias,
+            padding_mode=padding_mode,
+        )
+        self.pointwise = conv1dbasic(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            k_size=1,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+            padding_mode=padding_mode,
+        )
+
     def forward(self, x): 
         x = self.pad(x)
         x = self.depthwise(x) 
@@ -255,10 +293,13 @@ class Conv1dNormActivation(nn.Sequential):
         out_channels (int): Number of channels produced by the Convolution-Normalization-Activation block.
         kernel_size: (int, optional): Size of the convolving kernel. Default: 3.
         stride (int, optional): Stride of the convolution. Default: 1.
-        padding (int, tuple or str, optional): Padding added to both sides of the input. Default: None, in which case it will be calculated as ``padding = (kernel_size - 1) // 2 * dilation``.
+        padding (int, tuple or str, optional): Padding added to both sides of the input. Default: None, in which case it will be calculated as
+            ``padding = (kernel_size - 1) // 2 * dilation``.
         groups (int, optional): Number of blocked connections from input channels to output channels. Default: 1.
-        norm_layer (Callable[..., torch.nn.Module], optional): Norm layer that will be stacked on top of the convolution layer. If ``None`` this layer won't be used. Default: ``torch.nn.BatchNorm1d``.
-        activation_layer (Callable[..., torch.nn.Module], optional): Activation function which will be stacked on top of the normalization layer (if not None), otherwise on top of the conv layer. If ``None`` this layer won't be used. Default: ``torch.nn.ReLU``.
+        norm_layer (Callable[..., torch.nn.Module], optional): Norm layer that will be stacked on top of the convolution layer. If ``None`` this layer
+            won't be used. Default: ``torch.nn.BatchNorm1d``.
+        activation_layer (Callable[..., torch.nn.Module], optional): Activation function which will be stacked on top of the normalization layer (if
+            not None), otherwise on top of the conv layer. If ``None`` this layer won't be used. Default: ``torch.nn.ReLU``.
         dilation (int): Spacing between kernel elements. Default: 1.
         inplace (bool): Parameter for the activation layer, which can optionally do the operation in-place. Default ``True``.
         bias (bool, optional): Whether to use bias in the convolution layer. By default, biases are included if ``norm_layer is None``.

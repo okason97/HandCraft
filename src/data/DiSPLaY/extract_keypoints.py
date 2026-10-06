@@ -1,11 +1,13 @@
+import argparse
+import glob
 import os
 import sys
-import glob
-import argparse
+
 import cv2
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from mediapipe_keypoints import extract_keypoints, load_options, make_pose_dirs
+
 
 def list_clips(original_dir):
     return sorted(glob.glob(os.path.join(original_dir, 'Signs*', '*', '')))
@@ -43,7 +45,8 @@ def clip_frames(clip_path):
     Yield (frame, timestamp in ms from the first frame) for every colour frame of a clip.
     """
     times = read_times(os.path.join(clip_path, '01 Times', 'Times.csv'))
-    for frame_path, time in zip(list_frames(clip_path), times):
+    # Times.csv can have more rows than there are colour frames
+    for frame_path, time in zip(list_frames(clip_path), times, strict=False):
         yield cv2.imread(frame_path), time-times[0]
 
 def extract_all(data_dir, model_dir):

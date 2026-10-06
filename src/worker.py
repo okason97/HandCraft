@@ -4,21 +4,20 @@
 
 # src/worker.py
 
-from os.path import join
-
-from datetime import datetime
-import torch
-import torch.distributed as dist
-import numpy as np
 import itertools
 import json
-import shutil
 import os
+import shutil
+from datetime import datetime
+from os.path import join
+
+import numpy as np
 import polars as pl
-import csv
+import torch
+import torch.distributed as dist
+import wandb
 
 import utils.misc as misc
-import wandb
 
 
 class WORKER(object):
@@ -142,7 +141,7 @@ class WORKER(object):
         # sample real values and labels, then train for an epoch
         for values, labels in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda") as mpc:
+            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
                 values = values.to(self.local_rank, non_blocking=True)
                 labels = labels.to(self.local_rank, non_blocking=True)
                 
@@ -207,7 +206,7 @@ class WORKER(object):
         # sample real values and targets, then train for an epoch
         for values, targets in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda") as mpc:
+            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
                 values = values.to(self.local_rank, non_blocking=True)
                 targets = targets.to(self.local_rank, non_blocking=True)
 
@@ -255,7 +254,7 @@ class WORKER(object):
         # sample real values, targets and labels, then train for an epoch
         for values, targets, labels in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda") as mpc:
+            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
                 # load values, targets and labels onto the GPU memory
                 values = values.to(self.local_rank, non_blocking=True)
                 targets = targets.to(self.local_rank, non_blocking=True)
@@ -468,7 +467,7 @@ class WORKER(object):
         self.model.eval()
         top1_acc, top10_acc, loss = misc.AverageMeter(), misc.AverageMeter(), misc.AverageMeter()
         for values, labels in dataloader:
-            with torch.autocast("cuda") as mpc:
+            with torch.autocast("cuda"):
                 # load values and labels onto the GPU memory
                 values = values.to(self.local_rank)
                 labels = labels.to(self.local_rank)
@@ -485,7 +484,7 @@ class WORKER(object):
                 outputs = self.model(values, masks)
 
             # calculate Cross Entropy Loss
-            l = self.loss(outputs, labels)
+            batch_loss = self.loss(outputs, labels)
 
             # calculate topk
             acc1, acc10 = misc.accuracy(outputs.data, labels, topk=(1, 10))
@@ -495,7 +494,7 @@ class WORKER(object):
             top10_acc.update(acc10.item(), values.size(0))
 
             # accumulate loss
-            loss.update(l.item(), values.size(0))
+            loss.update(batch_loss.item(), values.size(0))
 
         top1 = top1_acc.avg
         top10 = top10_acc.avg
@@ -506,7 +505,7 @@ class WORKER(object):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
         for values, targets in dataloader:
-            with torch.autocast("cuda") as mpc:
+            with torch.autocast("cuda"):
                 # load values and targets onto the GPU memory
                 values = values.to(self.local_rank)
                 targets = targets.to(self.local_rank)
@@ -520,10 +519,10 @@ class WORKER(object):
                 outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)        
 
             # calculate Loss
-            l = self.loss(outputs, targets)
+            batch_loss = self.loss(outputs, targets)
 
             # accumulate loss
-            loss.update(l.item(), values.size(0))
+            loss.update(batch_loss.item(), values.size(0))
 
             # calculate Mean Per Joint Position Error (MPJPE)
             e = misc.mpjpe(outputs, targets)
@@ -537,7 +536,7 @@ class WORKER(object):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
         for values, targets, labels in dataloader:
-            with torch.autocast("cuda") as mpc:
+            with torch.autocast("cuda"):
                 # load values and labels onto the GPU memory
                 values = values.to(self.local_rank)
                 targets = targets.to(self.local_rank)
@@ -552,10 +551,10 @@ class WORKER(object):
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)        
 
             # calculate Cross Entropy Loss
-            l = self.loss(outputs, targets)
+            batch_loss = self.loss(outputs, targets)
 
             # accumulate loss
-            loss.update(l.item(), values.size(0))
+            loss.update(batch_loss.item(), values.size(0))
 
             # calculate Mean Per Joint Position Error (MPJPE)
             e = misc.mpjpe(outputs, targets)
@@ -580,7 +579,7 @@ class WORKER(object):
             values, targets, labels = next(iter(self.test_dataloader))
         else:
             raise NotImplementedError
-        with torch.autocast("cuda") as mpc:
+        with torch.autocast("cuda"):
             # load values and labels onto the GPU memory
             values = values.to(self.local_rank)
             targets = targets.to(self.local_rank)
@@ -625,7 +624,7 @@ class WORKER(object):
             values, targets, labels = next(iter(self.test_dataloader))
         else:
             raise NotImplementedError
-        with torch.autocast("cuda") as mpc:
+        with torch.autocast("cuda"):
             # load values and labels onto the GPU memory
             values = values.to(self.local_rank)
             targets = targets.to(self.local_rank)
@@ -725,7 +724,7 @@ class WORKER(object):
 
         for _ in range(self.RUN.sd_num):
             values, targets, labels = next(data_iter)
-            with torch.autocast("cuda") as mpc:
+            with torch.autocast("cuda"):
                 # load values and labels onto the GPU memory
                 values = values.to(self.local_rank)
                 labels = labels.to(self.local_rank)
@@ -740,7 +739,7 @@ class WORKER(object):
                     # replace first half with generated frames
                     values = torch.flip(r_outputs, [1])
 
-                for value, output in zip(values, outputs):
+                for value, output in zip(values, outputs, strict=False):
                     self.save_keypoints(value, output)
                     ids.append(str(self.gen_curr_id))
                     self.gen_curr_id += 1

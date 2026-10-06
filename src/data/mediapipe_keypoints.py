@@ -1,8 +1,9 @@
 import os
-import mediapipe as mp
-from mediapipe.tasks.python import vision
+
 import cv2
+import mediapipe as mp
 import numpy as np
+from mediapipe.tasks.python import vision
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 
@@ -71,7 +72,6 @@ def savgol(landmarks, window_length=15, polyorder=3):
 
 def get_face_options(model_path):
     BaseOptions = mp.tasks.BaseOptions
-    FaceLandmarker = mp.tasks.vision.FaceLandmarker
     FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
     VisionRunningMode = mp.tasks.vision.RunningMode
 
@@ -84,7 +84,6 @@ def get_face_options(model_path):
 
 def get_pose_options(model_path):
     BaseOptions = mp.tasks.BaseOptions
-    PoseLandmarker = mp.tasks.vision.PoseLandmarker
     PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
     VisionRunningMode = mp.tasks.vision.RunningMode
 
@@ -96,7 +95,6 @@ def get_pose_options(model_path):
 
 def get_hand_options(model_path):
     BaseOptions = mp.tasks.BaseOptions
-    HandLandmarker = mp.tasks.vision.HandLandmarker
     HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
     VisionRunningMode = mp.tasks.vision.RunningMode
 
@@ -226,7 +224,7 @@ def extract_keypoints(frames, video_id, data_dir, options):
     """
     landmarks = get_landmarks(frames, *options)
 
-    for part, data in zip(POSE_PARTS, landmarks):
+    for part, data in zip(POSE_PARTS, landmarks, strict=True):
         # Interpolate missing detections
         data = interpolate(data)
         # Apply Savitzky-Golay filter to smooth the data (reduce vibrations)

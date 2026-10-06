@@ -36,11 +36,10 @@ import contextlib
 
 import torch
 import torch.nn.functional as F
-
 from torch.nn.modules.batchnorm import _BatchNorm
 
 try:
-    from torch.nn.parallel._functions import ReduceAddCoalesced, Broadcast
+    from torch.nn.parallel._functions import Broadcast, ReduceAddCoalesced
 except ImportError:
     ReduceAddCoalesced = Broadcast = None
 
@@ -83,7 +82,7 @@ class _SynchronizedBatchNorm(_BatchNorm):
 
         if not self.track_running_stats:
             import warnings
-            warnings.warn('track_running_stats=False is not supported by the SynchronizedBatchNorm.')
+            warnings.warn('track_running_stats=False is not supported by the SynchronizedBatchNorm.', stacklevel=2)
 
         self._sync_master = SyncMaster(self._data_parallel_master)
 
@@ -398,7 +397,7 @@ def convert_model(module):
     for pth_module, sync_module in zip([
             torch.nn.modules.batchnorm.BatchNorm1d, torch.nn.modules.batchnorm.BatchNorm2d,
             torch.nn.modules.batchnorm.BatchNorm3d
-    ], [SynchronizedBatchNorm1d, SynchronizedBatchNorm2d, SynchronizedBatchNorm3d]):
+    ], [SynchronizedBatchNorm1d, SynchronizedBatchNorm2d, SynchronizedBatchNorm3d], strict=True):
         if isinstance(module, pth_module):
             mod = sync_module(module.num_features, module.eps, module.momentum, module.affine)
             mod.running_mean = module.running_mean

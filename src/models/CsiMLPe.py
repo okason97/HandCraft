@@ -1,9 +1,9 @@
+
 import torch
-from torch import nn, Tensor
 from einops.layers.torch import Rearrange
+from torch import nn
+
 import utils.misc as misc
-import math
-import numpy as np
 
 # https://github.com/facebookresearch/DiT/blob/main/models.py
 
@@ -136,7 +136,7 @@ class Model(nn.Module):
         nn.init.constant_(self.motion_fc_out.bias, 0)
 
     def forward(self, x, y):
-        with torch.cuda.amp.autocast() if self.mixed_precision and not eval else misc.dummy_context_mgr() as mp:
+        with torch.cuda.amp.autocast() if self.mixed_precision and not eval else misc.dummy_context_mgr():
             y = self.y_embedder(y, self.training)
 
             if self.temporal_fc_in:

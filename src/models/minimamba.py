@@ -22,14 +22,14 @@ Glossary:
 
 """
 from __future__ import annotations
+
 import math
-import json
+from dataclasses import dataclass
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dataclasses import dataclass
-from einops import rearrange, repeat, einsum
-from typing import Union
+from einops import einsum, rearrange, repeat
 
 
 @dataclass

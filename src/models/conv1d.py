@@ -2,11 +2,11 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-import utils.ops as ops
-import utils.misc as misc
 from torchvision.ops.stochastic_depth import StochasticDepth
+
+import utils.misc as misc
+import utils.ops as ops
+
 
 class Conv1DBlock(nn.Module):
     def __init__(self, in_channels, out_channels, MODEL, MODULES):
@@ -15,7 +15,9 @@ class Conv1DBlock(nn.Module):
         expanded_channels = out_channels * MODEL.expand_ratio
 
         self.in_linear = MODULES.linear(in_features=in_channels, out_features=expanded_channels)
-        self.conv1d = MODULES.conv1d(in_channels=expanded_channels, out_channels=expanded_channels, k_size=MODEL.k_size, stride=MODEL.stride, padding="valid", bias=False)
+        self.conv1d = MODULES.conv1d(
+            in_channels=expanded_channels, out_channels=expanded_channels, k_size=MODEL.k_size, stride=MODEL.stride, padding="valid", bias=False
+        )
         self.eca = MODULES.eca()
         self.bn = MODULES.feature_norm(in_features=expanded_channels)
         self.out_linear = MODULES.linear(in_features=expanded_channels, out_features=out_channels)
@@ -83,7 +85,9 @@ class Model(nn.Module):
             ]
 
             if self.apply_attn:
-                self.attns += [MODULES.transformer_layer(in_features=self.out_dims[index], nhead=MODEL.nheads, dim_feedforward=self.out_dims[index], dropout=MODEL.dropout)]
+                self.attns += [
+                    MODULES.transformer_layer(in_features=self.out_dims[index], nhead=MODEL.nheads, dim_feedforward=self.out_dims[index], dropout=MODEL.dropout)
+                ]
 
         self.blocks = nn.ModuleList(self.blocks)
         self.attns = nn.ModuleList(self.attns)
@@ -99,7 +103,7 @@ class Model(nn.Module):
             ops.init_weights(self.modules, MODEL.init)
 
     def forward(self, x, masks=None, eval=False):
-        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr() as mp:
+        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
             h = x
             if masks is not None:
                 masks = masks.any(dim=-1) 

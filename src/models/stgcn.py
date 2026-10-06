@@ -5,9 +5,11 @@
 # src/models/stgcn.py
 
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from models.graph_utils import GraphWithPartition
 
 
@@ -253,7 +255,7 @@ class Model(nn.Module):
         x = x.view(N, self.num_nodes, self.in_channels, T)
         x = x.permute(0, 2, 3, 1).contiguous() # NVCT -> NCTV
 
-        for gcn, importance in zip(self.st_gcn_networks, self.edge_importance):
+        for gcn, importance in zip(self.st_gcn_networks, self.edge_importance, strict=True):
             x, _ = gcn(x, self.A * importance)
 
         x = F.avg_pool2d(x, x.size()[2:])

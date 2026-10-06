@@ -5,11 +5,11 @@ from typing import Callable
 
 import torch
 import torch.nn as nn
-
-from torchvision.ops.misc import  MLP
+from torchvision.ops.misc import MLP
 from torchvision.utils import _log_api_usage_once
 
 import utils.misc as misc
+
 
 class MLPBlock(MLP):
     """Transformer MLP block."""
@@ -188,7 +188,7 @@ class Model(nn.Module):
         self.register_buffer('class_mask', class_mask, persistent=False)
 
     def forward(self, x: torch.Tensor, masks: torch.Tensor = None):
-        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr() as mp:
+        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
             n = x.shape[0]
 
             if masks is not None:

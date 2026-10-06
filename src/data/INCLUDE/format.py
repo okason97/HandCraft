@@ -1,11 +1,12 @@
-import os
-import glob
-import shutil
 import argparse
-import polars as pl
-from sklearn.model_selection import train_test_split
+import glob
 import json
+import os
+import shutil
+
+import polars as pl
 from extract_keypoints import extract_all, list_videos
+from sklearn.model_selection import train_test_split
 
 parser = argparse.ArgumentParser(description="Convert the extracted INCLUDE dataset into the HandCraft data layout")
 parser.add_argument("-data_dir", type=str, default=".", help="INCLUDE dataset root (contains original/)")

@@ -1,6 +1,7 @@
-import os
-import json
 import argparse
+import json
+import os
+
 import wget
 
 parser = argparse.ArgumentParser(description="Download the INCLUDE dataset from Zenodo (record 4010759)")

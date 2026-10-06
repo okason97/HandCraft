@@ -4,11 +4,10 @@
 
 # src/utils/log.py
 
-from os.path import dirname, exists, join
-from datetime import datetime
-import json
-import os
 import logging
+import os
+from datetime import datetime
+from os.path import dirname, exists, join
 
 
 def make_run_name(format, data_name, framework, phase):

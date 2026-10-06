@@ -1,16 +1,16 @@
-import utils.misc as misc
-
+import math
+from collections import OrderedDict
 from functools import partial
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
-
 from mamba_ssm.models.config_mamba import MambaConfig
-from mamba_ssm.utils.generation import GenerationMixin
 from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights
+from mamba_ssm.utils.generation import GenerationMixin
+
 import utils.misc as misc
-from collections import OrderedDict
+
 
 class Model(nn.Module, GenerationMixin):
         
@@ -98,7 +98,7 @@ class Model(nn.Module, GenerationMixin):
         """
         n = x.shape[0]
 
-        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr() as mp:
+        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
             if masks is not None:
                 batch_class_mask = self.class_mask.expand(n, -1, -1)
                 masks = torch.cat([masks, batch_class_mask], dim=1)

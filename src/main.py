@@ -4,15 +4,9 @@
 
 # src/main.py
 
-from argparse import ArgumentParser
-from warnings import simplefilter
-import json
-import os
 import random
-import sys
-import tempfile
+from argparse import ArgumentParser
 
-from torch.multiprocessing import Process
 import torch
 import torch.multiprocessing as mp
 
@@ -40,7 +34,9 @@ def load_configs_initialize_training():
     parser.add_argument("--seed", type=int, default=-1, help="seed for generating random numbers")
     parser.add_argument("-DDP", "--distributed_data_parallel", action="store_true")
     parser.add_argument("--backend", type=str, default="nccl", help="cuda backend for DDP training \in ['nccl', 'gloo']")
-    parser.add_argument("--mode", type=str, default="classification", help="type of model to be trained \in ['classification', 'prediction', 'cond_prediction']")
+    parser.add_argument(
+        "--mode", type=str, default="classification", help="type of model to be trained \in ['classification', 'prediction', 'cond_prediction']"
+    )
     parser.add_argument("--reverse", action="store_true", help="reverse prediction")
     parser.add_argument("-tn", "--total_nodes", default=1, type=int, help="total number of nodes for training")
     parser.add_argument("-cn", "--current_node", default=0, type=int, help="rank of the current node")
@@ -63,8 +59,13 @@ def load_configs_initialize_training():
     parser.add_argument("--print_every", type=int, default=5, help="logging interval")
     parser.add_argument("-every", "--save_every", type=int, default=5, help="save interval")
 
-    parser.add_argument("--dset_used", type=float, default=1.0, help="size of the training dataset, if less than 1 then it will be the fraction of the dataset used, \
-                        if greater than 1 then it will be the number of elements to be used.")
+    parser.add_argument(
+        "--dset_used",
+        type=float,
+        default=1.0,
+        help="size of the training dataset, if less than 1 then it will be the fraction of the dataset used, \
+                        if greater than 1 then it will be the number of elements to be used.",
+    )
 
     args = parser.parse_args()
     run_cfgs = vars(args)
