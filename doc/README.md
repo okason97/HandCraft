@@ -21,6 +21,7 @@ src/                 library code: main.py, loader.py, worker.py, models/, data/
 scripts/
 ├── run/             train.sh, test.sh, eval.sh, generate_dataset.sh (train, test, evaluate, generate)
 │                    experiments.sh (the commands of past experiments)
+│                    common.sh (reads the data and output directories; sourced by the others)
 ├── data/            download_mediapipe_models.sh, mediapipe_keypoints.py (shared keypoint extraction)
 │   ├── LSFB/        setup_lsfb.py
 │   ├── INCLUDE/     download, format, keypoint extraction and official split scripts

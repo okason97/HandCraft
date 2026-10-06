@@ -39,17 +39,25 @@ uv pip install mamba-ssm
 
 ## Paths
 
-The run scripts need two environment variables and stop with a message if one is not set:
+The run scripts need two directories, given as environment variables or as options, and stop with a message if one is missing:
 
-| Variable | Contents |
-|---|---|
-| `HANDCRAFT_DATA` | one directory per dataset (`LSFB`, `INCLUDE`, `DiSPLaY`, ...) |
-| `HANDCRAFT_SAVE` | checkpoints, statistics and generated datasets |
+| Variable | Option | Contents |
+|---|---|---|
+| `HANDCRAFT_DATA` | `--data-root <dir>` | one directory per dataset (`LSFB`, `INCLUDE`, `DiSPLaY`, ...) |
+| `HANDCRAFT_SAVE` | `--save-root <dir>` | checkpoints, statistics and generated datasets |
 
 ```bash
 export HANDCRAFT_DATA=/path/to/datasets
 export HANDCRAFT_SAVE=/path/to/outputs
 ```
+
+or, for a single run, anywhere in the arguments (an option takes precedence over the variable):
+
+```bash
+./scripts/run/train.sh classification ViT original-pad-128x2 INCLUDE --data-root /path/to/datasets --save-root /path/to/outputs
+```
+
+The dataset and development scripts take their directories as arguments or from `HANDCRAFT_DATA` only, as shown in their sections.
 
 ## Weights & Biases
 

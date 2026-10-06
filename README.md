@@ -82,6 +82,7 @@ Generate and classify sign language gestures with HandCraft. The steps below go 
    export HANDCRAFT_SAVE=/path/to/outputs
    export WANDB_MODE=offline   # or run `wandb login` to upload the training curves
    ```
+   The two directories can also be passed to the run scripts with `--data-root <dir>` and `--save-root <dir>`.
 
 More in [doc/installation.md](doc/installation.md).
 

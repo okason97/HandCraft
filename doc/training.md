@@ -22,7 +22,7 @@ They are in `scripts/run/` and are run from the root of the repository. All four
 | `config` | a file of `src/configs/<dataset>/<model>/`, without `.yaml` |
 | `dataset` | `LSFB`, `INCLUDE` or `DiSPLaY` |
 
-The scripts read the data from `$HANDCRAFT_DATA/<dataset>/` and write to `$HANDCRAFT_SAVE/<dataset>/<model>-<config>/` (see [installation.md](installation.md#paths)). Logs go to `./logs/<dataset>/<model>-<config>/`, numbered so that a new run never overwrites an earlier one.
+The scripts read the data from `$HANDCRAFT_DATA/<dataset>/` and write to `$HANDCRAFT_SAVE/<dataset>/<model>-<config>/`. Both directories can also be given with `--data-root <dir>` and `--save-root <dir>` (see [installation.md](installation.md#paths)). Logs go to `./logs/<dataset>/<model>-<config>/`, numbered so that a new run never overwrites an earlier one.
 
 Extra arguments are passed to `src/main.py`. The most useful ones:
 
