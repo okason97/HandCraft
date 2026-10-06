@@ -166,13 +166,14 @@ Compared with published test accuracy on the official split:
 | HWGAT | 97.7 |
 | HWGAT's Transformer baseline | 94.9 |
 | SL-GCN (OpenHands) | 93.5 |
-| **Transformer-SL, `official-all-nomirror`** | **92.3** |
+| **Transformer-SL, `official-nm-nodct`** | **93.2** |
+| Transformer-SL, `official-all-nomirror` | 92.3 |
 | Transformer-SL, `official-all` | 91.2 |
 | OpenHands Transformer | 90.4 |
 | LSTM (Khartheesvar et al., 2024) | 87.4 |
 | Transformer-SL, `official-base` | 83.1 |
 
-OpenHands selects checkpoints on the test set, so its numbers are somewhat optimistic. HWGAT uses a 10% validation split like ours. Remaining differences with HWGAT's Transformer: random keypoint masking, hand interpolation, a different optimizer and schedule (AdamW, cosine, 500 epochs, batch size 4) and a larger model. The ablations below found no reliable gain from 64 frames or 2D keypoints, which HWGAT also uses.
+OpenHands selects checkpoints on the test set, so its numbers are somewhat optimistic. HWGAT uses a 10% validation split like ours. The remaining differences with HWGAT's Transformer are tested in the last section.
 
 ### Ablations of `official-all`
 
@@ -193,5 +194,26 @@ Test top-1 accuracy (%) on the official test set.
 - **The speed sub-window is the most important component** (−5.5 without it). Without it, the combined config is no better than uniform sampling alone: the model sees the same 32 frames of each clip every epoch, so the random windows are the main source of temporal variety.
 - **The left/right flip hurts** (+1.1 without it, both seeds). A mirrored sign is performed with the other dominant hand, which likely isn't a faithful sample of the same sign in INCLUDE. Use `official-all-nomirror`.
 - **Label smoothing and depth both help** (−1.5 and −2.0 without them).
-- **64 frames and the bigger model give no reliable gain.** The spread between seeds (up to 2.7 points for `all-64`) is larger than the differences.
+- **64 frames and a moderately bigger model give no reliable gain.** The spread between seeds (up to 2.7 points for `all-64`) is larger than the differences. `all-big` is still far smaller than HWGAT's Transformer; that size is tested below as `nm-wide`.
 - With two seeds per config, differences under about 1 point aren't meaningful.
+
+### Remaining differences with HWGAT's Transformer
+
+HWGAT's Transformer baseline (94.9%) differs from ours in more ways than the changes above. Each config here changes one thing from `official-all-nomirror`:
+
+| Config | Change | Seed 42 | Seed 43 | Mean | vs `all-nomirror` |
+|---|---|---|---|---|---|
+| `official-all-nomirror` | – | 92.6 | 91.9 | 92.3 | – |
+| **`official-nm-nodct`** | `transform: "none"`: raw frames with the learned positional embedding, no DCT | **93.1** | **93.3** | **93.2** | **+0.9** |
+| `official-nm-handmask` | `hand_mask_p: 0.2`: hands in a random 20% of the frames replaced by linear interpolation | 91.8 | 92.1 | 91.9 | −0.3 |
+| `official-nm-clipnorm` | `norm: "shoulder_clip"`: centre and scale once per clip instead of every frame | 92.5 | 91.4 | 91.9 | −0.3 |
+| `official-nm-wide` | HWGAT's size (`depth: 3`, `hidden_dim: 512`, `nheads: 8`, `mlp_dim: 2048`, `dropout: 0.1`) with `AdamW` at 5e-4 | 91.8 | 91.8 | 91.8 | −0.5 |
+| `official-nm-pad64` | `temporal_sampling: "pad"`, `speed_range: [0.5, 1.5]`, 64 frames: random speed, then short clips padded with their edge frames instead of stretched | 92.6 | 90.4 | 91.5 | −0.8 |
+| `official-nm-lowlr` | learning rate 1e-3 instead of 1e-2 | 91.5 | 90.3 | 90.9 | −1.4 |
+
+Test top-1 accuracy (%) on the official test set.
+
+- **Removing the DCT helps** (+0.9, both seeds agree). `official-nm-nodct` is the best config so far at 93.2%, 0.3 points behind SL-GCN (93.5%).
+- **None of the other HWGAT differences help here.** The wide model, per-clip normalization, hand masking and HWGAT's temporal pipeline are all within noise of the baseline or slightly below it.
+- **The high learning rate is right for the small model:** 1e-3 costs 1.4 points.
+- These were tested one at a time on our pipeline. They might still help in combination, or with HWGAT's 29 keypoints and longer schedule, which weren't tested.

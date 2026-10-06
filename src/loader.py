@@ -100,6 +100,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                  rot=cfgs.DATA.rot,
                                  temporal_sampling=cfgs.DATA.temporal_sampling,
                                  speed=cfgs.DATA.speed,
+                                 speed_range=cfgs.DATA.speed_range,
+                                 hand_mask_p=cfgs.DATA.hand_mask_p,
                                  norm=cfgs.DATA.norm,
                                  shear_std=cfgs.DATA.shear_std,
                                  rot_std=cfgs.DATA.rot_std,

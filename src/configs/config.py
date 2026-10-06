@@ -72,11 +72,15 @@ class Configurations(object):
         self.DATA.rot_std = 0.0
         # probability of a horizontal flip that also swaps left/right keypoints (use with norm "shoulder")
         self.DATA.mirror_p = 0.0
-        # how max_len frames are taken from a clip \in ["crop", "uniform"]
+        # how max_len frames are taken from a clip \in ["crop", "uniform", "pad"]
         self.DATA.temporal_sampling = "crop"
         # for uniform sampling: minimum fraction of the clip covered by the random training window (None = whole clip)
         self.DATA.speed = None
-        # keypoint normalization \in ["dataset", "shoulder"]
+        # for pad sampling: [min, max] random speed factor applied to the clip length during training (None = off)
+        self.DATA.speed_range = None
+        # fraction of training frames whose hand keypoints are replaced by interpolation
+        self.DATA.hand_mask_p = 0.0
+        # keypoint normalization \in ["dataset", "shoulder", "shoulder_clip"]
         self.DATA.norm = "dataset"
         # number of coordinates per keypoint used as input (2 = x,y; 3 = x,y,z), must match input_size[2]
         self.DATA.coords = 3
@@ -183,7 +187,7 @@ class Configurations(object):
         # -----------------------------------------------------------------------------
         self.OPTIMIZATION = misc.make_empty_object()
 
-        # type of the optimizer for training \in ["SGD", "RMSprop", "Adam", "RAdam"]
+        # type of the optimizer for training \in ["SGD", "RMSprop", "Adam", "RAdam", "AdamW"]
         self.OPTIMIZATION.type_ = "RAdam"
         # lr scheduler \in ["OneCycle"]
         self.OPTIMIZATION.lrscheduler = None
@@ -366,6 +370,13 @@ class Configurations(object):
                                                            betas=betas,
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
+        elif self.OPTIMIZATION.type_ == "AdamW":
+            betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
+
+            self.OPTIMIZATION.optimizer = torch.optim.AdamW(params=params,
+                                                            lr=self.OPTIMIZATION.lr,
+                                                            betas=betas,
+                                                            weight_decay=self.OPTIMIZATION.weight_decay)
         else:
             raise NotImplementedError
         
