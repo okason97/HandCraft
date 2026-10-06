@@ -18,7 +18,6 @@ from torch.utils.data.distributed import DistributedSampler
 
 import models.model as model_generator
 import utils.ckpt as ckpt
-import utils.custom_ops as custom_ops
 import utils.log as log
 import utils.misc as misc
 from data.data_util import Dataset_, OversamplingWrapper, train_val_dataset
@@ -287,9 +286,6 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     else:
         r_model = None
 
-
-    if local_rank != 0:
-        custom_ops.verbosity = "none"
 
     # -----------------------------------------------------------------------------
     # define optimizer

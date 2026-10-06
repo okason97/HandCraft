@@ -9,27 +9,21 @@ dependencies = [
     "torch>=2.4,<2.5",
     "torchvision>=0.19,<0.20",
     "numpy>=1.26",
-    # data_util.py passes dtypes= to read_csv, which polars 1.x renamed
+    # data_util.py uses Expr.replace to map signs to classes, which changed in polars 1.0
     "polars>=0.20,<1",
     "scikit-learn>=1.4",
-    "scipy>=1.11",
     "pyyaml>=6.0",
     "matplotlib>=3.8",
     "einops>=0.8",
-    "pytorch-ignite>=0.5",
     "wandb>=0.17",
     "ema-pytorch>=0.7",
-    "torchinfo>=1.8",
-    "PyWavelets>=1.6",
-    # torch.utils.cpp_extension (src/utils/custom_ops.py) imports setuptools
-    "setuptools",
 ]
 
 [project.optional-dependencies]
 # download and setup of the LSFB dataset (src/data/setup_lsfb.py)
 lsfb = ["lsfb-dataset", "urllib3"]
-# download and keypoint extraction of the INCLUDE dataset (src/data/INCLUDE)
-include = ["mediapipe>=0.10,<0.11", "opencv-python>=4.6", "wget>=3.2"]
+# download and keypoint extraction of the INCLUDE and DiSPLaY datasets (src/data/INCLUDE, src/data/DiSPLaY)
+extract = ["mediapipe>=0.10,<0.11", "opencv-python>=4.6", "scipy>=1.11", "wget>=3.2"]
 # the mamba backbone also needs mamba-ssm, which has to be built against the local CUDA toolkit:
 # uv pip install mamba-ssm
 
@@ -37,7 +31,6 @@ include = ["mediapipe>=0.10,<0.11", "opencv-python>=4.6", "wget>=3.2"]
 dev = [
     "ruff>=0.8",
     "ty",
-    "ipympl",
 ]
 
 [tool.uv]

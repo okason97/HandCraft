@@ -35,7 +35,9 @@ for clip_path in list_clips(os.path.join(args.data_dir, 'original')):
     frame_numbers = [frame_number(frame_path) for frame_path in list_frames(clip_path)]
 
     instances['id'].append(name)
-    instances['sign'].append(name.split('_')[1])
+    # signs are written without leading zeros ('01' -> '1'): polars reads the column back as integers
+    # when the dataset generation copies sign_to_index.csv, and the names have to stay the same
+    instances['sign'].append(str(int(name.split('_')[1])))
     instances['signer'].append(name.split('_')[3])
     instances['start'].append(min(frame_numbers))
     instances['end'].append(max(frame_numbers))
@@ -46,7 +48,7 @@ df.write_csv(os.path.join(args.data_dir, 'instances.csv'), separator=",")
 # crear metadata/sign_to_index.csv
 # columnas sign,class
 print('Creating sign to class')
-unique_signs = sorted(set(instances['sign']))
+unique_signs = sorted(set(instances['sign']), key=int)
 sign_to_index = {
     'sign': [],
     'class': []
