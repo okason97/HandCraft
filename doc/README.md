@@ -19,7 +19,7 @@ The shortest path from a fresh clone to a trained and tested model is in the [RE
 ```
 src/                 library code: main.py, loader.py, worker.py, models/, data/data_util.py, configs/
 scripts/
-├── run/             script.sh, test_script.sh, eval_script.sh, gdataset_script.sh (train, test, evaluate, generate)
+├── run/             train.sh, test.sh, eval.sh, generate_dataset.sh (train, test, evaluate, generate)
 │                    multiscript.sh (the commands of past experiments)
 ├── data/            download_mediapipe_models.sh, mediapipe_keypoints.py (shared keypoint extraction)
 │   ├── LSFB/        setup_lsfb.py

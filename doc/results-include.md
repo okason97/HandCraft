@@ -14,11 +14,11 @@ python scripts/data/INCLUDE/make_official_split.py -data_dir <data_dir> -out_dir
 
 It downloads the official lists from [AI4Bharat/INCLUDE](https://github.com/AI4Bharat/INCLUDE) (pinned to a commit), links `poses`, `instances.csv` and `sign_to_index.csv` from `<data_dir>`, and writes `metadata/splits/train.json` (official train + val lists) and `test.json`, keeping only the videos that have keypoints. With the keypoints used for these results it has 3441 train+val and 816 test clips. Use `-dataset include50` for the INCLUDE-50 split.
 
-Train and evaluate with `scripts/run/test_script.sh`. It takes the same arguments as `scripts/run/script.sh` and also passes `--test`, so the best checkpoint (lowest validation loss) is evaluated on the test set. The results below use seeds 42 and 43:
+Train and evaluate with `scripts/run/test.sh`. It takes the same arguments as `scripts/run/train.sh` and also passes `--test`, so the best checkpoint (lowest validation loss) is evaluated on the test set. The results below use seeds 42 and 43:
 
 ```bash
-./scripts/run/test_script.sh classification ViT official-nm-nodct INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
-./scripts/run/test_script.sh classification stgcn official-lr5 INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
+./scripts/run/test.sh classification ViT official-nm-nodct INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
+./scripts/run/test.sh classification stgcn official-lr5 INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
 ```
 
 Each run writes its own numbered log, `logs/INCLUDE/<model>-<config>/testN.out`.

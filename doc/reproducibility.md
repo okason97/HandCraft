@@ -4,7 +4,7 @@
 
 Pass `--seed <n>` to every run. Without it `src/main.py` draws a random seed and the run cannot be repeated.
 
-With a seed, a run is deterministic: two runs of the same command on the same machine give identical validation and test metrics, and `scripts/run/gdataset_script.sh` writes identical synthetic clips. This was checked for classification (Transformer, ST-GCN, conv1d, old and new data pipelines), both generators, dataset generation and synthetic pretraining.
+With a seed, a run is deterministic: two runs of the same command on the same machine give identical validation and test metrics, and `scripts/run/generate_dataset.sh` writes identical synthetic clips. This was checked for classification (Transformer, ST-GCN, conv1d, old and new data pipelines), both generators, dataset generation and synthetic pretraining.
 
 The seed fixes:
 
@@ -19,13 +19,13 @@ Keep `--num_workers` the same between runs you want to compare: the augmentation
 Until commit "Sort the class list so class indexes are the same in every run", the list of classes came from an unordered operation, so every process numbered the signs differently. Two consequences for anything produced before it:
 
 - Runs with the same seed did not give the same result.
-- A checkpoint loaded by a different process than the one that trained it saw another numbering. Training followed by testing in one run (`-t --test`) was not affected. Generating a synthetic dataset was: `scripts/run/gdataset_script.sh` loads the generators in a new process, so every sign was generated with the class embedding of a different sign. The synthetic datasets used for the published synthetic pretraining results have this problem.
+- A checkpoint loaded by a different process than the one that trained it saw another numbering. Training followed by testing in one run (`-t --test`) was not affected. Generating a synthetic dataset was: `scripts/run/generate_dataset.sh` loads the generators in a new process, so every sign was generated with the class embedding of a different sign. The synthetic datasets used for the published synthetic pretraining results have this problem.
 
 Checkpoints saved before the fix cannot be evaluated or used for generation with the current code, because their class numbering is unknown.
 
 ## Validation and test accuracy
 
-The metrics logged during training are validation metrics, on 10% of the training split (see [training.md](training.md#validation)). `scripts/run/script.sh` does not evaluate on the test set; `scripts/run/test_script.sh` does.
+The metrics logged during training are validation metrics, on 10% of the training split (see [training.md](training.md#validation)). `scripts/run/train.sh` does not evaluate on the test set; `scripts/run/test.sh` does.
 
 The INCLUDE and LSFB accuracies in the logs of the HandCraft paper experiments are validation accuracies: none of those runs was evaluated on the test split. For INCLUDE, the paper's Transformer-SL result (86.4%) is the validation accuracy of `ViT/original-pad-128x2`; the same config gets 81.0% on the test set of the paper's split and 84.8% on the official test set. Published results of other papers are test accuracies.
 

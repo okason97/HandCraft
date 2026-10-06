@@ -4,15 +4,15 @@ Everything runs through `src/main.py`. Four shell scripts wrap it with the usual
 
 | Script | What it does | Log file |
 |---|---|---|
-| `scripts/run/script.sh` | trains, validating after every epoch | `runN.out` |
-| `scripts/run/test_script.sh` | trains, then evaluates the best checkpoint on the test set | `testN.out` |
-| `scripts/run/eval_script.sh` | evaluates a saved checkpoint on the test set, without training | `evalN.out` |
-| `scripts/run/gdataset_script.sh` | generates a synthetic dataset with trained generators | `generateN.out` |
+| `scripts/run/train.sh` | trains, validating after every epoch | `runN.out` |
+| `scripts/run/test.sh` | trains, then evaluates the best checkpoint on the test set | `testN.out` |
+| `scripts/run/eval.sh` | evaluates a saved checkpoint on the test set, without training | `evalN.out` |
+| `scripts/run/generate_dataset.sh` | generates a synthetic dataset with trained generators | `generateN.out` |
 
 They are in `scripts/run/` and are run from the root of the repository. All four take the same arguments:
 
 ```bash
-./scripts/run/script.sh <mode> <model> <config> <dataset> [extra arguments for src/main.py]
+./scripts/run/train.sh <mode> <model> <config> <dataset> [extra arguments for src/main.py]
 ```
 
 | Argument | Values |
@@ -41,26 +41,26 @@ Extra arguments are passed to `src/main.py`. The most useful ones:
 Train a sign recognition model and validate it after every epoch:
 
 ```bash
-./scripts/run/script.sh classification ViT original-pad-128x2 INCLUDE --seed 42
+./scripts/run/train.sh classification ViT original-pad-128x2 INCLUDE --seed 42
 ```
 
 Train and also report the accuracy on the test set:
 
 ```bash
-./scripts/run/test_script.sh classification ViT original-pad-128x2 INCLUDE --seed 42
+./scripts/run/test.sh classification ViT original-pad-128x2 INCLUDE --seed 42
 ```
 
 Evaluate a model trained earlier, without training:
 
 ```bash
-./scripts/run/eval_script.sh classification ViT original-pad-128x2 INCLUDE \
+./scripts/run/eval.sh classification ViT original-pad-128x2 INCLUDE \
     -ckpt $HANDCRAFT_SAVE/INCLUDE/ViT-original-pad-128x2/checkpoints/<run name>/
 ```
 
 For the official INCLUDE split, add `-data $HANDCRAFT_DATA/INCLUDE_official/` and use one of the `official-*` configs (see [results-include.md](results-include.md)):
 
 ```bash
-./scripts/run/test_script.sh classification stgcn official-lr5 INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
+./scripts/run/test.sh classification stgcn official-lr5 INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
 ```
 
 ## Generation
@@ -69,9 +69,9 @@ The generator is a conditional motion predictor: given the first frames of a cli
 
 ```bash
 # train, validating after every epoch
-./scripts/run/script.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
+./scripts/run/train.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
 # train and also evaluate on the test set
-./scripts/run/test_script.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
+./scripts/run/test.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
 ```
 
 During training, animations of generated clips are saved to `figures/` every validation.
@@ -91,13 +91,13 @@ Best Top 1-acc 84.8214    Best Top 10-acc 97.9167    Best Loss (Step: 330): 0.60
 
 ## Testing
 
-With `--test` (`scripts/run/test_script.sh` and `scripts/run/eval_script.sh`), the best checkpoint is loaded after training and evaluated on `test.json`. Its result is the `Test ...` line **after** `End of training!` in the log; `scripts/run/test_script.sh` prints it when it finishes.
+With `--test` (`scripts/run/test.sh` and `scripts/run/eval.sh`), the best checkpoint is loaded after training and evaluated on `test.json`. Its result is the `Test ...` line **after** `End of training!` in the log; `scripts/run/test.sh` prints it when it finishes.
 
 Three details of the evaluation:
 
 - Signs with fewer than `DATA.min_samples` clips in the training split are removed from training, validation and test.
 - The test loader drops the last incomplete batch, so up to `batch_size - 1` test clips are not evaluated.
-- With `DATA.temporal_sampling: "crop"` (the default, used by the configs of the paper), clips longer than `max_len` are cropped at a random position at test time too, so the test accuracy changes slightly between evaluations of the same checkpoint. `"uniform"` and `"pad"` are deterministic: `scripts/run/eval_script.sh` then reproduces the test result of the training run exactly.
+- With `DATA.temporal_sampling: "crop"` (the default, used by the configs of the paper), clips longer than `max_len` are cropped at a random position at test time too, so the test accuracy changes slightly between evaluations of the same checkpoint. `"uniform"` and `"pad"` are deterministic: `scripts/run/eval.sh` then reproduces the test result of the training run exactly.
 
 ## Outputs
 
@@ -109,7 +109,7 @@ Three details of the evaluation:
 | `logs/` | the Python log of the run |
 | `statistics/<run name>/` | training and validation metrics as `.npy` |
 | `figures/<run name>/` | animations of generated clips (generation modes) |
-| `generated_datasets/<run name>/` | synthetic datasets written by `scripts/run/gdataset_script.sh` |
+| `generated_datasets/<run name>/` | synthetic datasets written by `scripts/run/generate_dataset.sh` |
 | `wandb/` | the Weights & Biases run |
 
 ## Multiple GPUs and other options
