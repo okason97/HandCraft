@@ -106,23 +106,22 @@ Conclusions:
 
 ### Setting up the official split
 
-`format.py` writes our random split. To train on the official split, create a second data directory that reuses the keypoints and only replaces the split files:
+`format.py` writes our random split. To train on the official split, `make_official_split.py` creates a second data directory that reuses the keypoints and only replaces the split files:
 
 ```bash
-mkdir -p <official_dir>/metadata/splits
-ln -s <data_dir>/poses <official_dir>/poses
-ln -s <data_dir>/instances.csv <official_dir>/instances.csv
-ln -s <data_dir>/metadata/sign_to_index.csv <official_dir>/metadata/sign_to_index.csv
+python src/data/INCLUDE/make_official_split.py -data_dir <data_dir> -out_dir <official_dir>
 ```
 
-Then write `<official_dir>/metadata/splits/train.json` (official `include_train.txt` + `include_val.txt`) and `test.json` (`include_test.txt`) as lists of ids, converting each path `<Category>/<N>. <sign>/[Extra/]<video>.<ext>` to `<Category>_<sign>#<video>` the same way `format.py` does. Keep only ids that have keypoints. On `/disco2` this is `/disco2/datasets/INCLUDE_official` (3441 train+val / 816 test).
+It downloads the official lists from [AI4Bharat/INCLUDE](https://github.com/AI4Bharat/INCLUDE) (pinned to a commit), links `poses`, `instances.csv` and `sign_to_index.csv` from `<data_dir>`, and writes `metadata/splits/train.json` (official train + val lists) and `test.json`, keeping only the videos that have keypoints. On `/disco2` this is `/disco2/datasets/INCLUDE_official` (3441 train+val / 816 test). Use `-dataset include50` for the INCLUDE-50 split.
 
-Train and evaluate with `--test`, so the best checkpoint (lowest validation loss) is evaluated on the test set:
+Train and evaluate with `test_script.sh`. It takes the same arguments as `script.sh` and also passes `--test`, so the best checkpoint (lowest validation loss) is evaluated on the test set. The results below use seeds 42 and 43:
 
 ```bash
-python src/main.py --mode classification -t --test -data <official_dir>/ \
-    -cfg ./src/configs/INCLUDE/ViT/official-all.yaml -save <save_dir>/ --seed 42 -mpc
+./test_script.sh classification ViT official-nm-nodct INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 42
+./test_script.sh classification stgcn official-lr5 INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 42
 ```
+
+The log is written to `logs/INCLUDE/<model>-<config>/test0.out`, so run one seed at a time or copy the log between runs.
 
 ### Evaluation protocol
 

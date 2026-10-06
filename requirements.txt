@@ -12,3 +12,4 @@ polars
 ema-pytorch
 ipympl
 torchinfo
+PyWavelets

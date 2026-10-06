@@ -1,0 +1,68 @@
+[project]
+name = "handcraft"
+version = "0.1.0"
+description = "HandCraft: Dynamic Sign Generation for Synthetic Data Augmentation"
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "torch>=2.4,<2.5",
+    "torchvision>=0.19,<0.20",
+    "numpy>=1.26",
+    # data_util.py passes dtypes= to read_csv, which polars 1.x renamed
+    "polars>=0.20,<1",
+    "scikit-learn>=1.4",
+    "scipy>=1.11",
+    "pyyaml>=6.0",
+    "matplotlib>=3.8",
+    "einops>=0.8",
+    "pytorch-ignite>=0.5",
+    "wandb>=0.17",
+    "ema-pytorch>=0.7",
+    "torchinfo>=1.8",
+    "PyWavelets>=1.6",
+    # torch.utils.cpp_extension (src/utils/custom_ops.py) imports setuptools
+    "setuptools",
+]
+
+[project.optional-dependencies]
+# download and setup of the LSFB dataset (src/data/setup_lsfb.py)
+lsfb = ["lsfb-dataset", "urllib3"]
+# download and keypoint extraction of the INCLUDE dataset (src/data/INCLUDE)
+include = ["mediapipe>=0.10,<0.11", "opencv-python>=4.6", "wget>=3.2"]
+# the mamba backbone also needs mamba-ssm, which has to be built against the local CUDA toolkit:
+# uv pip install mamba-ssm
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "ty",
+    "ipympl",
+]
+
+[tool.uv]
+# the code is run as scripts (python src/main.py), it is not an installable package
+package = false
+environments = ["sys_platform == 'linux'"]
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }
+torchvision = { index = "pytorch-cu121" }
+
+[tool.ruff]
+line-length = 160
+target-version = "py310"
+src = ["src"]
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+# pycodestyle errors, pyflakes, import sorting and bugbear
+select = ["E", "F", "I", "B"]
+
+[tool.ty.environment]
+root = ["src"]

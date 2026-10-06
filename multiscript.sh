@@ -214,6 +214,14 @@
 #./script.sh classification ViT original-pad-synth25-425-da INCLUDE -s_data /disco1/models/HandCraft/samples/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/depth_big_noise_0.1-reversed-train-2024_11_11_22_23_33
 #./script.sh classification ViT original-pad-rs1024-da INCLUDE 
 
+# INCLUDE official split (see src/data/INCLUDE/README.md), results are the mean of seeds 42 and 43
+#./test_script.sh classification ViT official-base INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 42
+#./test_script.sh classification ViT official-all-nomirror INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 42
+#./test_script.sh classification ViT official-nm-nodct INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 42
+#./test_script.sh classification ViT official-nm-nodct INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 43
+#./test_script.sh classification stgcn official-lr5 INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 42
+#./test_script.sh classification stgcn official-lr5 INCLUDE -data /disco1/datasets/INCLUDE_official/ --seed 43
+
 ./script.sh classification ViT original-pad-2x256-1024-lr1-ema LSFB
 ./script.sh classification ViT original-pad-2x256-1024-lr1-latedrop LSFB
 ./script.sh classification ViT original-pad-4x256-1024-lr1-highdrop LSFB

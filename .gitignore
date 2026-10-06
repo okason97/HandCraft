@@ -4,3 +4,4 @@ analisys.ipynb
 nohup.out
 src/*.ipynb
 **/__pycache__
+.venv/

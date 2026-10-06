@@ -73,6 +73,14 @@ Clone the repo
    git clone https://github.com/okason97/HandCraft.git
    ```
 
+Install the dependencies with [uv](https://docs.astral.sh/uv/)
+   ```sh
+   uv sync
+   ```
+  Add `--extra include` or `--extra lsfb` for the dataset download and setup scripts. Run the commands below inside the environment (`uv run ./script.sh ...`, or activate `.venv` first).
+
+  Lint and type check with `uv run ruff check` and `uv run ty check`.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -86,6 +94,10 @@ Clone the repo
   Sign Language Recognition
    ```sh
    ./script.sh classification mamba original128-pad LSFB
+   ```
+  Sign Language Recognition, also evaluating the best checkpoint on the test set
+   ```sh
+   ./test_script.sh classification mamba original128-pad LSFB
    ```
   Sign Language Generation
    ```sh
