@@ -3,8 +3,9 @@ import json
 import os
 
 import polars as pl
-from extract_keypoints import clip_id, extract_all, frame_number, list_clips, list_frames
 from sklearn.model_selection import train_test_split
+
+from extract_keypoints import clip_id, extract_all, frame_number, list_clips, list_frames
 
 parser = argparse.ArgumentParser(description="Convert the extracted DiSPLaY dataset into the HandCraft data layout")
 parser.add_argument("-data_dir", type=str, default=".", help="DiSPLaY dataset root (contains original/)")

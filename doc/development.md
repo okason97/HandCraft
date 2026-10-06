@@ -35,9 +35,9 @@ uv lock --upgrade                   # update the pinned versions
 There are no unit tests. Because seeded runs are deterministic (see [reproducibility.md](reproducibility.md)), a refactor can be checked by comparing the metrics of short runs before and after it:
 
 ```bash
-./tools/regression_check.sh /tmp/before     # on the base commit
+./scripts/dev/regression_check.sh /tmp/before     # on the base commit
 # make the change
-./tools/regression_check.sh /tmp/after
+./scripts/dev/regression_check.sh /tmp/after
 diff /tmp/before/metrics.txt /tmp/after/metrics.txt && echo identical
 ```
 

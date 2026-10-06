@@ -21,7 +21,7 @@ COPY . /HandCraft
 ENV PATH="/HandCraft/.venv/bin:$PATH"
 
 # Datasets and outputs are expected to be mounted, by default at
-# /disco1/datasets and /disco1/models/HandCraft/samples (see HANDCRAFT_DATA and HANDCRAFT_SAVE in script.sh):
+# /disco1/datasets and /disco1/models/HandCraft/samples (see HANDCRAFT_DATA and HANDCRAFT_SAVE in scripts/run/script.sh):
 # docker run --gpus all -v <datasets>:/disco1/datasets -v <outputs>:/disco1/models/HandCraft/samples -it handcraft
 
 # wandb login

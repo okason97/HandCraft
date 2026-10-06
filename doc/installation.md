@@ -27,7 +27,7 @@ uv sync
 
 `uv sync --all-extras` installs everything.
 
-Run the commands of this documentation inside the environment: prefix them with `uv run` (`uv run ./script.sh ...`) or activate it once with `source .venv/bin/activate`.
+Run the commands of this documentation inside the environment: prefix them with `uv run` (`uv run ./scripts/run/script.sh ...`) or activate it once with `source .venv/bin/activate`.
 
 ### Mamba
 

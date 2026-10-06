@@ -1,6 +1,6 @@
 # INCLUDE data processing
 
-Scripts to download [INCLUDE](https://zenodo.org/record/4010759) (Indian Sign Language, 263 signs, 4292 videos) and convert it into the layout HandCraft's data loader ([data_util.py](../data_util.py)) expects:
+Scripts to download [INCLUDE](https://zenodo.org/record/4010759) (Indian Sign Language, 263 signs, 4292 videos) and convert it into the layout HandCraft's data loader ([data_util.py](../../../src/data/data_util.py)) expects:
 
 ```
 <data_dir>/
@@ -12,7 +12,7 @@ Scripts to download [INCLUDE](https://zenodo.org/record/4010759) (Indian Sign La
 └── raw/<Category>_<sign>#<video>.{MOV,MP4}
 ```
 
-The scripts need the `extract` dependencies (`uv sync --extra extract`) and the MediaPipe models, which `src/data/download_mediapipe_models.sh <dir>` downloads; pass that directory as `-model_dir`. The steps for all the datasets are in [doc/datasets.md](../../../doc/datasets.md).
+The scripts need the `extract` dependencies (`uv sync --extra extract`) and the MediaPipe models, which `scripts/data/download_mediapipe_models.sh <dir>` downloads; pass that directory as `-model_dir`. The steps for all the datasets are in [doc/datasets.md](../../../doc/datasets.md).
 
 ## Usage
 

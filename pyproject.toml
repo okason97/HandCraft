@@ -20,9 +20,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# download and setup of the LSFB dataset (src/data/setup_lsfb.py)
+# download and setup of the LSFB dataset (scripts/data/LSFB/setup_lsfb.py)
 lsfb = ["lsfb-dataset", "urllib3"]
-# download and keypoint extraction of the INCLUDE and DiSPLaY datasets (src/data/INCLUDE, src/data/DiSPLaY)
+# download and keypoint extraction of the INCLUDE and DiSPLaY datasets (scripts/data/INCLUDE, scripts/data/DiSPLaY)
 extract = ["mediapipe>=0.10,<0.11", "opencv-python>=4.6", "scipy>=1.11", "wget>=3.2"]
 # the mamba backbone also needs mamba-ssm, which has to be built against the local CUDA toolkit:
 # uv pip install mamba-ssm
@@ -50,7 +50,7 @@ torchvision = { index = "pytorch-cu121" }
 [tool.ruff]
 line-length = 160
 target-version = "py310"
-src = ["src"]
+src = ["src", "scripts/data", "scripts/data/INCLUDE", "scripts/data/DiSPLaY"]
 extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
@@ -62,7 +62,7 @@ select = ["E", "F", "I", "B"]
 "src/models/minimamba.py" = ["E741"]
 
 [tool.ty.environment]
-root = ["src"]
+root = ["src", "scripts/data"]
 
 [tool.ty.src]
 # vendored third-party code (https://github.com/vacancy/Synchronized-BatchNorm-PyTorch)

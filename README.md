@@ -93,18 +93,18 @@ Models are trained on keypoints. LSFB provides them; for INCLUDE and DiSPLaY the
 
   LSFB
    ```sh
-   python src/data/setup_lsfb.py -data_dir $HANDCRAFT_DATA/
+   python scripts/data/LSFB/setup_lsfb.py -data_dir $HANDCRAFT_DATA/
    ```
   INCLUDE (57 GB of videos; the keypoint extraction takes several hours)
    ```sh
-   ./src/data/download_mediapipe_models.sh $HANDCRAFT_DATA/mediapipe
-   ./src/data/INCLUDE/download_data.sh $HANDCRAFT_DATA/INCLUDE
-   python src/data/INCLUDE/format.py -data_dir $HANDCRAFT_DATA/INCLUDE -model_dir $HANDCRAFT_DATA/mediapipe
-   python src/data/INCLUDE/make_official_split.py -data_dir $HANDCRAFT_DATA/INCLUDE -out_dir $HANDCRAFT_DATA/INCLUDE_official
+   ./scripts/data/download_mediapipe_models.sh $HANDCRAFT_DATA/mediapipe
+   ./scripts/data/INCLUDE/download_data.sh $HANDCRAFT_DATA/INCLUDE
+   python scripts/data/INCLUDE/format.py -data_dir $HANDCRAFT_DATA/INCLUDE -model_dir $HANDCRAFT_DATA/mediapipe
+   python scripts/data/INCLUDE/make_official_split.py -data_dir $HANDCRAFT_DATA/INCLUDE -out_dir $HANDCRAFT_DATA/INCLUDE_official
    ```
   DiSPLaY: download the `Signs(...).zip` files from [IEEE DataPort](https://doi.org/10.21227/5gsb-fb69) (needs an account), extract them into `$HANDCRAFT_DATA/DiSPLaY/original/`, then
    ```sh
-   python src/data/DiSPLaY/format.py -data_dir $HANDCRAFT_DATA/DiSPLaY -model_dir $HANDCRAFT_DATA/mediapipe
+   python scripts/data/DiSPLaY/format.py -data_dir $HANDCRAFT_DATA/DiSPLaY -model_dir $HANDCRAFT_DATA/mediapipe
    ```
 
 More in [doc/datasets.md](doc/datasets.md).
@@ -122,37 +122,37 @@ Every run is `<script> <mode> <model> <config> <dataset>`, with the config in `s
 
   Train, validating after every epoch
    ```sh
-   ./script.sh classification ViT original-pad-128x2 INCLUDE --seed 42
+   ./scripts/run/script.sh classification ViT original-pad-128x2 INCLUDE --seed 42
    ```
   Train and evaluate the best checkpoint on the test set
    ```sh
-   ./test_script.sh classification ViT original-pad-128x2 INCLUDE --seed 42
+   ./scripts/run/test_script.sh classification ViT original-pad-128x2 INCLUDE --seed 42
    ```
   Evaluate a trained model on the test set
    ```sh
-   ./eval_script.sh classification ViT original-pad-128x2 INCLUDE -ckpt $HANDCRAFT_SAVE/INCLUDE/ViT-original-pad-128x2/checkpoints/<run name>/
+   ./scripts/run/eval_script.sh classification ViT original-pad-128x2 INCLUDE -ckpt $HANDCRAFT_SAVE/INCLUDE/ViT-original-pad-128x2/checkpoints/<run name>/
    ```
   Our best model on the official INCLUDE split (94.3% top-1, see [doc/results-include.md](doc/results-include.md))
    ```sh
-   ./test_script.sh classification stgcn official-lr5 INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
+   ./scripts/run/test_script.sh classification stgcn official-lr5 INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
    ```
 
 ### Sign Language Generation
 
-  Train the generator, validating after every epoch (use `test_script.sh` to also evaluate on the test set)
+  Train the generator, validating after every epoch (use `scripts/run/test_script.sh` to also evaluate on the test set)
    ```sh
-   ./script.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
-   ./script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --reverse --seed 42
+   ./scripts/run/script.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
+   ./scripts/run/script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --reverse --seed 42
    ```
   Generate a synthetic dataset with both generators
    ```sh
-   ./gdataset_script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --sd_num 100 --seed 42 \
+   ./scripts/run/gdataset_script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --sd_num 100 --seed 42 \
        -ckpt $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1/checkpoints/<forward run name>/ \
        -tg -r_ckpt $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/checkpoints/<reversed run name>/
    ```
   Pretrain a recognition model on it, then train and test on the real data
    ```sh
-   ./test_script.sh classification ViT original-pad-synth75-475 INCLUDE --seed 42 \
+   ./scripts/run/test_script.sh classification ViT original-pad-synth75-475 INCLUDE --seed 42 \
        -s_data $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/<generated dataset>
    ```
   Example of a generated sequence:

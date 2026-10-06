@@ -13,3 +13,20 @@
 | [development.md](development.md) | Linting, type checking, and how changes are checked for regressions |
 
 The shortest path from a fresh clone to a trained and tested model is in the [README](../README.md#getting-started).
+
+## Repository layout
+
+```
+src/                 library code: main.py, loader.py, worker.py, models/, data/data_util.py, configs/
+scripts/
+├── run/             script.sh, test_script.sh, eval_script.sh, gdataset_script.sh (train, test, evaluate, generate)
+│                    multiscript.sh (the commands of past experiments)
+├── data/            download_mediapipe_models.sh, mediapipe_keypoints.py (shared keypoint extraction)
+│   ├── LSFB/        setup_lsfb.py
+│   ├── INCLUDE/     download, format, keypoint extraction and official split scripts
+│   └── DiSPLaY/     format and keypoint extraction scripts
+└── dev/             regression_check.sh
+doc/                 this documentation
+```
+
+All scripts are run from the root of the repository.

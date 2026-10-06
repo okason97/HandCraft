@@ -7,7 +7,7 @@ HandCraft generates synthetic sign clips with a conditional motion predictor (CM
 Given the first 16 frames of a clip and its sign, it predicts the next 16.
 
 ```bash
-./script.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
+./scripts/run/script.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
 ```
 
 ## 2. Train the reversed generator
@@ -15,7 +15,7 @@ Given the first 16 frames of a clip and its sign, it predicts the next 16.
 The same model trained backwards in time: given the last 16 frames, it predicts the first 16.
 
 ```bash
-./script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --reverse --seed 42
+./scripts/run/script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --reverse --seed 42
 ```
 
 Each run writes its checkpoints to `$HANDCRAFT_SAVE/INCLUDE/CsiMLPe-<config>/checkpoints/<run name>/`.
@@ -23,7 +23,7 @@ Each run writes its checkpoints to `$HANDCRAFT_SAVE/INCLUDE/CsiMLPe-<config>/che
 ## 3. Generate the dataset
 
 ```bash
-./gdataset_script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE \
+./scripts/run/gdataset_script.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE \
     -ckpt $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1/checkpoints/<forward run name>/ \
     -tg -r_ckpt $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/checkpoints/<reversed run name>/ \
     --sd_num 100 --seed 42
@@ -47,7 +47,7 @@ with `sd_num × batch_size` clips per sign (1,600 with the values above). The di
 Pass the generated dataset with `-s_data` and use a config that sets `OPTIMIZATION.synth_total_steps`:
 
 ```bash
-./test_script.sh classification ViT original-pad-synth75-475 INCLUDE \
+./scripts/run/test_script.sh classification ViT original-pad-synth75-475 INCLUDE \
     -s_data $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/<generated dataset> --seed 42
 ```
 
