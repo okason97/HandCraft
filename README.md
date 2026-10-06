@@ -33,6 +33,7 @@
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#installation">Installation</a></li>
+        <li><a href="#datasets">Datasets</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
@@ -64,14 +65,50 @@ Sign language recognition models:
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Generate and classify sign language gestures with HandCraft. To do it follow these steps:
+Generate and classify sign language gestures with HandCraft. The steps below go from a fresh clone to trained and tested models. Each step links to the full documentation in [doc/](doc/README.md).
 
 ### Installation
 
-Clone the repo
+1. Clone the repo and install the dependencies with [uv](https://docs.astral.sh/uv/getting-started/installation/)
    ```sh
    git clone https://github.com/okason97/HandCraft.git
+   cd HandCraft
+   uv sync --all-extras
+   source .venv/bin/activate
    ```
+2. Choose where the datasets and the outputs go
+   ```sh
+   export HANDCRAFT_DATA=/path/to/datasets
+   export HANDCRAFT_SAVE=/path/to/outputs
+   export WANDB_MODE=offline   # or run `wandb login` to upload the training curves
+   ```
+   The two directories can also be passed to the run scripts with `--data-root <dir>` and `--save-root <dir>`.
+
+More in [doc/installation.md](doc/installation.md).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Datasets
+
+Models are trained on keypoints. LSFB provides them; for INCLUDE and DiSPLaY they are extracted from the videos with MediaPipe.
+
+  LSFB
+   ```sh
+   python scripts/data/LSFB/setup_lsfb.py -data_dir $HANDCRAFT_DATA
+   ```
+  INCLUDE (57 GB of videos; the keypoint extraction takes several hours)
+   ```sh
+   ./scripts/data/download_mediapipe_models.sh $HANDCRAFT_DATA/mediapipe
+   ./scripts/data/INCLUDE/download_data.sh $HANDCRAFT_DATA/INCLUDE
+   python scripts/data/INCLUDE/format.py -data_dir $HANDCRAFT_DATA/INCLUDE -model_dir $HANDCRAFT_DATA/mediapipe
+   python scripts/data/INCLUDE/make_official_split.py -data_dir $HANDCRAFT_DATA/INCLUDE -out_dir $HANDCRAFT_DATA/INCLUDE_official
+   ```
+  DiSPLaY: download the `Signs(...).zip` files from [IEEE DataPort](https://doi.org/10.21227/5gsb-fb69) (needs an account), extract them into `$HANDCRAFT_DATA/DiSPLaY/original/`, then
+   ```sh
+   python scripts/data/DiSPLaY/format.py -data_dir $HANDCRAFT_DATA/DiSPLaY -model_dir $HANDCRAFT_DATA/mediapipe
+   ```
+
+More in [doc/datasets.md](doc/datasets.md).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -80,19 +117,59 @@ Clone the repo
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-1. Create a config file. Examples in /src/configs
-2. Use /script.sh to use the models. 
+Every run is `<script> <mode> <model> <config> <dataset>`, with the config in `src/configs/<dataset>/<model>/<config>.yaml`. Add `--seed` to make a run reproducible.
 
-  Sign Language Recognition
+### Sign Language Recognition
+
+  Train, validating after every epoch
    ```sh
-   ./script.sh classification mamba original128-pad LSFB
+   ./scripts/run/train.sh classification ViT original-pad-128x2 INCLUDE --seed 42
    ```
-  Sign Language Generation
+  Train and evaluate the best checkpoint on the test set
    ```sh
-   ./script.sh cond_prediction CsiMLPe depth_big_noise_0.1 LSFB
+   ./scripts/run/test.sh classification ViT original-pad-128x2 INCLUDE --seed 42
+   ```
+  Evaluate a trained model on the test set
+   ```sh
+   ./scripts/run/eval.sh classification ViT original-pad-128x2 INCLUDE -ckpt $HANDCRAFT_SAVE/INCLUDE/ViT-original-pad-128x2/checkpoints/<run name>/
+   ```
+  Our best model on the official INCLUDE split (94.3% top-1, see [doc/results-include.md](doc/results-include.md))
+   ```sh
+   ./scripts/run/test.sh classification stgcn official-lr5 INCLUDE -data $HANDCRAFT_DATA/INCLUDE_official/ --seed 42
+   ```
+
+### Sign Language Generation
+
+  Train the generator, validating after every epoch (use `scripts/run/test.sh` to also evaluate on the test set)
+   ```sh
+   ./scripts/run/train.sh cond_prediction CsiMLPe depth_big_noise_0.1 INCLUDE --seed 42
+   ./scripts/run/train.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --reverse --seed 42
+   ```
+  Generate a synthetic dataset with both generators
+   ```sh
+   ./scripts/run/generate_dataset.sh cond_prediction CsiMLPe depth_big_noise_0.1-reversed INCLUDE --sd_num 100 --seed 42 \
+       -ckpt $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1/checkpoints/<forward run name>/ \
+       -tg -r_ckpt $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/checkpoints/<reversed run name>/
+   ```
+  Pretrain a recognition model on it, then train and test on the real data
+   ```sh
+   ./scripts/run/test.sh classification ViT original-pad-synth75-475 INCLUDE --seed 42 \
+       -s_data $HANDCRAFT_SAVE/INCLUDE/CsiMLPe-depth_big_noise_0.1-reversed/generated_datasets/<generated dataset>
    ```
   Example of a generated sequence:
 ![Example][example]
+
+Logs are written to `logs/<dataset>/<model>-<config>/`. During training the logged metrics are **validation** metrics; the test result is the `Test` line after `End of training!`. More in [doc/training.md](doc/training.md) and [doc/synthetic-data.md](doc/synthetic-data.md).
+
+### Documentation
+
+| | |
+|---|---|
+| [Installation](doc/installation.md) | [Datasets](doc/datasets.md) |
+| [Training, validation and testing](doc/training.md) | [Synthetic data pretraining](doc/synthetic-data.md) |
+| [Configuration reference](doc/configuration.md) | [Models](doc/models.md) |
+| [Results on the official INCLUDE split](doc/results-include.md) | [Reproducibility and known issues](doc/reproducibility.md) |
+| [Development](doc/development.md) | |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

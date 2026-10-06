@@ -4,11 +4,11 @@
 
 # src/utils/log.py
 
-from os.path import dirname, exists, join
-from datetime import datetime
-import json
-import os
 import logging
+import os
+import sys
+from datetime import datetime
+from os.path import dirname, exists, join
 
 
 def make_run_name(format, data_name, framework, phase):
@@ -31,7 +31,7 @@ def make_logger(save_dir, run_name, log_output):
 
     if not logger.handlers:  # execute only if logger doesn't already exist
         file_handler = logging.FileHandler(log_filepath, 'a', 'utf-8')
-        stream_handler = logging.StreamHandler(os.sys.stdout)
+        stream_handler = logging.StreamHandler(sys.stdout)
 
         formatter = logging.Formatter('[%(levelname)s] %(asctime)s > %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 

@@ -1,26 +1,28 @@
 # Download dataset
 
-from lsfb_dataset import Downloader
-import os
-import numpy as np
-import json
 import argparse
+import json
+import os
+
+import numpy as np
 import urllib3
+from lsfb_dataset import Downloader
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-parser = argparse.ArgumentParser(description="A simple argument parser example.")
+parser = argparse.ArgumentParser(description="Download the isolated LSFB poses and filter the splits")
 
-parser.add_argument("-data_dir", type=str, default="./src/data/", help="Data root directory")
+parser.add_argument("-data_dir", type=str, required=True, help="Directory with the datasets; LSFB is downloaded into <data_dir>/LSFB")
 
 args = parser.parse_args()
 
-lsfb_dir = args.data_dir + 'LSFB'
+lsfb_dir = os.path.join(args.data_dir, 'LSFB')
 
 print('Downloading LSFB')
 
 # downloader = Downloader(dataset='isol', destination=args.data_dir, include_videos=False, timeout=None, check_ssl=False)
-downloader = Downloader(dataset='isol', destination=lsfb_dir, include_videos=False, timeout=None)
+# timeout=None disables the download timeout
+downloader = Downloader(dataset='isol', destination=lsfb_dir, include_videos=False, timeout=None)  # ty: ignore[invalid-argument-type]
 
 downloader.download()
 
@@ -31,13 +33,13 @@ print('Train data: filter out empty values and samples with more than 60 frames'
 root_ids = os.path.join(lsfb_dir, 'metadata', 'splits', "train"+'.json')
 with open(root_ids) as f:
     data_ids = json.load(f)
-count = 0
+kept_ids = []
 for index in data_ids:
     pose_data = np.load(os.path.join(lsfb_dir, 'poses', "pose", index+'.npy'))
-    if 0 in pose_data.shape or pose_data.shape[0]>60:
-        data_ids.remove(index)
-        count += 1
-print(count)
+    if not (0 in pose_data.shape or pose_data.shape[0]>60):
+        kept_ids.append(index)
+print(len(data_ids)-len(kept_ids))
+data_ids = kept_ids
 
 # Serializing json
 json_object = json.dumps(data_ids, indent=4)
@@ -51,13 +53,13 @@ print('Test data: filter out empty values and samples with more than 60 frames')
 root_ids = os.path.join(lsfb_dir, 'metadata', 'splits', "test"+'.json')
 with open(root_ids) as f:
     data_ids = json.load(f)
-count = 0
+kept_ids = []
 for index in data_ids:
     pose_data = np.load(os.path.join(lsfb_dir, 'poses', "pose", index+'.npy'))
-    if 0 in pose_data.shape or pose_data.shape[0]>60:
-        data_ids.remove(index)
-        count += 1
-print(count)
+    if not (0 in pose_data.shape or pose_data.shape[0]>60):
+        kept_ids.append(index)
+print(len(data_ids)-len(kept_ids))
+data_ids = kept_ids
 
 # Serializing json
 json_object = json.dumps(data_ids, indent=4)

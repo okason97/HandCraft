@@ -4,32 +4,38 @@
 
 # src/utils/misc.py
 
-from os.path import dirname, exists, join, isfile
-from datetime import datetime
-import random
-import os
-import sys
 import glob
+import math
+import os
+import random
+import shutil
+import sys
+from datetime import datetime
+from os.path import dirname, exists, isfile, join
+from typing import TYPE_CHECKING, Any
 
-from torch.nn import DataParallel
-from torch.nn.parallel import DistributedDataParallel
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import math
-from torch.utils.data import Sampler
-import shutil
 from torch import linalg as LA
-import pywt
+from torch.nn import DataParallel
+from torch.nn.parallel import DistributedDataParallel
+from torch.utils.data import Sampler
 
 import utils.ckpt as ckpt
 
 
 class make_empty_object(object):
-    pass
+    """
+    Empty namespace for the configuration groups (cfgs.DATA, cfgs.MODEL, ...).
+    """
+    if TYPE_CHECKING:
+        # the attributes are set dynamically from the config files
+        def __getattr__(self, name: str) -> Any: ...
+        def __setattr__(self, name: str, value: Any) -> None: ...
 
 
 class dummy_context_mgr():
@@ -78,8 +84,8 @@ def accm_values_convert_dict(list_dict, value_dict, step, interval):
             except IndexError:
                 try:
                     value_list += [value_dict[name]]
-                except:
-                    raise KeyError
+                except Exception:
+                    raise KeyError from None
         list_dict[name] = value_list
     return list_dict
 
@@ -155,7 +161,7 @@ def toggle_grad(model, grad):
 def load_log_dicts(directory, file_name, ph):
     try:
         log_dict = ckpt.load_prev_dict(directory=directory, file_name=file_name)
-    except:
+    except Exception:
         log_dict = ph
     return log_dict
 
@@ -164,7 +170,7 @@ def make_model_require_grad(model):
     if isinstance(model, DataParallel) or isinstance(model, DistributedDataParallel):
         model = model.module
 
-    for name, param in model.named_parameters():
+    for param in model.parameters():
         param.requires_grad = True
 
 
@@ -211,7 +217,7 @@ def reshape_weight_to_matrix(weight):
 def calculate_all_sn(model, prefix):
     sigmas = {}
     with torch.no_grad():
-        for name, param in model.named_parameters():
+        for name, _ in model.named_parameters():
             operations = model
             if "weight_orig" in name:
                 splited_name = name.split(".")
@@ -255,7 +261,7 @@ def find_and_remove(path):
         os.remove(path)
 
 
-def orthogonalize_model(model, strength=1e-4, blacklist=[]):
+def orthogonalize_model(model, strength=1e-4, blacklist=()):
     with torch.no_grad():
         for param in model.parameters():
             if len(param.shape) < 2 or any([param is item for item in blacklist]):
@@ -372,21 +378,164 @@ def i_normalize(data, pose):
 
 # MediaPipe pose landmarks connection (in their order)
 
-CONNECTIONS = {'pose': [(0, 1), (1, 2), (2, 3), (3, 7), (0, 4), (4, 5), (5, 6), (6, 8), (9, 10), (11, 12), (11, 13), (13, 15), (15, 17), (11, 23), (12, 14), (14, 16), (15,19), (15,21), (16,22), (16,20), (20,18), (19,17), (16, 18), (12, 24), (23, 24), (23, 25), (25, 27), (27, 29), (29, 31), (24, 26), (26, 28), (28, 30), (30, 32)],
-               'right_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
-               'left_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
-               'face': [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 0), 
-                    (8, 9), (9, 10), (10, 11), (11, 8),
-                    (12, 13), (13, 14), (14, 15),
-                    (16, 17), (17, 18), (18, 19), (19, 16),
-                    (20, 21), (21, 22), (22, 23)]}
+CONNECTIONS = {
+    'pose': [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 7),
+        (0, 4),
+        (4, 5),
+        (5, 6),
+        (6, 8),
+        (9, 10),
+        (11, 12),
+        (11, 13),
+        (13, 15),
+        (15, 17),
+        (11, 23),
+        (12, 14),
+        (14, 16),
+        (15, 19),
+        (15, 21),
+        (16, 22),
+        (16, 20),
+        (20, 18),
+        (19, 17),
+        (16, 18),
+        (12, 24),
+        (23, 24),
+        (23, 25),
+        (25, 27),
+        (27, 29),
+        (29, 31),
+        (24, 26),
+        (26, 28),
+        (28, 30),
+        (30, 32),
+    ],
+    'right_hand': [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (0, 5),
+        (0, 17),
+        (5, 9),
+        (9, 13),
+        (13, 17),
+        (5, 6),
+        (6, 7),
+        (7, 8),
+        (9, 10),
+        (10, 11),
+        (11, 12),
+        (13, 14),
+        (14, 15),
+        (15, 16),
+        (17, 18),
+        (18, 19),
+        (19, 20),
+    ],
+    'left_hand': [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (0, 5),
+        (0, 17),
+        (5, 9),
+        (9, 13),
+        (13, 17),
+        (5, 6),
+        (6, 7),
+        (7, 8),
+        (9, 10),
+        (10, 11),
+        (11, 12),
+        (13, 14),
+        (14, 15),
+        (15, 16),
+        (17, 18),
+        (18, 19),
+        (19, 20),
+    ],
+    'face': [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (4, 5),
+        (5, 6),
+        (6, 7),
+        (7, 0),
+        (8, 9),
+        (9, 10),
+        (10, 11),
+        (11, 8),
+        (12, 13),
+        (13, 14),
+        (14, 15),
+        (16, 17),
+        (17, 18),
+        (18, 19),
+        (19, 16),
+        (20, 21),
+        (21, 22),
+        (22, 23),
+    ],
+}
 
-CONNECTIONS_REDUCED = {'pose': [(0, 1), (1, 2), (0, 3), (3, 4), (4, 5)],
-               'right_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
-               'left_hand': [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (0, 17), (5, 9), (9, 13), (13, 17), (5, 6), (6, 7), (7, 8), (9, 10), (10, 11), (11, 12), (13, 14), (14, 15), (15, 16), (17, 18), (18, 19), (19, 20)],
-               'face': [(0, 1), (1, 2), (2, 3), (3, 0), 
-                    (4, 5), (5, 6), (6, 7), (7, 4),
-                    (8, 9), (9, 10), (10, 11), (11, 8)]}
+CONNECTIONS_REDUCED = {
+    'pose': [(0, 1), (1, 2), (0, 3), (3, 4), (4, 5)],
+    'right_hand': [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (0, 5),
+        (0, 17),
+        (5, 9),
+        (9, 13),
+        (13, 17),
+        (5, 6),
+        (6, 7),
+        (7, 8),
+        (9, 10),
+        (10, 11),
+        (11, 12),
+        (13, 14),
+        (14, 15),
+        (15, 16),
+        (17, 18),
+        (18, 19),
+        (19, 20),
+    ],
+    'left_hand': [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (0, 5),
+        (0, 17),
+        (5, 9),
+        (9, 13),
+        (13, 17),
+        (5, 6),
+        (6, 7),
+        (7, 8),
+        (9, 10),
+        (10, 11),
+        (11, 12),
+        (13, 14),
+        (14, 15),
+        (15, 16),
+        (17, 18),
+        (18, 19),
+        (19, 20),
+    ],
+    'face': [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (8, 9), (9, 10), (10, 11), (11, 8)],
+}
 
 def plot_keypoints(xyz_keypoints, connections):
     fig = plt.figure()
@@ -492,7 +641,7 @@ def animate_all_keypoints(pose_keypoints, rhand_keypoints, lhand_keypoints, face
 
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_zticks([])
+        ax.set_zticks([])  # ty: ignore[call-non-callable]  (3D axes, typed as 2D by matplotlib)
 
         ax.view_init(-90, -90)
 
@@ -515,7 +664,15 @@ def create_axis(ax, xyz_keypoints, i, connections):
 
         ax.plot([xs[start], xs[end]], [ys[start], ys[end]], [zs[start], zs[end]], 'blue')
 
-    return xyz_keypoints[0, :, 0].max(), xyz_keypoints[0, :, 0].min(), xyz_keypoints[0, :, 1].max(), xyz_keypoints[0, :, 1].min(), xyz_keypoints[0, :, 2].max(), xyz_keypoints[0, :, 2].min()
+    return (
+        xyz_keypoints[0, :, 0].max(),
+        xyz_keypoints[0, :, 0].min(),
+        xyz_keypoints[0, :, 1].max(),
+        xyz_keypoints[0, :, 1].min(),
+        xyz_keypoints[0, :, 2].max(),
+        xyz_keypoints[0, :, 2].min(),
+    )
+
 
 def save_gif(ani, save_path, logger, logging=True):
     if logger is None:
@@ -544,7 +701,7 @@ class SingleClassSamplerFabric():
     def __init__(self, dataset):
         self.dataset = dataset
         self.class_indices = [[] for _ in range(len(self.dataset.classes))]
-        for i, (value, target, label) in enumerate(dataset):
+        for i, (_, _, label) in enumerate(dataset):
             self.class_indices[int(label.item())].append(i)
 
     def get_sampler(self, class_label):
@@ -684,10 +841,10 @@ class RandomBatchSampler(Sampler):
                     yield index
 
 def collate_fn_nested(batch):
-    return [torch.nested.as_nested_tensor(samples) for samples in zip(*batch)]
+    return [torch.nested.as_nested_tensor(samples) for samples in zip(*batch, strict=False)]
 
 def unpad(batch, masks):
-    return torch.nested.nested_tensor([sample[mask.any(dim=1)] for mask, sample in zip(masks, batch)])
+    return torch.nested.nested_tensor([sample[mask.any(dim=1)] for mask, sample in zip(masks, batch, strict=False)])
 
 def keep_first_true(tensor, dim=-1):
     """
@@ -708,7 +865,7 @@ def keep_first_true(tensor, dim=-1):
 
 def pad_index(tensor):
     # Find position of first True in each row
-    first_ones = (tensor == True).float().argmax(dim=1)
+    first_ones = tensor.eq(True).float().argmax(dim=1)
 
     # The last 0 positions are right before the first 1s
     last_zero_positions = first_ones - 1

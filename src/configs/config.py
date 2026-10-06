@@ -4,21 +4,15 @@
 
 # src/config.py
 
-from itertools import chain
-import json
-import os
-import random
-import sys
-import yaml
-
 import torch
 import torch.nn as nn
+import yaml
 
-import utils.misc as misc
 import utils.losses as losses
+import utils.misc as misc
 import utils.ops as ops
 import utils.optimizers as optimizers
-from ignite.handlers.param_scheduler import create_lr_scheduler_with_warmup
+
 
 class make_empty_object(object):
     pass
@@ -67,6 +61,23 @@ class Configurations(object):
         self.DATA.flip_p = 0.0
         self.DATA.scale = 0.0
         self.DATA.rot = 0.0
+        # random shear and rotation (radians), sampled from normal distributions with these stds
+        self.DATA.shear_std = 0.0
+        self.DATA.rot_std = 0.0
+        # probability of a horizontal flip that also swaps left/right keypoints (use with norm "shoulder")
+        self.DATA.mirror_p = 0.0
+        # how max_len frames are taken from a clip \in ["crop", "uniform", "pad"]
+        self.DATA.temporal_sampling = "crop"
+        # for uniform sampling: minimum fraction of the clip covered by the random training window (None = whole clip)
+        self.DATA.speed = None
+        # for pad sampling: [min, max] random speed factor applied to the clip length during training (None = off)
+        self.DATA.speed_range = None
+        # fraction of training frames whose hand keypoints are replaced by interpolation
+        self.DATA.hand_mask_p = 0.0
+        # keypoint normalization \in ["dataset", "shoulder", "shoulder_clip"]
+        self.DATA.norm = "dataset"
+        # number of coordinates per keypoint used as input (2 = x,y; 3 = x,y,z), must match input_size[2]
+        self.DATA.coords = 3
         # encode the data by applying a transformation ["DCT","DWT",None]
         self.DATA.transform = None
         self.DATA.batch_size = 128
@@ -162,13 +173,15 @@ class Configurations(object):
         self.LOSS.lecam_ema_decay = "N/A"
         # use relative motion for motion loss
         self.LOSS.relative_motion = True
+        # label smoothing for the CCE loss
+        self.LOSS.label_smoothing = 0.0
 
         # -----------------------------------------------------------------------------
         # optimizer settings
         # -----------------------------------------------------------------------------
         self.OPTIMIZATION = misc.make_empty_object()
 
-        # type of the optimizer for training \in ["SGD", "RMSprop", "Adam", "RAdam"]
+        # type of the optimizer for training \in ["SGD", "RMSprop", "Adam", "RAdam", "AdamW"]
         self.OPTIMIZATION.type_ = "RAdam"
         # lr scheduler \in ["OneCycle"]
         self.OPTIMIZATION.lrscheduler = None
@@ -255,7 +268,7 @@ class Configurations(object):
 
     def define_losses(self):
         losses_dic = {
-            "CCE": nn.CrossEntropyLoss(),
+            "CCE": nn.CrossEntropyLoss(label_smoothing=self.LOSS.label_smoothing),
             "motion": losses.MotionLoss(relative_motion=self.LOSS.relative_motion),
         }
 
@@ -334,7 +347,7 @@ class Configurations(object):
                                                                 momentum=self.OPTIMIZATION.momentum,
                                                                 alpha=self.OPTIMIZATION.alpha)
         elif self.OPTIMIZATION.type_ == "Adam":
-            betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
+            betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
             eps_ = 1e-6
 
             self.OPTIMIZATION.optimizer = torch.optim.Adam(params=params,
@@ -343,7 +356,7 @@ class Configurations(object):
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
         elif self.OPTIMIZATION.type_ == "RAdam":
-            betas = [self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2]
+            betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
             eps_ = 1e-6
 
             self.OPTIMIZATION.optimizer = torch.optim.RAdam(params=params,
@@ -351,11 +364,25 @@ class Configurations(object):
                                                            betas=betas,
                                                            weight_decay=self.OPTIMIZATION.weight_decay,
                                                            eps=eps_)
+        elif self.OPTIMIZATION.type_ == "AdamW":
+            betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
+
+            self.OPTIMIZATION.optimizer = torch.optim.AdamW(params=params,
+                                                            lr=self.OPTIMIZATION.lr,
+                                                            betas=betas,
+                                                            weight_decay=self.OPTIMIZATION.weight_decay)
         else:
             raise NotImplementedError
         
         if self.OPTIMIZATION.lrscheduler == "OneCycle":
-            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.OPTIMIZATION.optimizer, max_lr=self.OPTIMIZATION.max_lr, pct_start=self.OPTIMIZATION.pct_start, three_phase=False, steps_per_epoch=len_dataloader, epochs=epochs)
+            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                self.OPTIMIZATION.optimizer,
+                max_lr=self.OPTIMIZATION.max_lr,
+                pct_start=self.OPTIMIZATION.pct_start,
+                three_phase=False,
+                steps_per_epoch=len_dataloader,
+                epochs=epochs,
+            )
         else:
             self.OPTIMIZATION.scheduler = None
 
@@ -374,9 +401,12 @@ class Configurations(object):
             'cutout': dict(cutout=1),
             'bg':     dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1),
             'bgc':    dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1),
-            'bgcf':   dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1),
-            'bgcfn':  dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1),
-            'bgcfnc': dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1, brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1, cutout=1),
+            'bgcf':   dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1,
+                           brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1),
+            'bgcfn':  dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1,
+                           brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1),
+            'bgcfnc': dict(xflip=1, rotate90=1, xint=1, scale=1, rotate=1, aniso=1, xfrac=1,
+                           brightness=1, contrast=1, lumaflip=1, hue=1, saturation=1, imgfilter=1, noise=1, cutout=1),
         }
         if self.AUG.apply_diffaug:
             assert self.AUG.diffaug_type != "W/O", "Please select diffentiable augmentation type!"

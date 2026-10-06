@@ -1,7 +1,8 @@
+from collections import defaultdict
+
 import torch
 from torch.optim import Optimizer
-from torch.optim import RAdam
-from collections import defaultdict
+
 
 class Lookahead(Optimizer):
     '''

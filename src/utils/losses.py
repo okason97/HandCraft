@@ -1,7 +1,7 @@
 import torch
-import torch.nn as nn
-from torch.nn.modules.loss import _Loss
 from torch import linalg as LA
+from torch.nn.modules.loss import _Loss
+
 
 class MotionLoss(_Loss):
     def __init__(self, size_average=None, reduce=None, reduction='mean', relative_motion=False):

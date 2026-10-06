@@ -1,7 +1,8 @@
-import torch
-from torch import nn
 from einops.layers.torch import Rearrange
+from torch import nn
+
 import utils.misc as misc
+
 
 class MLPblock(nn.Module):
 
@@ -75,7 +76,8 @@ class Model(nn.Module):
         nn.init.constant_(self.motion_fc_out.bias, 0)
 
     def forward(self, motion_input):
-        with torch.cuda.amp.autocast() if self.mixed_precision and not eval else misc.dummy_context_mgr() as mp:
+        # mixed precision is applied by the worker, which runs the model inside torch.autocast
+        with misc.dummy_context_mgr():
             if self.temporal_fc_in:
                 motion_feats = self.arr0(motion_input)
                 motion_feats = self.motion_fc_in(motion_feats)

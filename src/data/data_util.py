@@ -4,19 +4,20 @@
 
 # src/data_util.py
 
-import os
-from sklearn.model_selection import train_test_split
-
-from torch.utils.data import Dataset, Subset
-import torch
-import torchvision.transforms as transforms
-import numpy as np
 import json
-import polars as pl
 import math
+import os
 import random
+from typing import Any
+
+import numpy as np
+import polars as pl
+import torch
 import torch.nn.functional as F
-import math
+import torchvision.transforms as transforms
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset, Subset
+
 
 def normalize(data, pose):
     MEAN = {
@@ -210,6 +211,185 @@ class RandomAffine(torch.nn.Module):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(flip_p={self.flip_p},scale={self.scale},rot={self.rot})"
 
+class UniformSampleFrames(torch.nn.Module):
+    """
+    Samples `size` frames evenly spaced over the whole clip (repeating frames for short clips).
+    If `speed` is set, a random sub-window covering [speed, 1] of the clip is sampled instead,
+    simulating different signing speeds and inaccurate start/end boundaries.
+    """
+
+    def __init__(self, size, speed=None):
+        super().__init__()
+        self.size = size
+        self.speed = speed
+
+    def forward(self, img):
+        n = img.shape[0]
+        start, length = 0, n
+        if self.speed:
+            length = max(1, round(n*random.uniform(self.speed, 1.0)))
+            start = random.randint(0, n-length)
+        indexes = np.round(np.linspace(start, start+length-1, self.size)).astype(int)
+        return img[indexes]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(size={self.size},speed={self.speed})"
+
+class ResamplePadFrames(torch.nn.Module):
+    """
+    Keeps the clip's own timing instead of stretching it to `size` frames: clips longer than `size`
+    are evenly subsampled, shorter clips are padded by repeating the first and last frames.
+    If `speed_range` is set, the clip is first resampled to a random fraction of its length
+    (half of the time picking random frames instead of evenly spaced ones), and the padding
+    offset is random.
+    """
+
+    def __init__(self, size, speed_range=None):
+        super().__init__()
+        self.size = size
+        self.speed_range = speed_range
+
+    def forward(self, img):
+        n = img.shape[0]
+        shift = 0.5
+        if self.speed_range:
+            m = max(1, int(n*random.uniform(self.speed_range[0], self.speed_range[1])))
+            if random.random() < 0.5:
+                indexes = np.sort(np.random.choice(n, size=m, replace=m > n))
+            else:
+                indexes = np.linspace(0, n-1, m).astype(int)
+            img = img[indexes]
+            n = m
+            shift = float(np.clip(np.random.normal(0.5, 0.1), 0, 1))
+        if n > self.size:
+            return img[np.linspace(0, n-1, self.size).astype(int)]
+        before = int((self.size-n)*shift)
+        indexes = np.clip(np.arange(self.size)-before, 0, n-1)
+        return img[indexes]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(size={self.size},speed_range={self.speed_range})"
+
+class HandMaskInterpolate(torch.nn.Module):
+    """
+    Replaces the hand keypoints of a random fraction p of the frames with a linear interpolation
+    of the remaining frames, simulating frames where the hand detector failed.
+    """
+
+    def __init__(self, p, hand_slices):
+        super().__init__()
+        self.p = p
+        self.hand_slices = hand_slices
+
+    def forward(self, img):
+        n = img.shape[0]
+        k = int(self.p*n)
+        if k == 0 or n-k < 2:
+            return img
+        masked = np.sort(np.random.choice(n, size=k, replace=False))
+        kept = np.setdiff1d(np.arange(n), masked)
+        out = img.clone()
+        for start, end in self.hand_slices:
+            hand = img[:, start:end].flatten(1).float().numpy()
+            for d in range(hand.shape[1]):
+                hand[masked, d] = np.interp(masked, kept, hand[kept, d])
+            out[:, start:end] = torch.from_numpy(hand).reshape(n, end-start, -1).to(img.dtype)
+        return out
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(p={self.p})"
+
+def hand_slices(poses):
+    """
+    (start, end) index ranges of the hand keypoints in the concatenated keypoints of `poses`.
+    """
+    slices, total = [], 0
+    for pose, keypoints in poses:
+        size = 21 if keypoints == 'all' else len(keypoints)
+        if 'hand' in pose:
+            slices.append((total, total+size))
+        total += size
+    return slices
+
+class RandomShearRotate(torch.nn.Module):
+    """
+    Random 2D shear and rotation of the x,y coordinates, both sampled from normal distributions.
+    """
+
+    def __init__(self, shear_std=0.0, rot_std=0.0):
+        super().__init__()
+        self.shear_std = shear_std
+        self.rot_std = rot_std
+
+    def forward(self, sample):
+        sx, sy = np.random.normal(0, self.shear_std, 2) if self.shear_std else (0.0, 0.0)
+        theta = np.random.normal(0, self.rot_std) if self.rot_std else 0.0
+        shear = np.array([[1, sx], [sy, 1]])
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        mat = torch.eye(sample.shape[-1])
+        mat[:2, :2] = torch.tensor(rot @ shear, dtype=torch.float32)
+        new_sample = sample.flatten(0,1).type(torch.float32) @ mat.T
+        return torch.reshape(new_sample, sample.shape)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(shear_std={self.shear_std},rot_std={self.rot_std})"
+
+class Mirror(torch.nn.Module):
+    """
+    Horizontal flip with probability p: negates x and swaps left/right keypoints using `perm`.
+    Assumes x is centred on the body (use with norm='shoulder').
+    """
+
+    def __init__(self, p, perm):
+        super().__init__()
+        self.p = p
+        self.perm = torch.tensor(perm)
+
+    def forward(self, sample):
+        if random.random() < self.p:
+            sample = sample[:, self.perm].clone()
+            sample[..., 0] = -sample[..., 0]
+        return sample
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(p={self.p})"
+
+# MediaPipe left/right keypoint pairs, used to build the mirror permutation
+MIRROR_PAIRS = {
+    'pose': [(1,4),(2,5),(3,6),(7,8),(9,10),(11,12),(13,14),(15,16),(17,18),(19,20),(21,22),(23,24),(25,26),(27,28),(29,30),(31,32)],
+    'face': [(61,291),(33,263),(159,386),(133,362),(145,374)],
+}
+
+def mirror_permutation(poses):
+    """
+    Index permutation over the concatenated keypoints of `poses` that swaps left and right.
+    """
+    offsets, sizes = {}, {}
+    total = 0
+    for pose, keypoints in poses:
+        size = 21 if keypoints == 'all' and 'hand' in pose else len(keypoints)
+        offsets[pose], sizes[pose] = total, size
+        total += size
+    perm = list(range(total))
+    if 'right_hand' in offsets and 'left_hand' in offsets:
+        right, left = offsets['right_hand'], offsets['left_hand']
+        for i in range(21):
+            perm[right+i], perm[left+i] = left+i, right+i
+    for pose, keypoints in poses:
+        if 'hand' in pose:
+            continue
+        if keypoints == 'all':
+            raise NotImplementedError("mirror needs an explicit keypoint list for '{}'".format(pose))
+        mirror = {}
+        for a, b in MIRROR_PAIRS.get(pose, []):
+            mirror[a], mirror[b] = b, a
+        for i, k in enumerate(keypoints):
+            m = mirror.get(k, k)
+            if m not in keypoints:
+                raise ValueError("mirror of keypoint {} of '{}' is not selected".format(k, pose))
+            perm[offsets[pose]+i] = offsets[pose]+keypoints.index(m)
+    return perm
+
 class Dataset_(Dataset):
     def __init__(self,
                  data_dir,
@@ -230,19 +410,30 @@ class Dataset_(Dataset):
                  flip_p=0.0,
                  scale=0.0,
                  rot=0.0,
+                 temporal_sampling="crop",
+                 speed=None,
+                 speed_range=None,
+                 hand_mask_p=0.0,
+                 norm="dataset",
+                 shear_std=0.0,
+                 rot_std=0.0,
+                 mirror_p=0.0,
+                 coords=3,
                  mode="classification"):
         super(Dataset_, self).__init__()
         self.mode = mode
-        self.target_len = target_len
+        self.target_len: Any = target_len
         self.data_dir = data_dir
         self.train = train
         self.load_data_in_memory = load_data_in_memory
         self.trsf_list = []
-        self.poses = poses
+        self.poses: Any = poses
         self.filter_classes = filter_classes
-        self.map_classes = map_classes
+        self.map_classes: Any = map_classes
         self.min_samples = min_samples
         self.max_len = max_len
+        self.norm = norm
+        self.coords = coords
         self.centers = []
 
         self.load_dataset()
@@ -252,7 +443,8 @@ class Dataset_(Dataset):
         self.trsf_list += [transforms.ToTensor()]
         self.trsf_list += [Permute([1,2,0])]
         self.trsf_list += [Half()]
-        if pad_frames:
+        # uniform and pad sampling always return max_len frames, so no padding is needed
+        if pad_frames and temporal_sampling == "crop":
             self.trsf_list += [PadFrames(self.max_len, pad_mode)]
 
         if self.load_data_in_memory:
@@ -266,12 +458,22 @@ class Dataset_(Dataset):
                 self.pose_data.append(self.pre_trsf(value))
                 self.labels.append(label)
 
-        if random_crop:
+        if hand_mask_p > 0:
+            self.trsf_list += [HandMaskInterpolate(hand_mask_p, hand_slices(self.poses))]
+        if temporal_sampling == "uniform":
+            self.trsf_list += [UniformSampleFrames(self.max_len, speed)]
+        elif temporal_sampling == "pad":
+            self.trsf_list += [ResamplePadFrames(self.max_len, speed_range)]
+        elif random_crop:
             self.trsf_list += [RandomCropFrames(self.max_len)]
         else:
             self.trsf_list += [CropFrames(self.max_len)]
         if flip_p > 0 or scale > 0 or rot > 0:
             self.trsf_list += [RandomAffine(flip_p, scale, rot)]
+        if shear_std > 0 or rot_std > 0:
+            self.trsf_list += [RandomShearRotate(shear_std, rot_std)]
+        if mirror_p > 0:
+            self.trsf_list += [Mirror(mirror_p, mirror_permutation(self.poses))]
         if drop_frame>0:
             self.trsf_list += [DropFrames(drop_frame)]
         if drop_keypoint>0:
@@ -279,7 +481,7 @@ class Dataset_(Dataset):
         self.trsf = transforms.Compose(self.trsf_list)
 
     def load_dataset(self):
-        mode = "train" if self.train == True else "test"
+        mode = "train" if self.train is True else "test"
 
         # get train/valid sample names
         self.root_ids = os.path.join(self.data_dir, 'metadata', 'splits', mode+'.json')
@@ -287,19 +489,19 @@ class Dataset_(Dataset):
             data_ids = json.load(f)
 
         # load all instances
-        self.data = pl.read_csv(os.path.join(self.data_dir, 'instances.csv'), dtypes = {"sign": pl.Utf8})
+        self.data = pl.read_csv(os.path.join(self.data_dir, 'instances.csv'), schema_overrides = {"sign": pl.Utf8})
 
         # filter to only use train/valid predefined samples
         self.data = self.data.filter(pl.col('id').cast(pl.String).is_in(data_ids))
 
         # map signs to transform them to their numeric representations
-        t_si = pl.read_csv(os.path.join(self.data_dir, 'metadata', 'sign_to_index.csv'), dtypes = {"sign": pl.Utf8}).transpose()
+        t_si = pl.read_csv(os.path.join(self.data_dir, 'metadata', 'sign_to_index.csv'), schema_overrides = {"sign": pl.Utf8}).transpose()
         mapping = t_si.rename(t_si.head(1).to_dicts().pop()).slice(1).to_dict(as_series=False)
         mapping = {k: v[0] for k, v in mapping.items()}
         self.data = self.data.with_columns(pl.col('sign').replace(mapping).cast(pl.Int64))
 
-        # get unique classes
-        self.classes = self.data.unique('sign')['sign'].to_list()       
+        # get unique classes, sorted so every run maps the classes to the same indexes
+        self.classes = sorted(self.data.unique('sign')['sign'].to_list())
 
         # only keep classes with a number of samples >= min_samples
         if self.min_samples:
@@ -314,7 +516,7 @@ class Dataset_(Dataset):
         if self.filter_classes or self.min_samples:
             if self.filter_classes:
                 if self.min_samples:
-                    selected_classes = list(set(self.filter_classes) & set(meet_min))
+                    selected_classes = sorted(set(self.filter_classes) & set(meet_min))
                 else:
                     selected_classes = self.filter_classes
             else:
@@ -323,9 +525,40 @@ class Dataset_(Dataset):
             self.classes = selected_classes
         
         if not self.map_classes:
-            self.map_classes = {i:j for i,j in zip(self.classes, range(len(self.classes)))}
+            self.map_classes = {i:j for i,j in zip(self.classes, range(len(self.classes)), strict=True)}
+
+    def load_shoulder_normalized(self, index):
+        """
+        Centre on the shoulder midpoint and scale by the mean shoulder width of the clip.
+        norm "shoulder" centres every frame, "shoulder_clip" uses the clip's mean midpoint for all frames,
+        which keeps the body's movement within the clip.
+        """
+        sample_id = str(self.data[index]['id'].item())
+        body = np.load(os.path.join(self.data_dir, 'poses', 'pose', sample_id+'.npy'))
+        center = (body[:,11] + body[:,12]) / 2
+        if self.norm == "shoulder_clip":
+            center = np.broadcast_to(center.mean(axis=0), center.shape)
+        width = np.linalg.norm(body[:,11,:2] - body[:,12,:2], axis=-1).mean() + 1e-6
+        poses_data = []
+        for pose, keypoints in self.poses:
+            pose_data = np.load(os.path.join(self.data_dir, 'poses', pose, sample_id+'.npy'))
+            if keypoints != 'all':
+                pose_data = pose_data[:,keypoints,:]
+            pose_data = (pose_data - center[:,None,:]) / width
+            if 'hand' in pose:
+                pose_data[:,:,2] = 0
+            poses_data.append(pose_data)
+        value = np.concatenate(poses_data,axis=1)
+        label = self.data[index, 'sign']
+        return value, self.map_classes[label]
 
     def load(self, index):
+        value, label = self.load_all_coords(index)
+        return value[..., :self.coords], label
+
+    def load_all_coords(self, index):
+        if self.norm in ("shoulder", "shoulder_clip"):
+            return self.load_shoulder_normalized(index)
         poses_data = []
         take_center = True
         for pose, keypoints in self.poses:

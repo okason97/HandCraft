@@ -4,13 +4,15 @@
 
 # src/models/model.py
 
+import torch
+import torch.distributed
+from ema_pytorch import EMA
 from torch.nn import DataParallel
 from torch.nn.parallel import DistributedDataParallel as DDP
-import torch
 
-from sync_batchnorm.batchnorm import convert_model
 import utils.misc as misc
-from ema_pytorch import EMA
+from sync_batchnorm.batchnorm import convert_model
+
 
 def load_model(DATA, MODEL, MODULES, RUN, device, logger):
     if device == 0:

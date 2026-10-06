@@ -4,24 +4,24 @@
 
 # src/loader.py
 
-from os.path import join
 import json
 import os
+from os.path import join
+from typing import Any, cast
 
-from torch.backends import cudnn
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 import torch
 import torch.distributed as dist
 import wandb
+from torch.backends import cudnn
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
-from data.data_util import Dataset_, train_val_dataset, OversamplingWrapper
-from worker import WORKER
-import utils.log as log
-import utils.ckpt as ckpt
-import utils.misc as misc
-import utils.custom_ops as custom_ops
 import models.model as model_generator
+import utils.ckpt as ckpt
+import utils.log as log
+import utils.misc as misc
+from data.data_util import Dataset_, OversamplingWrapper, train_val_dataset
+from worker import WORKER
 
 
 def load_worker(local_rank, cfgs, gpus_per_node, run_name):
@@ -61,6 +61,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # Intialize python logger.
     # -----------------------------------------------------------------------------
+    logger: Any
     if local_rank == 0:
         logger = log.make_logger(cfgs.RUN.save_dir, run_name, None)
         if cfgs.RUN.ckpt_dir is not None:
@@ -74,79 +75,85 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             logger.info("cfgs." + k + " =")
             logger.info(json.dumps(vars(v), indent=2))
     else:
-        logger = None
+        logger = cast(Any, None)
 
     # -----------------------------------------------------------------------------
-    # load train and test datasets.
+    # load train and test datasets. The train dataset is always needed, it defines the classes.
     # -----------------------------------------------------------------------------
-    if cfgs.RUN.train or cfgs.RUN.save_dataset:
+    if local_rank == 0:
+        logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
+    base_train_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
+                             train=True,
+                             load_data_in_memory=cfgs.RUN.load_data_in_memory,
+                             poses=cfgs.DATA.poses,
+                             max_len=cfgs.DATA.max_len,
+                             target_len=cfgs.DATA.target_len,
+                             pad_frames=cfgs.DATA.pad_frames,
+                             pad_mode=cfgs.DATA.pad_mode,
+                             min_samples=cfgs.DATA.min_samples,
+                             random_crop=cfgs.DATA.random_crop,
+                             drop_frame=cfgs.DATA.drop_frame,
+                             drop_keypoint=cfgs.DATA.drop_keypoint,
+                             block_size=cfgs.DATA.block_size,
+                             flip_p=cfgs.DATA.flip_p,
+                             scale=cfgs.DATA.scale,
+                             rot=cfgs.DATA.rot,
+                             temporal_sampling=cfgs.DATA.temporal_sampling,
+                             speed=cfgs.DATA.speed,
+                             speed_range=cfgs.DATA.speed_range,
+                             hand_mask_p=cfgs.DATA.hand_mask_p,
+                             norm=cfgs.DATA.norm,
+                             shear_std=cfgs.DATA.shear_std,
+                             rot_std=cfgs.DATA.rot_std,
+                             mirror_p=cfgs.DATA.mirror_p,
+                             coords=cfgs.DATA.coords,
+                             mode=cfgs.RUN.mode)
+
+    cfgs.DATA.num_classes = len(base_train_dataset.classes)
+
+    train_dataset, valid_dataset = train_val_dataset(
+        dataset=base_train_dataset, val_split=0.1, random_state=cfgs.RUN.seed, stratify=base_train_dataset.data['sign'].to_list()
+    )
+
+    if cfgs.RUN.dset_used > 1:
+        dset_used = int(cfgs.RUN.dset_used)
+    elif cfgs.RUN.dset_used < 1:
+        dset_used = 1 - cfgs.RUN.dset_used
+    else:
+        dset_used = cfgs.RUN.dset_used
+    if dset_used != 1:
+        train_dataset, _ = train_val_dataset(dataset = train_dataset, val_split=None, train_size=dset_used, random_state = cfgs.RUN.seed)
+
+    if cfgs.DATA.oversample:
+        train_dataset = OversamplingWrapper(train_dataset)
+
+    if local_rank == 0:
+        logger.info("Train dataset size: {dataset_size}".format(dataset_size=len(train_dataset)))
+        logger.info("Valid dataset size: {dataset_size}".format(dataset_size=len(valid_dataset)))
+
+    if cfgs.RUN.synth_dir:
         if local_rank == 0:
             logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-        train_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
-                                 train=True,
-                                 load_data_in_memory=cfgs.RUN.load_data_in_memory,
-                                 poses=cfgs.DATA.poses,
-                                 max_len=cfgs.DATA.max_len,
-                                 target_len=cfgs.DATA.target_len,
-                                 pad_frames=cfgs.DATA.pad_frames,
-                                 pad_mode=cfgs.DATA.pad_mode,
-                                 min_samples=cfgs.DATA.min_samples,
-                                 random_crop=cfgs.DATA.random_crop,
-                                 drop_frame=cfgs.DATA.drop_frame,
-                                 drop_keypoint=cfgs.DATA.drop_keypoint,
-                                 block_size=cfgs.DATA.block_size,
-                                 flip_p=cfgs.DATA.flip_p,
-                                 scale=cfgs.DATA.scale,
-                                 rot=cfgs.DATA.rot,
-                                 mode=cfgs.RUN.mode)
-
-        cfgs.DATA.num_classes = len(train_dataset.classes)
-
-        train_dataset, valid_dataset = train_val_dataset(dataset = train_dataset, val_split=0.1, random_state = cfgs.RUN.seed, stratify=train_dataset.data['sign'].to_list())
-
-        if cfgs.RUN.dset_used > 1:
-            dset_used = int(cfgs.RUN.dset_used)
-        elif cfgs.RUN.dset_used < 1:
-            dset_used = 1 - cfgs.RUN.dset_used
-        else:
-            dset_used = cfgs.RUN.dset_used
-        if dset_used != 1:
-            train_dataset, _ = train_val_dataset(dataset = train_dataset, val_split=None, train_size=dset_used, random_state = cfgs.RUN.seed)
-
-        if cfgs.DATA.oversample:
-            train_dataset = OversamplingWrapper(train_dataset)
-
+        synth_dataset = Dataset_(data_dir=cfgs.RUN.synth_dir,
+                                train=True,
+                                load_data_in_memory=cfgs.RUN.load_data_in_memory,
+                                poses=cfgs.DATA.synth_poses,
+                                max_len=cfgs.DATA.max_len,
+                                target_len=cfgs.DATA.target_len,
+                                pad_frames=cfgs.DATA.pad_frames,
+                                pad_mode=cfgs.DATA.pad_mode,
+                                min_samples=cfgs.DATA.min_samples,
+                                random_crop=cfgs.DATA.random_crop,
+                                drop_frame=cfgs.DATA.drop_frame,
+                                drop_keypoint=cfgs.DATA.drop_keypoint,
+                                block_size=cfgs.DATA.block_size,
+                                flip_p=cfgs.DATA.flip_p,
+                                scale=cfgs.DATA.scale,
+                                rot=cfgs.DATA.rot,
+                                mode=cfgs.RUN.mode)
         if local_rank == 0:
             logger.info("Train dataset size: {dataset_size}".format(dataset_size=len(train_dataset)))
-            logger.info("Valid dataset size: {dataset_size}".format(dataset_size=len(valid_dataset)))
-
-        if cfgs.RUN.synth_dir:
-            if local_rank == 0:
-                logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-            synth_dataset = Dataset_(data_dir=cfgs.RUN.synth_dir,
-                                    train=True,
-                                    load_data_in_memory=cfgs.RUN.load_data_in_memory,
-                                    poses=cfgs.DATA.synth_poses,
-                                    max_len=cfgs.DATA.max_len,
-                                    target_len=cfgs.DATA.target_len,
-                                    pad_frames=cfgs.DATA.pad_frames,
-                                    pad_mode=cfgs.DATA.pad_mode,
-                                    min_samples=cfgs.DATA.min_samples,
-                                    random_crop=cfgs.DATA.random_crop,
-                                    drop_frame=cfgs.DATA.drop_frame,
-                                    drop_keypoint=cfgs.DATA.drop_keypoint,
-                                    block_size=cfgs.DATA.block_size,
-                                    flip_p=cfgs.DATA.flip_p,
-                                    scale=cfgs.DATA.scale,
-                                    rot=cfgs.DATA.rot,
-                                    mode=cfgs.RUN.mode)
-            if local_rank == 0:
-                logger.info("Train dataset size: {dataset_size}".format(dataset_size=len(train_dataset)))
-        else:
-            synth_dataset = None
     else:
-        train_dataset = None
-        valid_dataset = None
         synth_dataset = None
 
     if local_rank == 0:
@@ -154,13 +161,16 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     test_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
                             train=False,
                             load_data_in_memory=cfgs.RUN.load_data_in_memory,
-                            filter_classes=train_dataset.classes,
-                            map_classes=train_dataset.dataset.dataset.map_classes,
+                            filter_classes=base_train_dataset.classes,
+                            map_classes=base_train_dataset.map_classes,
                             max_len=cfgs.DATA.max_len,
                             target_len=cfgs.DATA.target_len,
                             pad_frames=cfgs.DATA.pad_frames,
                             pad_mode=cfgs.DATA.pad_mode,
                             poses=cfgs.DATA.poses,
+                            temporal_sampling=cfgs.DATA.temporal_sampling,
+                            norm=cfgs.DATA.norm,
+                            coords=cfgs.DATA.coords,
                             mode=cfgs.RUN.mode)
     if local_rank == 0:
         logger.info("Test dataset size: {dataset_size}".format(dataset_size=len(test_dataset)))
@@ -172,7 +182,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     if cfgs.RUN.distributed_data_parallel:
         cfgs.OPTIMIZATION.batch_size = cfgs.OPTIMIZATION.batch_size//cfgs.OPTIMIZATION.world_size
 
-    if (cfgs.RUN.train or cfgs.RUN.save_dataset) and cfgs.RUN.distributed_data_parallel:
+    if cfgs.RUN.distributed_data_parallel:
         train_sampler = DistributedSampler(train_dataset,
                                            num_replicas=cfgs.OPTIMIZATION.world_size,
                                            rank=local_rank,
@@ -184,7 +194,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                            shuffle=False,
                                            drop_last=True)
         topk = cfgs.OPTIMIZATION.batch_size
-        if cfgs.RUN.synth_dir:
+        if synth_dataset is not None:
             synth_sampler = DistributedSampler(synth_dataset,
                                             num_replicas=cfgs.OPTIMIZATION.world_size,
                                             rank=local_rank,
@@ -195,7 +205,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     else:
         train_sampler = None
         valid_sampler = None
-        if cfgs.RUN.synth_dir:
+        if synth_dataset is not None:
             synth_sampler = torch.utils.data.RandomSampler(data_source=synth_dataset, 
                                                            replacement=True, 
                                                            num_samples=len(train_dataset))
@@ -205,42 +215,37 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         else:
             synth_sampler = None
 
-    if cfgs.RUN.train or cfgs.RUN.save_dataset:
-        train_dataloader = DataLoader(dataset=train_dataset,
-                                      batch_size=cfgs.OPTIMIZATION.batch_size,
-                                      shuffle=(train_sampler is None),
-                                      pin_memory=True,
-                                      prefetch_factor=cfgs.RUN.prefetch_factor,
-                                      num_workers=cfgs.RUN.num_workers,
-                                      sampler=train_sampler,
-                                      drop_last=True,
-                                      #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                      persistent_workers=True)
-        valid_dataloader = DataLoader(dataset=valid_dataset,
-                                        batch_size=cfgs.OPTIMIZATION.batch_size,
-                                        shuffle=False,
-                                        pin_memory=True,
-                                        prefetch_factor=cfgs.RUN.prefetch_factor,
-                                        num_workers=cfgs.RUN.num_workers,
-                                        sampler=valid_sampler,
-                                        #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                        drop_last=True)
-        if cfgs.RUN.synth_dir:
-            synth_dataloader = DataLoader(dataset=synth_dataset,
-                                        batch_size=cfgs.OPTIMIZATION.batch_size,
-                                        shuffle=(synth_sampler is None),
-                                        pin_memory=True,
-                                        prefetch_factor=cfgs.RUN.prefetch_factor,
-                                        num_workers=cfgs.RUN.num_workers,
-                                        sampler=synth_sampler,
-                                        drop_last=True,
-                                        #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                        persistent_workers=True)
-        else:
-            synth_dataloader = None
+    train_dataloader = DataLoader(dataset=train_dataset,
+                                  batch_size=cfgs.OPTIMIZATION.batch_size,
+                                  shuffle=(train_sampler is None),
+                                  pin_memory=True,
+                                  prefetch_factor=cfgs.RUN.prefetch_factor,
+                                  num_workers=cfgs.RUN.num_workers,
+                                  sampler=train_sampler,
+                                  drop_last=True,
+                                  #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+                                  persistent_workers=True)
+    valid_dataloader = DataLoader(dataset=valid_dataset,
+                                    batch_size=cfgs.OPTIMIZATION.batch_size,
+                                    shuffle=False,
+                                    pin_memory=True,
+                                    prefetch_factor=cfgs.RUN.prefetch_factor,
+                                    num_workers=cfgs.RUN.num_workers,
+                                    sampler=valid_sampler,
+                                    #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+                                    drop_last=True)
+    if synth_dataset is not None:
+        synth_dataloader = DataLoader(dataset=synth_dataset,
+                                    batch_size=cfgs.OPTIMIZATION.batch_size,
+                                    shuffle=(synth_sampler is None),
+                                    pin_memory=True,
+                                    prefetch_factor=cfgs.RUN.prefetch_factor,
+                                    num_workers=cfgs.RUN.num_workers,
+                                    sampler=synth_sampler,
+                                    drop_last=True,
+                                    #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+                                    persistent_workers=True)
     else:
-        train_dataloader = None
-        valid_dataloader = None
         synth_dataloader = None
 
     if cfgs.RUN.distributed_data_parallel:
@@ -282,9 +287,6 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         r_model = None
 
 
-    if local_rank != 0:
-        custom_ops.verbosity = "none"
-
     # -----------------------------------------------------------------------------
     # define optimizer
     # -----------------------------------------------------------------------------
@@ -315,7 +317,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                       backbone=cfgs.MODEL.backbone)
 
         if topk == "initialize":
-            topk == cfgs.OPTIMIZATION.batch_size
+            topk = cfgs.OPTIMIZATION.batch_size
 
     if cfgs.RUN.ckpt_dir is None:
         if local_rank == 0:
@@ -471,15 +473,15 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     if cfgs.RUN.save_samples:
         if global_rank == 0:
             print(""), logger.info("-" * 80)
-        worker.visualize_samples_poses()
+        worker.visualize_samples_poses(step=best_step)
 
     if cfgs.RUN.save_dataset:
         if global_rank == 0:
             print(""), logger.info("-" * 80)
         single_class_sampler_fabric = misc.SingleClassSamplerFabric(train_dataset)
         worker.prepare_generation()
-        for sign in train_dataset.classes:
-            class_n = train_dataset.dataset.dataset.map_classes[sign]
+        for sign in base_train_dataset.classes:
+            class_n = base_train_dataset.map_classes[sign]
             print(f"Generating class {class_n}")
             single_class_sampler = single_class_sampler_fabric.get_sampler(class_n)
             class_dataloader = DataLoader(dataset=train_dataset,
