@@ -108,7 +108,25 @@ Install the dependencies with [uv](https://docs.astral.sh/uv/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- Publication -->
+## Publication
 
+**Paper**: [HandCraft: Dynamic Sign Generation for Synthetic Data Augmentation](https://arxiv.org/abs/2508.14345)
+
+### Citation
+
+If you use this work in your research, please cite:
+```bibtex
+@misc{rios2025handcraftdynamicsigngeneration,
+      title={HandCraft: Dynamic Sign Generation for Synthetic Data Augmentation}, 
+      author={Gaston Gustavo Rios and Pedro Dal Bianco and Franco Ronchetti and Facundo Quiroga and Oscar Stanchi and Santiago Ponte Ahón and Waldo Hasperué},
+      year={2025},
+      eprint={2508.14345},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2508.14345}, 
+}
+```
 
 <!-- LICENSE -->
 ## License
@@ -123,8 +141,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 ## Contact
 
 Gaston Rios - okason1997@hotmail.com
-
-Project Link: [https://github.com/okason97/HandCraft](https://github.com/okason97/HandCraft)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
