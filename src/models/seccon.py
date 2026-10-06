@@ -109,8 +109,7 @@ class Model(nn.Module):
         self.register_buffer('class_mask', class_mask, persistent=False)
 
     def forward(self, x, masks=None, eval=False):
-        # mixed precision is applied by the worker, which runs the model inside torch.autocast
-        with misc.dummy_context_mgr():
+        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
             h = x
             n = h.shape[0]
             if masks is not None:

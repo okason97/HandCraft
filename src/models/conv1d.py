@@ -103,8 +103,7 @@ class Model(nn.Module):
             ops.init_weights(self.modules, MODEL.init)
 
     def forward(self, x, masks=None, eval=False):
-        # mixed precision is applied by the worker, which runs the model inside torch.autocast
-        with misc.dummy_context_mgr():
+        with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
             h = x
             if masks is not None:
                 masks = masks.any(dim=-1) 
