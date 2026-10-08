@@ -51,10 +51,26 @@ class Lookahead(Optimizer):
         self.optimizer.zero_grad(set_to_none=set_to_none)
 
     def state_dict(self):
-        return self.optimizer.state_dict()
+        # the inner optimizer and the slow weights, in the order of the parameters
+        params = [p for group in self.optimizer.param_groups for p in group['params']]
+        return {
+            'inner': self.optimizer.state_dict(),
+            'cached_params': [self.state[p]['cached_params'] for p in params],
+            'step_counter': self.step_counter,
+        }
 
     def load_state_dict(self, state_dict):
-        self.optimizer.load_state_dict(state_dict)
+        if 'inner' not in state_dict:
+            # checkpoints saved before the slow weights were stored only have the inner optimizer
+            self.optimizer.load_state_dict(state_dict)
+        else:
+            self.optimizer.load_state_dict(state_dict['inner'])
+            params = [p for group in self.optimizer.param_groups for p in group['params']]
+            for p, cached in zip(params, state_dict['cached_params'], strict=True):
+                self.state[p]['cached_params'].copy_(cached)
+            self.step_counter = state_dict['step_counter']
+        # the inner optimizer replaces its param_groups list when loading: share the new one, which the lr scheduler updates
+        self.param_groups = self.optimizer.param_groups
 
     def _backup_and_load_cache(self):
         """Useful for performing evaluation on the slow weights (which typically generalize better)"""
