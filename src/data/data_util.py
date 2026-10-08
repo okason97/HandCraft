@@ -18,7 +18,7 @@ import torch.nn.functional as F
 import torchvision.transforms as transforms
 from scipy import interpolate
 from sklearn.model_selection import train_test_split
-from torch.utils.data import Dataset, Subset
+from torch.utils.data import Dataset, Sampler, Subset, get_worker_info
 
 
 def normalize(data, pose):
@@ -831,6 +831,65 @@ class Dataset_(Dataset):
             return self.get_cond_prediction_item(index)
         else:
             raise NotImplementedError
+
+
+class SeededSampler(Sampler):
+    """
+    Yields (index, sample seed) pairs. The order of the indexes (shuffled or not) and the seed of every sample depend
+    only on the run seed and the epoch set with set_epoch(), so the data of an epoch is the same whatever the number of
+    data loader workers, and a run resumed from a checkpoint sees the same data as an uninterrupted one.
+    Use with SeededDataset.
+    """
+
+    def __init__(self, length, seed, shuffle):
+        self.length = length
+        self.seed = seed
+        self.shuffle = shuffle
+        self.epoch = 0
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def __iter__(self):
+        generator = torch.Generator().manual_seed(self.seed * 1_000_003 + self.epoch)
+        order = torch.randperm(self.length, generator=generator) if self.shuffle else torch.arange(self.length)
+        seeds = torch.randint(0, 2**31 - 1, (self.length,), generator=generator)
+        return iter(zip(order.tolist(), seeds.tolist(), strict=True))
+
+    def __len__(self):
+        return self.length
+
+
+class SeededDataset(Dataset):
+    """
+    Wraps a dataset for SeededSampler: seeds the random number generators with the sample seed before loading the
+    sample, so its random augmentations depend only on that seed.
+    """
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        index, seed = index
+        if get_worker_info() is not None:
+            # in a data loader worker the generators only serve the data pipeline
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            return self.dataset[index]
+        # in the main process, keep the generators of the training (dropout, ...) untouched
+        state = random.getstate(), np.random.get_state()
+        with torch.random.fork_rng(devices=[]):
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            sample = self.dataset[index]
+        random.setstate(state[0])
+        np.random.set_state(state[1])
+        return sample
 
 
 class OversamplingWrapper(torch.utils.data.Dataset):

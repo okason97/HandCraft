@@ -76,6 +76,25 @@ Training logs to [Weights & Biases](https://wandb.ai). Either log in once with `
 export WANDB_MODE=offline
 ```
 
+Runs go to the project `handcraft-<backbone>-<dataset>` (the run scripts pass `--project handcraft-<model>-<dataset>`) of the entity in `WANDB_ENTITY`, or of the account's default entity when it is not set. Set it to log to a team:
+
+```bash
+export WANDB_ENTITY=<team>
+```
+
+What a run records:
+
+| Key | Contents |
+|---|---|
+| `train_loss`, `train_top1`, `train_top10` | Training metrics of every epoch |
+| `valid_loss`, `valid_top1`, `valid_top10`, `valid_mpjpe` | Validation metrics of every epoch, on the 10% of the training split held out for validation |
+| `test_loss`, `test_top1`, `test_top10`, `test_mpjpe` | The final evaluation of the best checkpoint on the test split (only with `--test`) |
+| config | Every option of the `DATA`, `MODEL`, `LOSS`, `OPTIMIZATION` and `RUN` sections, including the seed and the data directory |
+
+The run name is `<dataset>-<config>-seed<seed>-train-<timestamp>`.
+
+Runs made before this was introduced logged the validation metrics as `test_*` and did not log the test set, so their `test_top1` is validation accuracy (see [reproducibility.md](reproducibility.md)).
+
 ## Docker
 
 The `Dockerfile` installs the same locked environment. The image sets `HANDCRAFT_DATA=/data` and `HANDCRAFT_SAVE=/outputs`; mount the datasets and the output directory there:

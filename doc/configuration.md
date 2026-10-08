@@ -124,8 +124,8 @@ Flags of `src/main.py`. The run scripts set `--mode`, `-t`, `-data`, `-cfg`, `-s
 
 | Flag | Default | Description |
 |---|---|---|
-| `--entity` | `None` | Weights & Biases entity |
-| `--project` | `None` | Weights & Biases project name |
+| `--entity` | `None` | Weights & Biases entity. Default: `WANDB_ENTITY`, or the account's default entity |
+| `--project` | `None` | Weights & Biases project. Default: `handcraft-<backbone>-<dataset>` |
 | `-cfg, --cfg_file` | required | Config file |
 | `-data, --data_dir` | required | Dataset directory |
 | `-s_data, --synth_dir` | `None` | Synthetic dataset to pretrain on (classification) |

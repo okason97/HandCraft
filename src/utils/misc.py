@@ -77,6 +77,25 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
+def cfgs_to_dict(cfgs):
+    """
+    The options of every config section as a nested dict of plain values, for the wandb run config.
+    Values that are objects (models, optimizers, modules) are left out.
+    """
+    plain = (str, int, float, bool, type(None))
+
+    def is_plain(value):
+        if isinstance(value, (list, tuple)):
+            return all(is_plain(v) for v in value)
+        return isinstance(value, plain)
+
+    return {
+        section: {name: value for name, value in vars(obj).items() if is_plain(value)}
+        for section, obj in cfgs.super_cfgs.items()
+        if section in ("DATA", "MODEL", "LOSS", "OPTIMIZATION", "RUN")
+    }
+
+
 def accm_values_convert_dict(list_dict, value_dict, step, interval):
     for name, value_list in list_dict.items():
         if step is None:
