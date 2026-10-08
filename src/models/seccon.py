@@ -64,6 +64,9 @@ class Block(nn.Module):
         return x
 
 class Model(nn.Module):
+    # buffer registered in __init__; torch types buffer attributes as Tensor | Module
+    class_mask: torch.Tensor
+
     def __init__(self, DATA, RUN, MODULES, MODEL):
         super(Model, self).__init__()
 

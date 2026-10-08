@@ -206,6 +206,9 @@ class Model(nn.Module):
     Expects DATA.poses to be HWGAT29_POSES. The input is a sequence of raw frames, so it
     should be used with DATA.transform "none" and a sampling that returns no padded frames.
     """
+    # buffer registered in __init__; torch types buffer attributes as Tensor | Module
+    A: torch.Tensor
+
     def __init__(self, DATA: Any, RUN: Any, MODULES: Any, MODEL: Any):
         super().__init__()
         self.num_nodes = DATA.input_size[1]

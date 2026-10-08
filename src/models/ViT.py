@@ -134,6 +134,9 @@ class Encoder(nn.Module):
 class Model(nn.Module):
     """Vision Transformer as per https://arxiv.org/abs/2010.11929."""
 
+    # buffer registered in __init__; torch types buffer attributes as Tensor | Module
+    class_mask: torch.Tensor
+
     def __init__(
         self,
         DATA: Any,

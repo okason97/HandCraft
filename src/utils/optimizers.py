@@ -46,8 +46,8 @@ class Lookahead(Optimizer):
             'pullback_momentum': self.pullback_momentum
         }
 
-    def zero_grad(self):
-        self.optimizer.zero_grad()
+    def zero_grad(self, set_to_none: bool = True):
+        self.optimizer.zero_grad(set_to_none=set_to_none)
 
     def state_dict(self):
         return self.optimizer.state_dict()

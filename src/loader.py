@@ -233,7 +233,10 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                     num_workers=cfgs.RUN.num_workers,
                                     sampler=valid_sampler,
                                     #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                    drop_last=True)
+                                    drop_last=True,
+                                    # keep the workers between evaluations: on Windows each new worker process re-imports torch,
+                                    # which made every validation take about 45 s
+                                    persistent_workers=True)
     if synth_dataset is not None:
         synth_dataloader = DataLoader(dataset=synth_dataset,
                                     batch_size=cfgs.OPTIMIZATION.batch_size,
@@ -265,7 +268,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                                     num_workers=cfgs.RUN.num_workers,
                                     sampler=test_sampler,
                                     #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                    drop_last=True)
+                                    drop_last=True,
+                                    persistent_workers=True)
 
     # -----------------------------------------------------------------------------
     # load the model
