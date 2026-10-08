@@ -48,7 +48,7 @@ class Configurations(object):
         self.DATA.oversample = False
         # data poses and keypoints used
         self.DATA.poses = []
-        self.DATA.synth_poses = [["pose","all"],["right_hand","all"],["left_hand","all"], ["face","all"]]
+        self.DATA.synth_poses = [["pose", "all"], ["right_hand", "all"], ["left_hand", "all"], ["face", "all"]]
         # count of the subset of keypoints chosen
         self.DATA.num_keypoints = 91
         # data augmentation
@@ -82,7 +82,6 @@ class Configurations(object):
         self.DATA.transform = None
         self.DATA.batch_size = 128
 
-
         # -----------------------------------------------------------------------------
         # Model settings
         # -----------------------------------------------------------------------------
@@ -91,7 +90,7 @@ class Configurations(object):
         # type of backbone architectures of the generator and discriminator \in
         # ["conv1d"]
         self.MODEL.backbone = "conv1d"
-        # whether to apply spectral normalization 
+        # whether to apply spectral normalization
         self.MODEL.apply_sn = False
         # type of activation function \in ["ReLU", "Leaky_ReLU", "ELU", "GELU"]
         self.MODEL.act_fn = "ReLU"
@@ -156,7 +155,7 @@ class Configurations(object):
         self.MODEL.representation_size = None
         # MAMBA
         # latent state dim
-        self.MODEL.d_state = 16 
+        self.MODEL.d_state = 16
         # rank of Δ
         self.MODEL.dt_rank = 'auto'
 
@@ -263,8 +262,7 @@ class Configurations(object):
                     if hasattr(self.super_cfgs[super_cfg_name], attr):
                         setattr(self.super_cfgs[super_cfg_name], attr, value)
                     else:
-                        raise AttributeError("There does not exist '{cls}.{attr}' attribute in the config.py.". \
-                                             format(cls=super_cfg_name, attr=attr))
+                        raise AttributeError("There does not exist '{cls}.{attr}' attribute in the config.py.".format(cls=super_cfg_name, attr=attr))
 
     def define_losses(self):
         losses_dic = {
@@ -335,45 +333,42 @@ class Configurations(object):
             params.append(param)
 
         if self.OPTIMIZATION.type_ == "SGD":
-            self.OPTIMIZATION.optimizer = torch.optim.SGD(params=params,
-                                                            lr=self.OPTIMIZATION.lr,
-                                                            weight_decay=self.OPTIMIZATION.weight_decay,
-                                                            momentum=self.OPTIMIZATION.momentum,
-                                                            nesterov=self.OPTIMIZATION.nesterov)
+            self.OPTIMIZATION.optimizer = torch.optim.SGD(
+                params=params,
+                lr=self.OPTIMIZATION.lr,
+                weight_decay=self.OPTIMIZATION.weight_decay,
+                momentum=self.OPTIMIZATION.momentum,
+                nesterov=self.OPTIMIZATION.nesterov,
+            )
         elif self.OPTIMIZATION.type_ == "RMSprop":
-            self.OPTIMIZATION.optimizer = torch.optim.RMSprop(params=params,
-                                                                lr=self.OPTIMIZATION.lr,
-                                                                weight_decay=self.OPTIMIZATION.weight_decay,
-                                                                momentum=self.OPTIMIZATION.momentum,
-                                                                alpha=self.OPTIMIZATION.alpha)
+            self.OPTIMIZATION.optimizer = torch.optim.RMSprop(
+                params=params,
+                lr=self.OPTIMIZATION.lr,
+                weight_decay=self.OPTIMIZATION.weight_decay,
+                momentum=self.OPTIMIZATION.momentum,
+                alpha=self.OPTIMIZATION.alpha,
+            )
         elif self.OPTIMIZATION.type_ == "Adam":
             betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
             eps_ = 1e-6
 
-            self.OPTIMIZATION.optimizer = torch.optim.Adam(params=params,
-                                                           lr=self.OPTIMIZATION.lr,
-                                                           betas=betas,
-                                                           weight_decay=self.OPTIMIZATION.weight_decay,
-                                                           eps=eps_)
+            self.OPTIMIZATION.optimizer = torch.optim.Adam(
+                params=params, lr=self.OPTIMIZATION.lr, betas=betas, weight_decay=self.OPTIMIZATION.weight_decay, eps=eps_
+            )
         elif self.OPTIMIZATION.type_ == "RAdam":
             betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
             eps_ = 1e-6
 
-            self.OPTIMIZATION.optimizer = torch.optim.RAdam(params=params,
-                                                           lr=self.OPTIMIZATION.lr,
-                                                           betas=betas,
-                                                           weight_decay=self.OPTIMIZATION.weight_decay,
-                                                           eps=eps_)
+            self.OPTIMIZATION.optimizer = torch.optim.RAdam(
+                params=params, lr=self.OPTIMIZATION.lr, betas=betas, weight_decay=self.OPTIMIZATION.weight_decay, eps=eps_
+            )
         elif self.OPTIMIZATION.type_ == "AdamW":
             betas = (self.OPTIMIZATION.beta1, self.OPTIMIZATION.beta2)
 
-            self.OPTIMIZATION.optimizer = torch.optim.AdamW(params=params,
-                                                            lr=self.OPTIMIZATION.lr,
-                                                            betas=betas,
-                                                            weight_decay=self.OPTIMIZATION.weight_decay)
+            self.OPTIMIZATION.optimizer = torch.optim.AdamW(params=params, lr=self.OPTIMIZATION.lr, betas=betas, weight_decay=self.OPTIMIZATION.weight_decay)
         else:
             raise NotImplementedError
-        
+
         if self.OPTIMIZATION.lrscheduler == "OneCycle":
             self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.OPTIMIZATION.optimizer,
@@ -387,7 +382,7 @@ class Configurations(object):
             self.OPTIMIZATION.scheduler = None
 
         if self.OPTIMIZATION.lookahead:
-            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer,k=5,alpha=0.5)
+            self.OPTIMIZATION.optimizer = optimizers.Lookahead(optimizer=self.OPTIMIZATION.optimizer, k=5, alpha=0.5)
 
     """
     def define_augments(self, device):
@@ -466,16 +461,16 @@ class Configurations(object):
             assert self.RUN.r_ckpt_dir is not None, "Specify -r_ckpt CHECKPOINT_FOLDER to evaluate with two generators."
 
         if self.RUN.distributed_data_parallel:
-            print("Turning on DDP might cause inexact evaluation results. \
-                \nPlease use a single GPU or DataParallel for the exact evluation.")
+            print(
+                "Turning on DDP might cause inexact evaluation results. \
+                \nPlease use a single GPU or DataParallel for the exact evluation."
+            )
 
         if self.OPTIMIZATION.world_size == 1:
             assert not self.RUN.distributed_data_parallel, "Cannot perform distributed training with a single gpu."
 
-        assert self.OPTIMIZATION.batch_size % self.OPTIMIZATION.world_size == 0, \
-            "Batch_size should be divided by the number of gpus."
+        assert self.OPTIMIZATION.batch_size % self.OPTIMIZATION.world_size == 0, "Batch_size should be divided by the number of gpus."
 
-        assert self.RUN.save_every % self.RUN.print_every == 0, \
-            "RUN.save_every should be divided by RUN.print_every for wandb logging."
-        
+        assert self.RUN.save_every % self.RUN.print_every == 0, "RUN.save_every should be divided by RUN.print_every for wandb logging."
+
         assert self.RUN.ss_num <= self.OPTIMIZATION.batch_size, "Number of saved samples should be smaller than the batch size."

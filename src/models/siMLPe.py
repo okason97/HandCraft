@@ -5,7 +5,6 @@ import utils.misc as misc
 
 
 class MLPblock(nn.Module):
-
     def __init__(self, dims, MODULES):
         super().__init__()
 
@@ -27,16 +26,16 @@ class MLPblock(nn.Module):
 
         return x
 
+
 class TransMLP(nn.Module):
     def __init__(self, dims, num_layers, MODULES):
         super().__init__()
-        self.mlps = nn.Sequential(*[
-            MLPblock(dims, MODULES)
-            for i in range(num_layers)])
+        self.mlps = nn.Sequential(*[MLPblock(dims, MODULES) for i in range(num_layers)])
 
     def forward(self, x):
         x = self.mlps(x)
         return x
+
 
 class Model(nn.Module):
     '''
@@ -44,19 +43,16 @@ class Model(nn.Module):
     siMLPe article: https://arxiv.org/abs/2207.01567
     siMLPe code: https://github.com/dulucas/siMLPe/tree/main
     '''
+
     def __init__(self, DATA, RUN, MODULES, MODEL):
         super(Model, self).__init__()
         self.arr0 = Rearrange('b n d -> b d n')
         self.arr1 = Rearrange('b d n -> b n d')
         self.mixed_precision = RUN.mixed_precision
-        seq = DATA.input_size[-2]*DATA.input_size[-1]
+        seq = DATA.input_size[-2] * DATA.input_size[-1]
         dim = DATA.input_size[-3]
 
-        self.motion_mlp = TransMLP(
-            dims=[seq, dim],
-            num_layers=MODEL.depth,
-            MODULES=MODULES
-        )
+        self.motion_mlp = TransMLP(dims=[seq, dim], num_layers=MODEL.depth, MODULES=MODULES)
 
         self.temporal_fc_in = MODEL.temporal_fc_in
         self.temporal_fc_out = MODEL.temporal_fc_out

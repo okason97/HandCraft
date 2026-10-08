@@ -11,7 +11,7 @@ import utils.ops as ops
 class Conv1DBlock(nn.Module):
     def __init__(self, in_channels, out_channels, MODEL, MODULES):
         super(Conv1DBlock, self).__init__()
-        self.res = (in_channels==out_channels)
+        self.res = in_channels == out_channels
         expanded_channels = out_channels * MODEL.expand_ratio
 
         self.in_linear = MODULES.linear(in_features=in_channels, out_features=expanded_channels)
@@ -22,7 +22,7 @@ class Conv1DBlock(nn.Module):
         self.bn = MODULES.feature_norm(in_features=expanded_channels)
         self.out_linear = MODULES.linear(in_features=expanded_channels, out_features=out_channels)
         self.dropout = MODULES.dropout(p=MODEL.dropout)
-        self.drop_path = MODULES.drop_path(p=MODEL.drop_path,mode="batch")
+        self.drop_path = MODULES.drop_path(p=MODEL.drop_path, mode="batch")
 
         self.activation = MODULES.act_fn
 
@@ -32,13 +32,13 @@ class Conv1DBlock(nn.Module):
 
         x = self.activation(self.in_linear(x))
         # (n, f, embeding) -> (n, c, f)
-        x = torch.transpose(x,1,2)
+        x = torch.transpose(x, 1, 2)
         x = self.activation(self.conv1d(x))
         x = self.eca(x)
         x = self.bn(x)
         # (n, c, f) -> (n, f, embeding)
-        x = torch.transpose(x,1,2)
-        #if masks is not None:
+        x = torch.transpose(x, 1, 2)
+        # if masks is not None:
         #    x[masks] = 0
         x = self.dropout(self.out_linear(x))
 
@@ -47,29 +47,31 @@ class Conv1DBlock(nn.Module):
         else:
             return x
 
+
 class Block(nn.Module):
     def __init__(self, in_channels, out_channels, MODEL, MODULES):
         super(Block, self).__init__()
 
-        #self.conv1d0 = Conv1DBlock(in_channels, in_channels, MODEL, MODULES)
-        #self.conv1d1 = Conv1DBlock(in_channels, in_channels, MODEL, MODULES)
+        # self.conv1d0 = Conv1DBlock(in_channels, in_channels, MODEL, MODULES)
+        # self.conv1d1 = Conv1DBlock(in_channels, in_channels, MODEL, MODULES)
         self.conv1d2 = Conv1DBlock(in_channels, out_channels, MODEL, MODULES)
 
     def forward(self, x, masks=None):
 
-        #x = self.conv1d0(x, masks)
-        #x = self.conv1d1(x, masks)
+        # x = self.conv1d0(x, masks)
+        # x = self.conv1d1(x, masks)
         x = self.conv1d2(x, masks)
 
         return x
+
 
 class Model(nn.Module):
     def __init__(self, DATA, RUN, MODULES, MODEL):
         super(Model, self).__init__()
 
-        f_input_size = DATA.input_size[1]*DATA.input_size[2]
-        self.in_dims = [MODEL.embed_size]+[MODEL.conv_dim]*(MODEL.depth-1)
-        self.out_dims = [MODEL.conv_dim]*MODEL.depth
+        f_input_size = DATA.input_size[1] * DATA.input_size[2]
+        self.in_dims = [MODEL.embed_size] + [MODEL.conv_dim] * (MODEL.depth - 1)
+        self.out_dims = [MODEL.conv_dim] * MODEL.depth
 
         self.mixed_precision = RUN.mixed_precision
 
@@ -77,12 +79,7 @@ class Model(nn.Module):
         self.attns = []
         self.apply_attn = MODEL.apply_attn
         for index in range(len(self.in_dims)):
-            self.blocks += [
-                Block(in_channels=self.in_dims[index],
-                            out_channels=self.out_dims[index],
-                            MODEL=MODEL,
-                            MODULES=MODULES)
-            ]
+            self.blocks += [Block(in_channels=self.in_dims[index], out_channels=self.out_dims[index], MODEL=MODEL, MODULES=MODULES)]
 
             if self.apply_attn:
                 self.attns += [
@@ -94,7 +91,7 @@ class Model(nn.Module):
 
         self.inlinear = MODULES.linear(f_input_size, self.in_dims[0], bias=False)
         self.bn = MODULES.feature_norm(in_features=DATA.input_size[0])
-        self.top_linear = MODULES.linear(self.out_dims[-1], self.out_dims[-1]*2, bias=False)
+        self.top_linear = MODULES.linear(self.out_dims[-1], self.out_dims[-1] * 2, bias=False)
         self.outlinear = MODULES.linear(DATA.input_size[0], DATA.num_classes)
 
         self.dropout = MODULES.dropout(p=MODEL.dropout)
@@ -106,8 +103,8 @@ class Model(nn.Module):
         with torch.autocast("cuda") if self.mixed_precision and not eval else misc.dummy_context_mgr():
             h = x
             if masks is not None:
-                masks = masks.any(dim=-1) 
-                #h[masks] = 0
+                masks = masks.any(dim=-1)
+                # h[masks] = 0
                 attn_masks = masks.T
             else:
                 attn_masks = None

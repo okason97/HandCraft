@@ -32,13 +32,14 @@ class make_empty_object(object):
     """
     Empty namespace for the configuration groups (cfgs.DATA, cfgs.MODEL, ...).
     """
+
     if TYPE_CHECKING:
         # the attributes are set dynamically from the config files
         def __getattr__(self, name: str) -> Any: ...
         def __setattr__(self, name: str, value: Any) -> None: ...
 
 
-class dummy_context_mgr():
+class dummy_context_mgr:
     def __enter__(self):
         return None
 
@@ -56,8 +57,10 @@ class SaveOutput:
     def clear(self):
         self.outputs = []
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 
@@ -117,6 +120,7 @@ def prepare_folder(names, save_dir):
 def download_data_if_possible(data_name, data_dir):
     return True
 
+
 def fix_seed(seed):
     random.seed(seed)
     torch.manual_seed(seed)
@@ -137,10 +141,7 @@ def setup(rank, world_size, backend="nccl"):
         dist.init_process_group(backend, init_method=init_method, rank=rank, world_size=world_size)
     else:
         # initialize the process group
-        dist.init_process_group(backend,
-                                init_method="tcp://%s:%s" % (os.environ["MASTER_ADDR"], os.environ["MASTER_PORT"]),
-                                rank=rank,
-                                world_size=world_size)
+        dist.init_process_group(backend, init_method="tcp://%s:%s" % (os.environ["MASTER_ADDR"], os.environ["MASTER_PORT"]), rank=rank, world_size=world_size)
 
 
 def cleanup():
@@ -267,13 +268,13 @@ def orthogonalize_model(model, strength=1e-4, blacklist=()):
             if len(param.shape) < 2 or any([param is item for item in blacklist]):
                 continue
             w = param.view(param.shape[0], -1)
-            grad = (2 * torch.mm(torch.mm(w, w.t()) * (1. - torch.eye(w.shape[0], device=w.device)), w))
+            grad = 2 * torch.mm(torch.mm(w, w.t()) * (1.0 - torch.eye(w.shape[0], device=w.device)), w)
             param.grad.data += strength * grad.view(param.shape)
 
 
 def interpolate(x0, x1, num_midpoints):
     lerp = torch.linspace(0, 1.0, num_midpoints + 2, device="cuda").to(x0.dtype)
-    return ((x0 * (1 - lerp.view(1, -1, 1))) + (x1 * lerp.view(1, -1, 1)))
+    return (x0 * (1 - lerp.view(1, -1, 1))) + (x1 * lerp.view(1, -1, 1))
 
 
 def save_dict_npy(directory, name, dictionary):
@@ -288,7 +289,7 @@ def compute_gradient(fx, logits, label, num_classes):
     probs = torch.nn.Softmax(dim=1)(logits.detach().cpu())
     gt_prob = F.one_hot(label, num_classes)
     oneMp = gt_prob - probs
-    preds = (probs*gt_prob).sum(-1)
+    preds = (probs * gt_prob).sum(-1)
     grad = torch.mean(fx.unsqueeze(1) * oneMp.unsqueeze(2), dim=0)
     return fx.norm(dim=1), preds, torch.norm(grad, dim=1)
 
@@ -301,8 +302,9 @@ def load_parameters(src, dst, strict=True):
                 dst[dst_key].copy_(src[dst_key])
             else:
                 mismatch_names.append(dst_key)
-                err = "source tensor {key}({src}) does not match with destination tensor {key}({dst}).".\
-                    format(key=dst_key, src=src[dst_key].shape, dst=dst_value.shape)
+                err = "source tensor {key}({src}) does not match with destination tensor {key}({dst}).".format(
+                    key=dst_key, src=src[dst_key].shape, dst=dst_value.shape
+                )
                 assert not strict, err
         else:
             mismatch_names.append(dst_key)
@@ -314,31 +316,40 @@ def enable_allreduce(dict_):
     loss = 0
     for key, value in dict_.items():
         if value is not None and key != "label":
-            loss += value.mean()*0
+            loss += value.mean() * 0
     return loss
 
+
 def sigmoid(x):
-    return 1/(1+math.exp(-x))
+    return 1 / (1 + math.exp(-x))
+
 
 def mixup_data(x_a, x_b, alpha=5, beta=5):
     if alpha > 0 and beta > 0:
         lam = np.random.beta(alpha, beta)
     else:
-        lam = 1 
+        lam = 1
     mixed_x = lam * x_a + (1 - lam) * x_b
     return mixed_x, lam
 
+
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
 
 def dataset_with_indices(cls):
     def __getitem__(self, index):
         data, target = cls.__getitem__(self, index)
         return data, target, index
 
-    return type(cls.__name__, (cls,), {
-        '__getitem__': __getitem__,
-    })
+    return type(
+        cls.__name__,
+        (cls,),
+        {
+            '__getitem__': __getitem__,
+        },
+    )
+
 
 def get_dct_matrix(N):
     dct_m = np.eye(N)
@@ -351,19 +362,15 @@ def get_dct_matrix(N):
     idct_m = np.linalg.inv(dct_m)
     return dct_m, idct_m
 
+
 def i_normalize(data, pose):
     MEAN = {
         'pose': [0.0011, 0.1365, 0.0693],
-        'right_hand': [-0.0325,  0.1191,  0.0000],
+        'right_hand': [-0.0325, 0.1191, 0.0000],
         'left_hand': [0.0251, 0.1365, 0.0000],
-        'face': [-0.0024, -0.0086,  0.1384]
+        'face': [-0.0024, -0.0086, 0.1384],
     }
-    STD = {
-        'pose': [0.0184, 0.1365, 0.0692],
-        'right_hand': [0.0111, 0.0222, 42],
-        'left_hand': [0.0105, 0.0198, 42],
-        'face': [0.0046, 0.0086, 0.0040]
-    }
+    STD = {'pose': [0.0184, 0.1365, 0.0692], 'right_hand': [0.0111, 0.0222, 42], 'left_hand': [0.0105, 0.0198, 42], 'face': [0.0046, 0.0086, 0.0040]}
 
     mean = np.array(MEAN[pose])
     std = np.array(STD[pose])
@@ -375,6 +382,7 @@ def i_normalize(data, pose):
     normalized_data = data * std + mean
 
     return normalized_data
+
 
 # MediaPipe pose landmarks connection (in their order)
 
@@ -537,6 +545,7 @@ CONNECTIONS_REDUCED = {
     'face': [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (8, 9), (9, 10), (10, 11), (11, 8)],
 }
 
+
 def plot_keypoints(xyz_keypoints, connections):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -558,10 +567,10 @@ def plot_keypoints(xyz_keypoints, connections):
     ax.set_zlabel('Z')
 
     # Set aspect ratio
-    max_range = np.array([xs.max()-xs.min(), ys.max()-ys.min(), zs.max()-zs.min()]).max() / 2.0
-    mid_x = (xs.max()+xs.min()) * 0.5
-    mid_y = (ys.max()+ys.min()) * 0.5
-    mid_z = (zs.max()+zs.min()) * 0.5
+    max_range = np.array([xs.max() - xs.min(), ys.max() - ys.min(), zs.max() - zs.min()]).max() / 2.0
+    mid_x = (xs.max() + xs.min()) * 0.5
+    mid_y = (ys.max() + ys.min()) * 0.5
+    mid_z = (zs.max() + zs.min()) * 0.5
     ax.set_xlim(mid_x - max_range, mid_x + max_range)
     ax.set_ylim(mid_y - max_range, mid_y + max_range)
     ax.set_zlim(mid_z - max_range, mid_z + max_range)
@@ -569,6 +578,7 @@ def plot_keypoints(xyz_keypoints, connections):
     ax.view_init(-70, -90)
 
     return plt
+
 
 def animate_keypoints(xyz_keypoints, pose):
     fig = plt.figure()
@@ -579,7 +589,7 @@ def animate_keypoints(xyz_keypoints, pose):
     zss = xyz_keypoints[:, :, 2]
 
     def animate(i):
-        ax.cla()   
+        ax.cla()
         xs = xss[i]
         ys = yss[i]
         zs = zss[i]
@@ -596,19 +606,19 @@ def animate_keypoints(xyz_keypoints, pose):
         ax.set_zlabel('Z')
 
         # Set aspect ratio
-        max_range = np.array([xss[0].max()-xss[0].min(), yss[0].max()-yss[0].min(), zss[0].max()-zss[0].min()]).max() / 2.0
-        mid_x = (xss[0].max()+xss[0].min()) * 0.5
-        mid_y = (yss[0].max()+yss[0].min()) * 0.5
-        mid_z = (zss[0].max()+zss[0].min()) * 0.5
+        max_range = np.array([xss[0].max() - xss[0].min(), yss[0].max() - yss[0].min(), zss[0].max() - zss[0].min()]).max() / 2.0
+        mid_x = (xss[0].max() + xss[0].min()) * 0.5
+        mid_y = (yss[0].max() + yss[0].min()) * 0.5
+        mid_z = (zss[0].max() + zss[0].min()) * 0.5
         ax.set_xlim(mid_x - max_range, mid_x + max_range)
         ax.set_ylim(mid_y - max_range, mid_y + max_range)
         ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
         ax.view_init(-70, -90)
-    
-    ani = animation.FuncAnimation(fig, animate, repeat=False,
-                                        frames=len(xyz_keypoints) - 1, interval=50)
+
+    ani = animation.FuncAnimation(fig, animate, repeat=False, frames=len(xyz_keypoints) - 1, interval=50)
     return plt, ani
+
 
 def animate_all_keypoints(pose_keypoints, rhand_keypoints, lhand_keypoints, face_keypoints):
     fig = plt.figure()
@@ -631,10 +641,10 @@ def animate_all_keypoints(pose_keypoints, rhand_keypoints, lhand_keypoints, face
         zs_min = min(zs_min)
 
         # Set aspect ratio
-        max_range = np.array([xs_max-xs_min, ys_max-ys_min, zs_max-zs_min]).max() / 2.0
-        mid_x = (xs_max+xs_min) * 0.5
-        mid_y = (ys_max+ys_min) * 0.5
-        mid_z = (zs_max+zs_min) * 0.5
+        max_range = np.array([xs_max - xs_min, ys_max - ys_min, zs_max - zs_min]).max() / 2.0
+        mid_x = (xs_max + xs_min) * 0.5
+        mid_y = (ys_max + ys_min) * 0.5
+        mid_z = (zs_max + zs_min) * 0.5
         ax.set_xlim(mid_x - max_range, mid_x + max_range)
         ax.set_ylim(mid_y - max_range, mid_y + max_range)
         ax.set_zlim(mid_z - max_range, mid_z + max_range)
@@ -645,12 +655,12 @@ def animate_all_keypoints(pose_keypoints, rhand_keypoints, lhand_keypoints, face
 
         ax.view_init(-90, -90)
 
-    ani = animation.FuncAnimation(fig, animate, repeat=False,
-                                        frames=len(pose_keypoints) - 1, interval=50)
+    ani = animation.FuncAnimation(fig, animate, repeat=False, frames=len(pose_keypoints) - 1, interval=50)
 
     plt.close(fig)
 
     return ani
+
 
 def create_axis(ax, xyz_keypoints, i, connections):
     xs = xyz_keypoints[i, :, 0]
@@ -682,12 +692,11 @@ def save_gif(ani, save_path, logger, logging=True):
     if not exists(directory):
         os.makedirs(directory)
 
-    writer = animation.PillowWriter(fps=15,
-                                 metadata=dict(artist='Me'),
-                                 bitrate=1800)
+    writer = animation.PillowWriter(fps=15, metadata=dict(artist='Me'), bitrate=1800)
     ani.save(save_path, writer=writer, dpi=200)
     if logging:
         logger.info("Save poses to {}".format(save_path))
+
 
 def classifier_free_guidance(pred, guidance_scale):
     # Compute scores from both models
@@ -697,7 +706,8 @@ def classifier_free_guidance(pred, guidance_scale):
     pred = pred_uncond + guidance_scale * (pred_cond - pred_uncond)
     return pred
 
-class SingleClassSamplerFabric():
+
+class SingleClassSamplerFabric:
     def __init__(self, dataset):
         self.dataset = dataset
         self.class_indices = [[] for _ in range(len(self.dataset.classes))]
@@ -706,6 +716,7 @@ class SingleClassSamplerFabric():
 
     def get_sampler(self, class_label):
         return SingleClassSampler(self.class_indices[class_label])
+
 
 class SingleClassSampler(Sampler):
     def __init__(self, indices):
@@ -718,21 +729,24 @@ class SingleClassSampler(Sampler):
     def __len__(self):
         return len(self.indices)
 
+
 def prepare_save_folder(directory):
     if exists(directory):
         shutil.rmtree(directory)
     os.makedirs(directory, exist_ok=True)
 
+
 def mpjpe(motion_pred, motion_target):
     pjpe = LA.vector_norm(motion_pred - motion_target, 2, -1)
     return torch.mean(pjpe)
+
 
 class DCTLayer(torch.nn.Module):
     def __init__(self, frames=32, device='cpu'):
         super(DCTLayer, self).__init__()
         self.frames = frames
         self.device = device
-        
+
         self.dct_m, self.idct_m = self.get_dct_matrix(frames)
 
     def get_dct_matrix(self, N):
@@ -754,6 +768,7 @@ class DCTLayer(torch.nn.Module):
         # Apply IDCT to each keypoint
         return torch.matmul(self.idct_m, x)  # (batch_size, 32, 180)
 
+
 class Identity(torch.nn.Module):
     # placeholder transform
     def __init__(self):
@@ -765,40 +780,44 @@ class Identity(torch.nn.Module):
     def inverse(self, x):
         return x
 
+
 def add_noise(x, noise_scale):
-        return x + torch.randn_like(x) * noise_scale
+    return x + torch.randn_like(x) * noise_scale
+
 
 def generate_poses(model, inputs, transform, target_len):
     offset = inputs[:, -1:]
-    # apply Transform 
+    # apply Transform
     inputs = transform(inputs)
 
     # get model output for the current batch
     outputs = model(inputs)
 
-    # apply Inverse Transform 
+    # apply Inverse Transform
     outputs = transform.inverse(outputs)
 
     # apply output over the last frame as offset
     outputs = outputs[:, :target_len] + offset
-    
+
     return outputs
+
 
 def cond_generate_poses(model, inputs, labels, transform, target_len):
     offset = inputs[:, -1:]
-    # apply Transform 
+    # apply Transform
     inputs = transform(inputs)
 
     # get model output for the current batch
     outputs = model(inputs, labels)
 
-    # apply Inverse Transform 
+    # apply Inverse Transform
     outputs = transform.inverse(outputs)
 
     # apply output over the last frame as offset
     outputs = outputs[:, :target_len] + offset
-    
+
     return outputs
+
 
 class RandomBatchSampler(Sampler):
     """Sampling class to create random sequential batches from a given dataset
@@ -811,6 +830,7 @@ class RandomBatchSampler(Sampler):
     :returns: generator object of shuffled batch indices
     https://towardsdatascience.com/reading-h5-files-faster-with-pytorch-datasets-3ff86938cc
     """
+
     def __init__(self, data_source, batch_size, num_samples=None):
         self.data_source = data_source
         self.batch_size = batch_size
@@ -827,33 +847,35 @@ class RandomBatchSampler(Sampler):
     def __iter__(self):
         batch_ids = np.random.permutation(self.total_batches)
 
-        for id in batch_ids[:self.n_batches]:
+        for id in batch_ids[: self.n_batches]:
             for index in range(id * self.batch_size, (id + 1) * self.batch_size):
                 yield index
 
         if self.n_batches < self.total_batches:
             if self.n_batches < self.total_batches:
-                for index in range(batch_ids[self.n_batches] * self.batch_size, 
-                                   (batch_ids[self.n_batches] + 1) * self.batch_size):
+                for index in range(batch_ids[self.n_batches] * self.batch_size, (batch_ids[self.n_batches] + 1) * self.batch_size):
                     yield index
             else:
                 for index in range(self.n_batches * self.batch_size, self.num_samples):
                     yield index
 
+
 def collate_fn_nested(batch):
     return [torch.nested.as_nested_tensor(samples) for samples in zip(*batch, strict=False)]
+
 
 def unpad(batch, masks):
     return torch.nested.nested_tensor([sample[mask.any(dim=1)] for mask, sample in zip(masks, batch, strict=False)])
 
+
 def keep_first_true(tensor, dim=-1):
     """
     Modifies a boolean tensor to keep only the first True value along specified dimension.
-    
+
     Args:
         tensor (torch.Tensor): Input boolean tensor
         dim (int): Dimension along which to find first True value. Default: -1 (last dimension)
-        
+
     Returns:
         torch.Tensor: Modified boolean tensor with same shape as input
     """
@@ -862,6 +884,7 @@ def keep_first_true(tensor, dim=-1):
 
     # First True will have value 1, subsequent Trues will have values > 1
     return cumsum == 1
+
 
 def pad_index(tensor):
     # Find position of first True in each row

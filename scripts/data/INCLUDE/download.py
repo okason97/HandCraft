@@ -15,5 +15,5 @@ with open(args.files_json, 'r') as file:
     data = json.load(file)
 
 for entry in data['entries']:
-    url = entry['links']['self'].replace('api/','')+'?download=1'
+    url = entry['links']['self'].replace('api/', '') + '?download=1'
     filename = wget.download(url, out=args.out_dir)

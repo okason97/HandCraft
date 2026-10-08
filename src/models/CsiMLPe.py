@@ -1,4 +1,3 @@
-
 import torch
 from einops.layers.torch import Rearrange
 from torch import nn
@@ -7,13 +6,16 @@ import utils.misc as misc
 
 # https://github.com/facebookresearch/DiT/blob/main/models.py
 
+
 def modulate(x, shift, scale):
     return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+
 
 class LabelEmbedder(nn.Module):
     """
     Embeds class labels into vector representations. Also handles label dropout for classifier-free guidance.
     """
+
     def __init__(self, num_classes, hidden_size, dropout_prob):
         super().__init__()
         use_cfg_embedding = dropout_prob > 0
@@ -39,17 +41,14 @@ class LabelEmbedder(nn.Module):
         embeddings = self.embedding_table(labels)
         return embeddings
 
-class MLPblock(nn.Module):
 
+class MLPblock(nn.Module):
     def __init__(self, dims, MODULES, MODEL):
         super().__init__()
 
         self.fc0 = MODULES.glinear(dims)
         self.norm0 = MODULES.feature_norm(dims)
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(),
-            nn.Linear(dims[-1], 3 * dims[-1], bias=True)
-        )
+        self.adaLN_modulation = nn.Sequential(nn.SiLU(), nn.Linear(dims[-1], 3 * dims[-1], bias=True))
         self.noise_scale = MODEL.noise_scale
 
         self.reset_parameters()
@@ -67,16 +66,16 @@ class MLPblock(nn.Module):
 
         return x_y
 
+
 class TransMLP(nn.Module):
     def __init__(self, dims, num_layers, MODULES, MODEL):
         super().__init__()
-        self.mlps = nn.Sequential(*[
-            MLPblock(dims, MODULES, MODEL)
-            for i in range(num_layers)])
+        self.mlps = nn.Sequential(*[MLPblock(dims, MODULES, MODEL) for i in range(num_layers)])
 
     def forward(self, x_y):
         x_y = self.mlps(x_y)
         return x_y[0]
+
 
 class Model(nn.Module):
     '''
@@ -84,20 +83,16 @@ class Model(nn.Module):
     siMLPe article: https://arxiv.org/abs/2207.01567
     siMLPe code: https://github.com/dulucas/siMLPe/tree/main
     '''
+
     def __init__(self, DATA, RUN, MODULES, MODEL):
         super(Model, self).__init__()
         self.arr0 = Rearrange('b n d -> b d n')
         self.arr1 = Rearrange('b d n -> b n d')
         self.mixed_precision = RUN.mixed_precision
-        seq = DATA.input_size[-2]*DATA.input_size[-1]
+        seq = DATA.input_size[-2] * DATA.input_size[-1]
         dim = DATA.input_size[-3]
 
-        self.motion_mlp = TransMLP(
-            dims=[seq, dim],
-            num_layers=MODEL.depth,
-            MODULES=MODULES,
-            MODEL=MODEL
-        )
+        self.motion_mlp = TransMLP(dims=[seq, dim], num_layers=MODEL.depth, MODULES=MODULES, MODEL=MODEL)
 
         self.temporal_fc_in = MODEL.temporal_fc_in
         self.temporal_fc_out = MODEL.temporal_fc_out
@@ -121,6 +116,7 @@ class Model(nn.Module):
                 torch.nn.init.xavier_uniform_(module.weight)
                 if module.bias is not None:
                     nn.init.constant_(module.bias, 0)
+
         self.apply(_basic_init)
 
         # Initialize label embedding table:

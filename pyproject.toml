@@ -6,8 +6,9 @@ readme = "README.md"
 license = { file = "LICENSE.txt" }
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "torch>=2.4,<2.5",
-    "torchvision>=0.19,<0.20",
+    # 2.7 is the first release with kernels for Blackwell GPUs (RTX 50xx, compute capability 12.0)
+    "torch>=2.7,<2.8",
+    "torchvision>=0.22,<0.23",
     "numpy>=1.26",
     # data_util.py uses Expr.replace to map signs to classes, which changed in polars 1.0
     "polars>=0.20,<1",
@@ -29,6 +30,7 @@ extract = ["mediapipe>=0.10,<0.11", "opencv-python>=4.6", "scipy>=1.11", "wget>=
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4",
     "ruff>=0.8",
     "ty",
 ]
@@ -36,16 +38,16 @@ dev = [
 [tool.uv]
 # the code is run as scripts (python src/main.py), it is not an installable package
 package = false
-environments = ["sys_platform == 'linux'"]
+environments = ["sys_platform == 'linux'", "sys_platform == 'win32'"]
 
 [[tool.uv.index]]
-name = "pytorch-cu121"
-url = "https://download.pytorch.org/whl/cu121"
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 [tool.uv.sources]
-torch = { index = "pytorch-cu121" }
-torchvision = { index = "pytorch-cu121" }
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
 
 [tool.ruff]
 line-length = 160
@@ -70,3 +72,5 @@ exclude = ["src/sync_batchnorm"]
 
 [tool.ruff.format]
 quote-style = "preserve"
+# vendored third-party code (https://github.com/vacancy/Synchronized-BatchNorm-PyTorch)
+exclude = ["src/sync_batchnorm/*.py"]

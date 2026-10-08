@@ -2,11 +2,11 @@
 
 ## Requirements
 
-- Linux with an NVIDIA GPU. The locked PyTorch build is 2.4.1 for CUDA 12.1; the wheels bundle the CUDA libraries, so only the NVIDIA driver is needed.
+- Linux or Windows with an NVIDIA GPU. The locked PyTorch build is 2.7.1 for CUDA 12.8, which also supports Blackwell GPUs (RTX 50xx); the wheels bundle the CUDA libraries, so only the NVIDIA driver is needed (version 570 or newer).
 - [uv](https://docs.astral.sh/uv/getting-started/installation/), which installs Python and every dependency.
 - `wget` and `unzip` for the dataset download scripts.
 
-The experiments in this repository ran on two RTX 3070 (8 GB). A classification model uses under 1 GB of GPU memory.
+The experiments of the HandCraft paper ran on two RTX 3070 (8 GB) with PyTorch 2.4.1. A classification model uses under 1 GB of GPU memory.
 
 ## Install
 
@@ -27,7 +27,16 @@ uv sync
 
 `uv sync --all-extras` installs everything.
 
-Run the commands of this documentation inside the environment: prefix them with `uv run` (`uv run ./scripts/run/train.sh ...`) or activate it once with `source .venv/bin/activate`.
+Run the commands of this documentation inside the environment: prefix them with `uv run` (`uv run ./scripts/run/train.sh ...`) or activate it once with `source .venv/bin/activate` (`.venv\Scripts\activate` on Windows).
+
+To keep the environment (about 6 GB) and uv's download cache outside the repository, for example on another disk, set `UV_PROJECT_ENVIRONMENT` and `UV_CACHE_DIR` before `uv sync` and `uv run`.
+
+### Windows
+
+Training, testing, dataset generation and keypoint extraction run on Windows. The run scripts are bash scripts: run them from Git Bash, or call `python src/main.py` directly. Two things differ from Linux:
+
+- The `mamba` backbone is not available: `mamba-ssm` builds only on Linux.
+- Distributed training (`-DDP`) needs `--backend gloo`; the default `nccl` backend does not exist on Windows. A single GPU does not use either.
 
 ### Mamba
 

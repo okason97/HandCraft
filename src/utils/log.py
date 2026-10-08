@@ -12,10 +12,7 @@ from os.path import dirname, exists, join
 
 
 def make_run_name(format, data_name, framework, phase):
-    return format.format(data_name=data_name,
-                         framework=framework,
-                         phase=phase,
-                         timestamp=datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+    return format.format(data_name=data_name, framework=framework, phase=phase, timestamp=datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
 
 
 def make_logger(save_dir, run_name, log_output):

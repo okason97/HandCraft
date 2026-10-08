@@ -14,6 +14,15 @@ The seed fixes:
 
 Keep `--num_workers` the same between runs you want to compare: the augmentation random numbers are drawn inside the data loader workers. Results can still differ between GPU models, driver versions and PyTorch versions.
 
+### Same seed, different numbers after the PyTorch 2.7 update
+
+The commit "Support Windows and Blackwell GPUs" changed two things that change the random numbers a seed produces, so a seed gives different (but still repeatable) results before and after it:
+
+- PyTorch went from 2.4.1 to 2.7.1, with other GPU kernels.
+- The validation and test data loaders keep their worker processes between evaluations. The validation split comes from the training split and applies its augmentations, so before this change every validation re-seeded the workers from the main process and drew another random number from it.
+
+Two runs with the same seed after the commit still give identical metrics (checked with a Transformer on INCLUDE on Windows).
+
 ### Class indexes
 
 Until commit "Sort the class list so class indexes are the same in every run", the list of classes came from an unordered operation, so every process numbered the signs differently. Two consequences for anything produced before it:

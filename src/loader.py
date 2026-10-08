@@ -28,13 +28,12 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # define default variables for loading ckpt or testing the trained model.
     # -----------------------------------------------------------------------------
-    step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, is_best = \
-        0, 0, cfgs.OPTIMIZATION.batch_size, 0, 999, 999, 0, 0, False
+    step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, is_best = 0, 0, cfgs.OPTIMIZATION.batch_size, 0, 999, 999, 0, 0, False
     if cfgs.RUN.mode == "classification":
         loss_list_dict = {"train_loss": [], "train_top1": [], "train_top10": []}
         metric_dict_during_train = {"test_loss": [], "test_top1": [], "test_top10": []}
     else:
-        metric_dict_during_train = {"test_loss": [], "test_mpjpe":[]}
+        metric_dict_during_train = {"test_loss": [], "test_mpjpe": []}
         loss_list_dict = {"train_loss": []}
 
     # -----------------------------------------------------------------------------
@@ -82,32 +81,34 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     if local_rank == 0:
         logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-    base_train_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
-                             train=True,
-                             load_data_in_memory=cfgs.RUN.load_data_in_memory,
-                             poses=cfgs.DATA.poses,
-                             max_len=cfgs.DATA.max_len,
-                             target_len=cfgs.DATA.target_len,
-                             pad_frames=cfgs.DATA.pad_frames,
-                             pad_mode=cfgs.DATA.pad_mode,
-                             min_samples=cfgs.DATA.min_samples,
-                             random_crop=cfgs.DATA.random_crop,
-                             drop_frame=cfgs.DATA.drop_frame,
-                             drop_keypoint=cfgs.DATA.drop_keypoint,
-                             block_size=cfgs.DATA.block_size,
-                             flip_p=cfgs.DATA.flip_p,
-                             scale=cfgs.DATA.scale,
-                             rot=cfgs.DATA.rot,
-                             temporal_sampling=cfgs.DATA.temporal_sampling,
-                             speed=cfgs.DATA.speed,
-                             speed_range=cfgs.DATA.speed_range,
-                             hand_mask_p=cfgs.DATA.hand_mask_p,
-                             norm=cfgs.DATA.norm,
-                             shear_std=cfgs.DATA.shear_std,
-                             rot_std=cfgs.DATA.rot_std,
-                             mirror_p=cfgs.DATA.mirror_p,
-                             coords=cfgs.DATA.coords,
-                             mode=cfgs.RUN.mode)
+    base_train_dataset = Dataset_(
+        data_dir=cfgs.RUN.data_dir,
+        train=True,
+        load_data_in_memory=cfgs.RUN.load_data_in_memory,
+        poses=cfgs.DATA.poses,
+        max_len=cfgs.DATA.max_len,
+        target_len=cfgs.DATA.target_len,
+        pad_frames=cfgs.DATA.pad_frames,
+        pad_mode=cfgs.DATA.pad_mode,
+        min_samples=cfgs.DATA.min_samples,
+        random_crop=cfgs.DATA.random_crop,
+        drop_frame=cfgs.DATA.drop_frame,
+        drop_keypoint=cfgs.DATA.drop_keypoint,
+        block_size=cfgs.DATA.block_size,
+        flip_p=cfgs.DATA.flip_p,
+        scale=cfgs.DATA.scale,
+        rot=cfgs.DATA.rot,
+        temporal_sampling=cfgs.DATA.temporal_sampling,
+        speed=cfgs.DATA.speed,
+        speed_range=cfgs.DATA.speed_range,
+        hand_mask_p=cfgs.DATA.hand_mask_p,
+        norm=cfgs.DATA.norm,
+        shear_std=cfgs.DATA.shear_std,
+        rot_std=cfgs.DATA.rot_std,
+        mirror_p=cfgs.DATA.mirror_p,
+        coords=cfgs.DATA.coords,
+        mode=cfgs.RUN.mode,
+    )
 
     cfgs.DATA.num_classes = len(base_train_dataset.classes)
 
@@ -122,7 +123,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     else:
         dset_used = cfgs.RUN.dset_used
     if dset_used != 1:
-        train_dataset, _ = train_val_dataset(dataset = train_dataset, val_split=None, train_size=dset_used, random_state = cfgs.RUN.seed)
+        train_dataset, _ = train_val_dataset(dataset=train_dataset, val_split=None, train_size=dset_used, random_state=cfgs.RUN.seed)
 
     if cfgs.DATA.oversample:
         train_dataset = OversamplingWrapper(train_dataset)
@@ -134,23 +135,25 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     if cfgs.RUN.synth_dir:
         if local_rank == 0:
             logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-        synth_dataset = Dataset_(data_dir=cfgs.RUN.synth_dir,
-                                train=True,
-                                load_data_in_memory=cfgs.RUN.load_data_in_memory,
-                                poses=cfgs.DATA.synth_poses,
-                                max_len=cfgs.DATA.max_len,
-                                target_len=cfgs.DATA.target_len,
-                                pad_frames=cfgs.DATA.pad_frames,
-                                pad_mode=cfgs.DATA.pad_mode,
-                                min_samples=cfgs.DATA.min_samples,
-                                random_crop=cfgs.DATA.random_crop,
-                                drop_frame=cfgs.DATA.drop_frame,
-                                drop_keypoint=cfgs.DATA.drop_keypoint,
-                                block_size=cfgs.DATA.block_size,
-                                flip_p=cfgs.DATA.flip_p,
-                                scale=cfgs.DATA.scale,
-                                rot=cfgs.DATA.rot,
-                                mode=cfgs.RUN.mode)
+        synth_dataset = Dataset_(
+            data_dir=cfgs.RUN.synth_dir,
+            train=True,
+            load_data_in_memory=cfgs.RUN.load_data_in_memory,
+            poses=cfgs.DATA.synth_poses,
+            max_len=cfgs.DATA.max_len,
+            target_len=cfgs.DATA.target_len,
+            pad_frames=cfgs.DATA.pad_frames,
+            pad_mode=cfgs.DATA.pad_mode,
+            min_samples=cfgs.DATA.min_samples,
+            random_crop=cfgs.DATA.random_crop,
+            drop_frame=cfgs.DATA.drop_frame,
+            drop_keypoint=cfgs.DATA.drop_keypoint,
+            block_size=cfgs.DATA.block_size,
+            flip_p=cfgs.DATA.flip_p,
+            scale=cfgs.DATA.scale,
+            rot=cfgs.DATA.rot,
+            mode=cfgs.RUN.mode,
+        )
         if local_rank == 0:
             logger.info("Train dataset size: {dataset_size}".format(dataset_size=len(train_dataset)))
     else:
@@ -158,20 +161,22 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
 
     if local_rank == 0:
         logger.info("Load {name} test dataset.".format(name=cfgs.DATA.name))
-    test_dataset = Dataset_(data_dir=cfgs.RUN.data_dir,
-                            train=False,
-                            load_data_in_memory=cfgs.RUN.load_data_in_memory,
-                            filter_classes=base_train_dataset.classes,
-                            map_classes=base_train_dataset.map_classes,
-                            max_len=cfgs.DATA.max_len,
-                            target_len=cfgs.DATA.target_len,
-                            pad_frames=cfgs.DATA.pad_frames,
-                            pad_mode=cfgs.DATA.pad_mode,
-                            poses=cfgs.DATA.poses,
-                            temporal_sampling=cfgs.DATA.temporal_sampling,
-                            norm=cfgs.DATA.norm,
-                            coords=cfgs.DATA.coords,
-                            mode=cfgs.RUN.mode)
+    test_dataset = Dataset_(
+        data_dir=cfgs.RUN.data_dir,
+        train=False,
+        load_data_in_memory=cfgs.RUN.load_data_in_memory,
+        filter_classes=base_train_dataset.classes,
+        map_classes=base_train_dataset.map_classes,
+        max_len=cfgs.DATA.max_len,
+        target_len=cfgs.DATA.target_len,
+        pad_frames=cfgs.DATA.pad_frames,
+        pad_mode=cfgs.DATA.pad_mode,
+        poses=cfgs.DATA.poses,
+        temporal_sampling=cfgs.DATA.temporal_sampling,
+        norm=cfgs.DATA.norm,
+        coords=cfgs.DATA.coords,
+        mode=cfgs.RUN.mode,
+    )
     if local_rank == 0:
         logger.info("Test dataset size: {dataset_size}".format(dataset_size=len(test_dataset)))
 
@@ -180,112 +185,95 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # define dataloaders for train and test.
     # -----------------------------------------------------------------------------
     if cfgs.RUN.distributed_data_parallel:
-        cfgs.OPTIMIZATION.batch_size = cfgs.OPTIMIZATION.batch_size//cfgs.OPTIMIZATION.world_size
+        cfgs.OPTIMIZATION.batch_size = cfgs.OPTIMIZATION.batch_size // cfgs.OPTIMIZATION.world_size
 
     if cfgs.RUN.distributed_data_parallel:
-        train_sampler = DistributedSampler(train_dataset,
-                                           num_replicas=cfgs.OPTIMIZATION.world_size,
-                                           rank=local_rank,
-                                           shuffle=True,
-                                           drop_last=True)
-        valid_sampler = DistributedSampler(valid_dataset,
-                                           num_replicas=cfgs.OPTIMIZATION.world_size,
-                                           rank=local_rank,
-                                           shuffle=False,
-                                           drop_last=True)
+        train_sampler = DistributedSampler(train_dataset, num_replicas=cfgs.OPTIMIZATION.world_size, rank=local_rank, shuffle=True, drop_last=True)
+        valid_sampler = DistributedSampler(valid_dataset, num_replicas=cfgs.OPTIMIZATION.world_size, rank=local_rank, shuffle=False, drop_last=True)
         topk = cfgs.OPTIMIZATION.batch_size
         if synth_dataset is not None:
-            synth_sampler = DistributedSampler(synth_dataset,
-                                            num_replicas=cfgs.OPTIMIZATION.world_size,
-                                            rank=local_rank,
-                                            shuffle=True,
-                                            drop_last=True)
+            synth_sampler = DistributedSampler(synth_dataset, num_replicas=cfgs.OPTIMIZATION.world_size, rank=local_rank, shuffle=True, drop_last=True)
         else:
             synth_sampler = None
     else:
         train_sampler = None
         valid_sampler = None
         if synth_dataset is not None:
-            synth_sampler = torch.utils.data.RandomSampler(data_source=synth_dataset, 
-                                                           replacement=True, 
-                                                           num_samples=len(train_dataset))
-            #synth_sampler = misc.RandomBatchSampler(data_source=synth_dataset, 
+            synth_sampler = torch.utils.data.RandomSampler(data_source=synth_dataset, replacement=True, num_samples=len(train_dataset))
+            # synth_sampler = misc.RandomBatchSampler(data_source=synth_dataset,
             #                                        batch_size=cfgs.OPTIMIZATION.batch_size,
             #                                        num_samples=len(train_dataset))
         else:
             synth_sampler = None
 
-    train_dataloader = DataLoader(dataset=train_dataset,
-                                  batch_size=cfgs.OPTIMIZATION.batch_size,
-                                  shuffle=(train_sampler is None),
-                                  pin_memory=True,
-                                  prefetch_factor=cfgs.RUN.prefetch_factor,
-                                  num_workers=cfgs.RUN.num_workers,
-                                  sampler=train_sampler,
-                                  drop_last=True,
-                                  #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                  persistent_workers=True)
-    valid_dataloader = DataLoader(dataset=valid_dataset,
-                                    batch_size=cfgs.OPTIMIZATION.batch_size,
-                                    shuffle=False,
-                                    pin_memory=True,
-                                    prefetch_factor=cfgs.RUN.prefetch_factor,
-                                    num_workers=cfgs.RUN.num_workers,
-                                    sampler=valid_sampler,
-                                    #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                    drop_last=True)
+    train_dataloader = DataLoader(
+        dataset=train_dataset,
+        batch_size=cfgs.OPTIMIZATION.batch_size,
+        shuffle=(train_sampler is None),
+        pin_memory=True,
+        prefetch_factor=cfgs.RUN.prefetch_factor,
+        num_workers=cfgs.RUN.num_workers,
+        sampler=train_sampler,
+        drop_last=True,
+        # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+        persistent_workers=True,
+    )
+    valid_dataloader = DataLoader(
+        dataset=valid_dataset,
+        batch_size=cfgs.OPTIMIZATION.batch_size,
+        shuffle=False,
+        pin_memory=True,
+        prefetch_factor=cfgs.RUN.prefetch_factor,
+        num_workers=cfgs.RUN.num_workers,
+        sampler=valid_sampler,
+        # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+        drop_last=True,
+        # keep the workers between evaluations: on Windows each new worker process re-imports torch,
+        # which made every validation take about 45 s
+        persistent_workers=True,
+    )
     if synth_dataset is not None:
-        synth_dataloader = DataLoader(dataset=synth_dataset,
-                                    batch_size=cfgs.OPTIMIZATION.batch_size,
-                                    shuffle=(synth_sampler is None),
-                                    pin_memory=True,
-                                    prefetch_factor=cfgs.RUN.prefetch_factor,
-                                    num_workers=cfgs.RUN.num_workers,
-                                    sampler=synth_sampler,
-                                    drop_last=True,
-                                    #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                    persistent_workers=True)
+        synth_dataloader = DataLoader(
+            dataset=synth_dataset,
+            batch_size=cfgs.OPTIMIZATION.batch_size,
+            shuffle=(synth_sampler is None),
+            pin_memory=True,
+            prefetch_factor=cfgs.RUN.prefetch_factor,
+            num_workers=cfgs.RUN.num_workers,
+            sampler=synth_sampler,
+            drop_last=True,
+            # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+            persistent_workers=True,
+        )
     else:
         synth_dataloader = None
 
     if cfgs.RUN.distributed_data_parallel:
-        test_sampler = DistributedSampler(test_dataset,
-                                            num_replicas=cfgs.OPTIMIZATION.world_size,
-                                            rank=local_rank,
-                                            shuffle=False,
-                                            drop_last=True)
+        test_sampler = DistributedSampler(test_dataset, num_replicas=cfgs.OPTIMIZATION.world_size, rank=local_rank, shuffle=False, drop_last=True)
     else:
         test_sampler = None
 
-    test_dataloader = DataLoader(dataset=test_dataset,
-                                    batch_size=cfgs.OPTIMIZATION.batch_size,
-                                    shuffle=False,
-                                    pin_memory=True,
-                                    prefetch_factor=cfgs.RUN.prefetch_factor,
-                                    num_workers=cfgs.RUN.num_workers,
-                                    sampler=test_sampler,
-                                    #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                    drop_last=True)
+    test_dataloader = DataLoader(
+        dataset=test_dataset,
+        batch_size=cfgs.OPTIMIZATION.batch_size,
+        shuffle=False,
+        pin_memory=True,
+        prefetch_factor=cfgs.RUN.prefetch_factor,
+        num_workers=cfgs.RUN.num_workers,
+        sampler=test_sampler,
+        # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+        drop_last=True,
+        persistent_workers=True,
+    )
 
     # -----------------------------------------------------------------------------
     # load the model
     # -----------------------------------------------------------------------------
-    model = model_generator.load_model(DATA=cfgs.DATA,
-                                    MODEL=cfgs.MODEL,
-                                    MODULES=cfgs.MODULES,
-                                    RUN=cfgs.RUN,
-                                    device=local_rank,
-                                    logger=logger)
+    model = model_generator.load_model(DATA=cfgs.DATA, MODEL=cfgs.MODEL, MODULES=cfgs.MODULES, RUN=cfgs.RUN, device=local_rank, logger=logger)
     if cfgs.RUN.twin_generator:
-        r_model = model_generator.load_model(DATA=cfgs.DATA,
-                                MODEL=cfgs.MODEL,
-                                MODULES=cfgs.MODULES,
-                                RUN=cfgs.RUN,
-                                device=local_rank,
-                                logger=logger)
+        r_model = model_generator.load_model(DATA=cfgs.DATA, MODEL=cfgs.MODEL, MODULES=cfgs.MODULES, RUN=cfgs.RUN, device=local_rank, logger=logger)
     else:
         r_model = None
-
 
     # -----------------------------------------------------------------------------
     # define optimizer
@@ -302,19 +290,20 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         if local_rank == 0:
             logger.handlers[0].close()
             os.remove(join(cfgs.RUN.save_dir, "logs", run_name + ".log"))
-        run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, logger =\
-            ckpt.load_model_ckpts(ckpt_dir=cfgs.RUN.ckpt_dir,
-                                      load_best=cfgs.RUN.load_best,
-                                      model=model,
-                                      optimizer=cfgs.OPTIMIZATION.optimizer,
-                                      run_name=run_name,
-                                      is_train=cfgs.RUN.train,
-                                      RUN=cfgs.RUN,
-                                      logger=logger,
-                                      global_rank=global_rank,
-                                      device=local_rank,
-                                      cfg_file=cfgs.RUN.cfg_file,
-                                      backbone=cfgs.MODEL.backbone)
+        run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, logger = ckpt.load_model_ckpts(
+            ckpt_dir=cfgs.RUN.ckpt_dir,
+            load_best=cfgs.RUN.load_best,
+            model=model,
+            optimizer=cfgs.OPTIMIZATION.optimizer,
+            run_name=run_name,
+            is_train=cfgs.RUN.train,
+            RUN=cfgs.RUN,
+            logger=logger,
+            global_rank=global_rank,
+            device=local_rank,
+            cfg_file=cfgs.RUN.cfg_file,
+            backbone=cfgs.MODEL.backbone,
+        )
 
         if topk == "initialize":
             topk = cfgs.OPTIMIZATION.batch_size
@@ -327,34 +316,40 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         metric_dict_during_train = misc.load_log_dicts(directory=dict_dir, file_name="metrics.npy", ph=metric_dict_during_train)
 
     if cfgs.RUN.r_ckpt_dir is not None:
-        ckpt.load_model_ckpts(ckpt_dir=cfgs.RUN.r_ckpt_dir,
-                                load_best=cfgs.RUN.load_best,
-                                model=r_model,
-                                run_name=run_name,
-                                is_train=cfgs.RUN.train,
-                                RUN=cfgs.RUN,
-                                optimizer=None,
-                                logger=logger,
-                                global_rank=global_rank,
-                                device=local_rank,
-                                cfg_file=cfgs.RUN.cfg_file,
-                                backbone=cfgs.MODEL.backbone)
+        ckpt.load_model_ckpts(
+            ckpt_dir=cfgs.RUN.r_ckpt_dir,
+            load_best=cfgs.RUN.load_best,
+            model=r_model,
+            run_name=run_name,
+            is_train=cfgs.RUN.train,
+            RUN=cfgs.RUN,
+            optimizer=None,
+            logger=logger,
+            global_rank=global_rank,
+            device=local_rank,
+            cfg_file=cfgs.RUN.cfg_file,
+            backbone=cfgs.MODEL.backbone,
+        )
 
     # -----------------------------------------------------------------------------
     # prepare parallel training
     # -----------------------------------------------------------------------------
     if cfgs.OPTIMIZATION.world_size > 1:
-        model = model_generator.prepare_parallel_training(model=model,
-                                        world_size=cfgs.OPTIMIZATION.world_size,
-                                        distributed_data_parallel=cfgs.RUN.distributed_data_parallel,
-                                        synchronized_bn=cfgs.RUN.synchronized_bn,
-                                        device=local_rank)
+        model = model_generator.prepare_parallel_training(
+            model=model,
+            world_size=cfgs.OPTIMIZATION.world_size,
+            distributed_data_parallel=cfgs.RUN.distributed_data_parallel,
+            synchronized_bn=cfgs.RUN.synchronized_bn,
+            device=local_rank,
+        )
         if cfgs.RUN.twin_generator:
-            r_model = model_generator.prepare_parallel_training(model=r_model,
-                                            world_size=cfgs.OPTIMIZATION.world_size,
-                                            distributed_data_parallel=cfgs.RUN.distributed_data_parallel,
-                                            synchronized_bn=cfgs.RUN.synchronized_bn,
-                                            device=local_rank)
+            r_model = model_generator.prepare_parallel_training(
+                model=r_model,
+                world_size=cfgs.OPTIMIZATION.world_size,
+                distributed_data_parallel=cfgs.RUN.distributed_data_parallel,
+                synchronized_bn=cfgs.RUN.synchronized_bn,
+                device=local_rank,
+            )
 
     # -----------------------------------------------------------------------------
     # initialize WORKER for training and testing
@@ -393,11 +388,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                 top1, top10, loss = worker.train_step(step)
 
                 if global_rank == 0 and (step + 1) % cfgs.RUN.print_every == 0:
-
-                    worker.log_train_statistics(current_step=step,
-                                                loss=loss,
-                                                top1=top1,
-                                                top10=top10)
+                    worker.log_train_statistics(current_step=step, loss=loss, top1=top1, top10=top10)
 
                 step += 1
             step = 0
@@ -429,11 +420,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             top1, top10, loss = worker.train_step(step)
 
             if global_rank == 0 and (step + 1) % cfgs.RUN.print_every == 0:
-
-                worker.log_train_statistics(current_step=step,
-                                            loss=loss,
-                                            top1=top1,
-                                            top10=top10)
+                worker.log_train_statistics(current_step=step, loss=loss, top1=top1, top10=top10)
 
             if step % cfgs.RUN.save_every == 0:
                 if global_rank == 0 and "prediction" in cfgs.RUN.mode:
@@ -462,9 +449,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     worker.epoch_counter = epoch
 
     if global_rank == 0:
-        best_step = ckpt.load_best_model(ckpt_dir=cfgs.RUN.ckpt_dir,
-                                         model=model,
-                                         backbone=cfgs.MODEL.backbone)
+        best_step = ckpt.load_best_model(ckpt_dir=cfgs.RUN.ckpt_dir, model=model, backbone=cfgs.MODEL.backbone)
         print(""), logger.info("-" * 80)
 
     if cfgs.RUN.test:
@@ -484,15 +469,17 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             class_n = base_train_dataset.map_classes[sign]
             print(f"Generating class {class_n}")
             single_class_sampler = single_class_sampler_fabric.get_sampler(class_n)
-            class_dataloader = DataLoader(dataset=train_dataset,
-                                batch_size=cfgs.OPTIMIZATION.batch_size,
-                                pin_memory=True,
-                                prefetch_factor=cfgs.RUN.prefetch_factor,
-                                num_workers=cfgs.RUN.num_workers,
-                                sampler=single_class_sampler,
-                                drop_last=True,
-                                #collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                                persistent_workers=True)
+            class_dataloader = DataLoader(
+                dataset=train_dataset,
+                batch_size=cfgs.OPTIMIZATION.batch_size,
+                pin_memory=True,
+                prefetch_factor=cfgs.RUN.prefetch_factor,
+                num_workers=cfgs.RUN.num_workers,
+                sampler=single_class_sampler,
+                drop_last=True,
+                # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
+                persistent_workers=True,
+            )
             worker.save_dataset(class_dataloader, sign)
         worker.save_metadata()
 

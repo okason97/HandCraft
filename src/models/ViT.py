@@ -41,8 +41,8 @@ class MLPBlock(MLP):
             # Replacing legacy MLPBlock with MLP. See https://github.com/pytorch/vision/pull/6053
             for i in range(2):
                 for type in ["weight", "bias"]:
-                    old_key = f"{prefix}linear_{i+1}.{type}"
-                    new_key = f"{prefix}{3*i}.{type}"
+                    old_key = f"{prefix}linear_{i + 1}.{type}"
+                    new_key = f"{prefix}{3 * i}.{type}"
                     if old_key in state_dict:
                         state_dict[new_key] = state_dict.pop(old_key)
 
@@ -134,6 +134,9 @@ class Encoder(nn.Module):
 class Model(nn.Module):
     """Vision Transformer as per https://arxiv.org/abs/2010.11929."""
 
+    # buffer registered in __init__; torch types buffer attributes as Tensor | Module
+    class_mask: torch.Tensor
+
     def __init__(
         self,
         DATA: Any,
@@ -146,7 +149,7 @@ class Model(nn.Module):
         self.mixed_precision = RUN.mixed_precision
 
         seq_length = DATA.input_size[0]
-        f_input_size = DATA.input_size[1]*DATA.input_size[2]
+        f_input_size = DATA.input_size[1] * DATA.input_size[2]
 
         self.embeding = MODULES.linear(f_input_size, MODEL.hidden_dim, bias=False)
 
@@ -194,7 +197,7 @@ class Model(nn.Module):
 
             if masks is not None:
                 # sin esta linea funciona
-                #x = torch.where(masks, x, 0)
+                # x = torch.where(masks, x, 0)
 
                 batch_class_mask = self.class_mask.expand(n, -1, -1)
                 masks = torch.cat([batch_class_mask, masks], dim=1)
@@ -214,7 +217,7 @@ class Model(nn.Module):
             x = self.heads(x)
 
         return x
-    
+
     def update_dropout(self, drop_rate):
         for module in self.modules():
             if isinstance(module, nn.Dropout):

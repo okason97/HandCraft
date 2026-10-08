@@ -74,7 +74,7 @@ Generate and classify sign language gestures with HandCraft. The steps below go 
    git clone https://github.com/okason97/HandCraft.git
    cd HandCraft
    uv sync --all-extras
-   source .venv/bin/activate
+   source .venv/bin/activate   # Windows: .venv\Scripts\activate
    ```
 2. Choose where the datasets and the outputs go
    ```sh

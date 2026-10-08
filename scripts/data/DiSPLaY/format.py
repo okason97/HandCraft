@@ -26,13 +26,7 @@ if __name__ == '__main__':
     # columnas id,sign,signer,start,end
     # original/Signs(<a>-<b>)/Sign_<sign>_Performer_<signer>_<repetition>/
     print('Creating metadata')
-    instances = {
-        'id': [],
-        'sign': [],
-        'signer': [],
-        'start': [],
-        'end': []
-    }
+    instances = {'id': [], 'sign': [], 'signer': [], 'start': [], 'end': []}
     for clip_path in list_clips(os.path.join(args.data_dir, 'original')):
         name = clip_id(clip_path)
         frame_numbers = [frame_number(frame_path) for frame_path in list_frames(clip_path)]
@@ -52,10 +46,7 @@ if __name__ == '__main__':
     # columnas sign,class
     print('Creating sign to class')
     unique_signs = sorted(set(instances['sign']), key=int)
-    sign_to_index = {
-        'sign': [],
-        'class': []
-    }
+    sign_to_index = {'sign': [], 'class': []}
     for i, sign in enumerate(unique_signs):
         sign_to_index['sign'].append(sign)
         sign_to_index['class'].append(i)

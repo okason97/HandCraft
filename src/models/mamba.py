@@ -16,7 +16,6 @@ import utils.misc as misc
 
 
 class Model(nn.Module, GenerationMixin):
-        
     def __init__(
         self,
         DATA: Any,
@@ -29,11 +28,11 @@ class Model(nn.Module, GenerationMixin):
     ) -> None:
 
         super().__init__()
-        #self.inference_params = InferenceParams(max_seqlen=DATA.max_len, max_batch_size=DATA.batch_size)
+        # self.inference_params = InferenceParams(max_seqlen=DATA.max_len, max_batch_size=DATA.batch_size)
         config = MambaConfig(
             d_model=MODEL.hidden_dim,
             n_layer=MODEL.depth,
-            vocab_size=1, # placeholder value, we replace the embedding layer later
+            vocab_size=1,  # placeholder value, we replace the embedding layer later
             ssm_cfg=dict(layer="Mamba1"),
             rms_norm=True,
             residual_in_fp32=True,
@@ -56,7 +55,7 @@ class Model(nn.Module, GenerationMixin):
             residual_in_fp32=config.residual_in_fp32,
             **factory_kwargs,
         )
-        f_input_size = DATA.input_size[1]*DATA.input_size[2]
+        f_input_size = DATA.input_size[1] * DATA.input_size[2]
         self.backbone.embedding = MODULES.linear(f_input_size, config.d_model, bias=True)
         self.lm_head = MODULES.linear(config.d_model, DATA.num_classes, bias=False)
         self.class_token = nn.Parameter(torch.zeros(1, 1, f_input_size))
@@ -110,7 +109,7 @@ class Model(nn.Module, GenerationMixin):
                 masks = masks.any(dim=-1)
                 ft = misc.keep_first_true(masks)
                 x = F.pad(input=x, pad=(0, 0, 0, 1, 0, 0), mode='constant', value=0)
-                #x[masks] = 0
+                # x[masks] = 0
                 x[ft] = self.class_token.to(x.dtype)
 
             else:
@@ -127,7 +126,7 @@ class Model(nn.Module, GenerationMixin):
             hidden_states = self.backbone(x, inference_params=inference_params, **mixer_kwargs)
 
             if masks is not None:
-                #hidden_states = hidden_states[row_indices, last_zero_positions]
+                # hidden_states = hidden_states[row_indices, last_zero_positions]
                 hidden_states = hidden_states[ft]
             else:
                 hidden_states = hidden_states[:, -1]
