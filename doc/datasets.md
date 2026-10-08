@@ -56,7 +56,7 @@ uv run python scripts/data/INCLUDE/make_official_split.py -data_dir $HANDCRAFT_D
 
 Step 2 produces the 70/30 random split used in the HandCraft paper. Step 3 produces the official split used by other papers. See [scripts/data/INCLUDE/README.md](../scripts/data/INCLUDE/README.md) for the script options and for how the two splits differ.
 
-Keypoint extraction runs MediaPipe on every frame on the CPU and takes several hours for the whole dataset. `extract_keypoints.py` repeats only that step.
+Keypoint extraction runs MediaPipe on every frame on the CPU and takes several hours for the whole dataset. `-workers N` extracts N videos in parallel, one process each, and gives the same keypoints as one worker (see [Keypoint extraction](#keypoint-extraction)). `extract_keypoints.py` repeats only that step and takes the same option.
 
 ## DiSPLaY
 
@@ -70,11 +70,13 @@ The dataset is distributed through IEEE DataPort and needs a (free) account, so 
 uv run python scripts/data/DiSPLaY/format.py -data_dir $HANDCRAFT_DATA/DiSPLaY -model_dir $HANDCRAFT_DATA/mediapipe
 ```
 
-`scripts/data/DiSPLaY/extract_keypoints.py` repeats only the extraction.
+`scripts/data/DiSPLaY/extract_keypoints.py` repeats only the extraction. Both scripts take `-workers N` to extract N clips in parallel.
 
 ## Keypoint extraction
 
 [`scripts/data/mediapipe_keypoints.py`](../scripts/data/mediapipe_keypoints.py) is shared by INCLUDE and DiSPLaY. For every frame it detects the pose, then the hands and the face in crops around the pose landmarks. Frames without a detection are filled by linear interpolation, and each track is smoothed with a Savitzky-Golay filter (window 15, order 3).
+
+MediaPipe processes the frames of a clip one by one, so a clip uses only part of the CPU. `-workers N` runs N clips at the same time, each in its own process with its own landmarkers; every clip is still processed in order by one process, so the keypoints are identical to a single-worker run. On a 12-core machine, 6 workers extracted about 3.5 times more clips per minute than 1 worker; each worker uses about 200 to 300 MB of memory. The MediaPipe GPU delegate is not an alternative: the Windows wheels are built without it, and under WSL2 it ran about 5 times slower than the CPU.
 
 Re-extracting an INCLUDE video with the pinned MediaPipe models reproduces the published keypoints: the pose is identical and the hands and face differ by less than 0.002.
 

@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 
 import cv2
@@ -239,3 +240,36 @@ def load_options(model_dir):
 def make_pose_dirs(data_dir):
     for part in POSE_PARTS:
         os.makedirs(os.path.join(data_dir, 'poses', part), exist_ok=True)
+
+# landmarker options of a worker process, created once per process by _init_worker
+_worker_options = None
+
+def _init_worker(model_dir):
+    global _worker_options
+    _worker_options = load_options(model_dir)
+
+def _extract_clip(job):
+    frames_fn, source, clip_id, data_dir = job
+    extract_keypoints(frames_fn(source), clip_id, data_dir, _worker_options)
+    return clip_id
+
+def extract_clips(clips, data_dir, model_dir, workers=1):
+    """
+    Extract the keypoints of every (frames_fn, source, clip_id) in clips, where frames_fn(source) yields
+    (frame, timestamp in ms). With workers > 1 the clips are split across processes; every clip is still
+    processed in order by a single process, so the keypoints are the same as with one worker.
+    frames_fn has to be a module-level function so it can be sent to the worker processes.
+    """
+    make_pose_dirs(data_dir)
+
+    if workers <= 1:
+        options = load_options(model_dir)
+        for frames_fn, source, clip_id in clips:
+            print('Extracting pose for: {}'.format(clip_id))
+            extract_keypoints(frames_fn(source), clip_id, data_dir, options)
+        return
+
+    jobs = [(frames_fn, source, clip_id, data_dir) for frames_fn, source, clip_id in clips]
+    with multiprocessing.Pool(workers, initializer=_init_worker, initargs=(model_dir,)) as pool:
+        for done, clip_id in enumerate(pool.imap_unordered(_extract_clip, jobs), 1):
+            print('[{}/{}] Extracted pose for: {}'.format(done, len(jobs), clip_id), flush=True)
