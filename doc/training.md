@@ -84,10 +84,10 @@ Training holds out a stratified 10% of the training split for validation. The sp
 
 ```
 Test Top 1-acc 84.8214    Test Top 10-acc 97.9167    Test Loss 0.6074
-Best Top 1-acc 84.8214    Best Top 10-acc 97.9167    Best Loss (Step: 330): 0.6074
+Best Top 1-acc 84.8214    Best Top 10-acc 97.9167    Best Loss (Step: 330): 0.6074 (best = lowest validation loss)
 ```
 
-**During training both lines are validation metrics**, despite the word "Test". The checkpoint with the lowest validation loss is kept as the best one. Generation models report the loss and the MPJPE (mean per joint position error) instead of accuracies.
+**During training both lines are validation metrics**, despite the word "Test" (on Weights & Biases they are logged as `valid_*`). The checkpoint with the lowest validation loss is kept as the best one, and "Best Top 1-acc" is the accuracy of that epoch, not the highest validation accuracy. Every validation clip is evaluated. Generation models report the loss and the MPJPE (mean per joint position error) instead of accuracies.
 
 ## Testing
 

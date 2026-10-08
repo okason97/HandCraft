@@ -183,6 +183,13 @@ class WORKER(object):
         if self.RUN.mixed_precision:
             self.scaler = torch.amp.GradScaler('cuda')
 
+    def reset_best(self):
+        """
+        Forget the best validation result, so that the best checkpoint is chosen among the epochs of the training on
+        the real data and not compared with the model at the end of the synthetic pretraining.
+        """
+        self.best_loss, self.best_mpjpe, self.best_t1acc, self.best_t10acc, self.best_step = None, None, 0, 0, 0
+
     # -----------------------------------------------------------------------------
     # train model
     # -----------------------------------------------------------------------------
@@ -197,8 +204,8 @@ class WORKER(object):
         # sample real values and labels, then train for an epoch
         for values, labels in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
-                values = values.to(self.local_rank, non_blocking=True)
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
+                values = values.to(self.local_rank, non_blocking=True).float()
                 labels = labels.to(self.local_rank, non_blocking=True)
 
                 if self.DATA.pad_mode == 'pad':
@@ -264,9 +271,9 @@ class WORKER(object):
         # sample real values and targets, then train for an epoch
         for values, targets in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
-                values = values.to(self.local_rank, non_blocking=True)
-                targets = targets.to(self.local_rank, non_blocking=True)
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
+                values = values.to(self.local_rank, non_blocking=True).float()
+                targets = targets.to(self.local_rank, non_blocking=True).float()
 
                 if self.RUN.reverse:
                     r_values = torch.flip(values, [1])
@@ -312,10 +319,10 @@ class WORKER(object):
         # sample real values, targets and labels, then train for an epoch
         for values, targets, labels in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values, targets and labels onto the GPU memory
-                values = values.to(self.local_rank, non_blocking=True)
-                targets = targets.to(self.local_rank, non_blocking=True)
+                values = values.to(self.local_rank, non_blocking=True).float()
+                targets = targets.to(self.local_rank, non_blocking=True).float()
                 labels = labels.to(self.local_rank, non_blocking=True)
 
                 if self.RUN.reverse:
@@ -448,7 +455,8 @@ class WORKER(object):
             if training:
                 if self.RUN.mode == "classification":
                     self.logger.info(
-                        "Best Top 1-acc {top1:.4f}\tBest Top 10-acc {top10:.4f}\tBest Loss (Step: {step}): {loss}".format(
+                        # the best checkpoint is the one with the lowest validation loss; the accuracies are those of that epoch
+                        "Best Top 1-acc {top1:.4f}\tBest Top 10-acc {top10:.4f}\tBest Loss (Step: {step}): {loss} (best = lowest validation loss)".format(
                             step=self.best_step, loss=self.best_loss, top1=self.best_t1acc, top10=self.best_t10acc
                         )
                     )
@@ -513,9 +521,9 @@ class WORKER(object):
         self.model.eval()
         top1_acc, top10_acc, loss = misc.AverageMeter(), misc.AverageMeter(), misc.AverageMeter()
         for values, labels in dataloader:
-            with torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and labels onto the GPU memory
-                values = values.to(self.local_rank)
+                values = values.to(self.local_rank).float()
                 labels = labels.to(self.local_rank)
 
                 if self.DATA.pad_mode == 'pad':
@@ -551,10 +559,10 @@ class WORKER(object):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
         for values, targets in dataloader:
-            with torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and targets onto the GPU memory
-                values = values.to(self.local_rank)
-                targets = targets.to(self.local_rank)
+                values = values.to(self.local_rank).float()
+                targets = targets.to(self.local_rank).float()
 
                 if self.RUN.reverse:
                     r_values = torch.flip(values, [1])
@@ -582,10 +590,10 @@ class WORKER(object):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
         for values, targets, labels in dataloader:
-            with torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and labels onto the GPU memory
-                values = values.to(self.local_rank)
-                targets = targets.to(self.local_rank)
+                values = values.to(self.local_rank).float()
+                targets = targets.to(self.local_rank).float()
                 labels = labels.to(self.local_rank)
 
                 if self.RUN.reverse:
@@ -625,10 +633,10 @@ class WORKER(object):
             values, targets, labels = next(iter(self.test_dataloader))
         else:
             raise NotImplementedError
-        with torch.autocast("cuda"):
+        with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
             # load values and labels onto the GPU memory
-            values = values.to(self.local_rank)
-            targets = targets.to(self.local_rank)
+            values = values.to(self.local_rank).float()
+            targets = targets.to(self.local_rank).float()
             if self.RUN.mode == "cond_prediction":
                 labels = labels.to(self.local_rank)
 
@@ -670,10 +678,10 @@ class WORKER(object):
             values, targets, labels = next(iter(self.test_dataloader))
         else:
             raise NotImplementedError
-        with torch.autocast("cuda"):
+        with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
             # load values and labels onto the GPU memory
-            values = values.to(self.local_rank)
-            targets = targets.to(self.local_rank)
+            values = values.to(self.local_rank).float()
+            targets = targets.to(self.local_rank).float()
             if self.RUN.mode == "cond_prediction":
                 labels = labels.to(self.local_rank)
 
@@ -690,7 +698,7 @@ class WORKER(object):
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             if self.RUN.twin_generator:
-                r_values = torch.flip(targets.to(self.local_rank), [1])
+                r_values = torch.flip(targets.to(self.local_rank).float(), [1])
 
                 if self.RUN.mode == "prediction":
                     r_outputs = misc.generate_poses(self.model, r_values, self.transform, self.DATA.target_len)
@@ -766,13 +774,13 @@ class WORKER(object):
             values, targets, labels = next(data_iter)
             with torch.autocast("cuda"):
                 # load values and labels onto the GPU memory
-                values = values.to(self.local_rank)
+                values = values.to(self.local_rank).float()
                 labels = labels.to(self.local_rank)
 
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
                 if self.RUN.twin_generator:
-                    r_values = torch.flip(targets.to(self.local_rank), [1])
+                    r_values = torch.flip(targets.to(self.local_rank).float(), [1])
 
                     r_outputs = misc.cond_generate_poses(self.model, r_values, labels, self.transform, self.DATA.target_len)
 
