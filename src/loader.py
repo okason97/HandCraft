@@ -13,14 +13,14 @@ import torch
 import torch.distributed as dist
 import wandb
 from torch.backends import cudnn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
 
 import models.model as model_generator
 import utils.ckpt as ckpt
 import utils.log as log
 import utils.misc as misc
-from data.data_util import Dataset_, OversamplingWrapper, train_val_dataset
+from data.data_util import Dataset_, OversamplingWrapper, SeededDataset, SeededSampler, train_val_dataset
 from worker import WORKER
 
 
@@ -107,6 +107,11 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         rot_std=cfgs.DATA.rot_std,
         mirror_p=cfgs.DATA.mirror_p,
         coords=cfgs.DATA.coords,
+        pixel_coords=cfgs.DATA.pixel_coords,
+        aug_pivot=cfgs.DATA.aug_pivot,
+        xflip_p=cfgs.DATA.xflip_p,
+        missing_hand=cfgs.DATA.missing_hand,
+        hand_mask_interp=cfgs.DATA.hand_mask_interp,
         mode=cfgs.RUN.mode,
     )
 
@@ -115,6 +120,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     train_dataset, valid_dataset = train_val_dataset(
         dataset=base_train_dataset, val_split=0.1, random_state=cfgs.RUN.seed, stratify=base_train_dataset.data['sign'].to_list()
     )
+    if not cfgs.DATA.augment_valid:
+        valid_dataset = Subset(base_train_dataset.eval_view(), valid_dataset.indices)
 
     if cfgs.RUN.dset_used > 1:
         dset_used = int(cfgs.RUN.dset_used)
@@ -175,6 +182,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         temporal_sampling=cfgs.DATA.temporal_sampling,
         norm=cfgs.DATA.norm,
         coords=cfgs.DATA.coords,
+        pixel_coords=cfgs.DATA.pixel_coords,
+        missing_hand=cfgs.DATA.missing_hand,
         mode=cfgs.RUN.mode,
     )
     if local_rank == 0:
@@ -196,8 +205,10 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         else:
             synth_sampler = None
     else:
-        train_sampler = None
-        valid_sampler = None
+        # the order and the augmentation of every sample depend only on the seed and the epoch (see SeededSampler)
+        train_sampler = SeededSampler(len(train_dataset), cfgs.RUN.seed, shuffle=True)
+        valid_sampler = SeededSampler(len(valid_dataset), cfgs.RUN.seed, shuffle=False)
+        train_dataset, valid_dataset = SeededDataset(train_dataset), SeededDataset(valid_dataset)
         if synth_dataset is not None:
             synth_sampler = torch.utils.data.RandomSampler(data_source=synth_dataset, replacement=True, num_samples=len(train_dataset))
             # synth_sampler = misc.RandomBatchSampler(data_source=synth_dataset,
@@ -217,6 +228,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         drop_last=True,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         persistent_workers=True,
+        # the loaders draw their workers' seeds from their own generator, not from the one of the training
+        generator=torch.Generator().manual_seed(cfgs.RUN.seed),
     )
     valid_dataloader = DataLoader(
         dataset=valid_dataset,
@@ -227,10 +240,11 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         num_workers=cfgs.RUN.num_workers,
         sampler=valid_sampler,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-        drop_last=True,
+        drop_last=False,
         # keep the workers between evaluations: on Windows each new worker process re-imports torch,
         # which made every validation take about 45 s
         persistent_workers=True,
+        generator=torch.Generator().manual_seed(cfgs.RUN.seed),
     )
     if synth_dataset is not None:
         synth_dataloader = DataLoader(
@@ -262,8 +276,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         num_workers=cfgs.RUN.num_workers,
         sampler=test_sampler,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-        drop_last=True,
+        drop_last=cfgs.DATA.test_drop_last,
         persistent_workers=True,
+        generator=torch.Generator().manual_seed(cfgs.RUN.seed),
     )
 
     # -----------------------------------------------------------------------------
@@ -278,7 +293,11 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # define optimizer
     # -----------------------------------------------------------------------------
-    if cfgs.RUN.mode == "classification" and cfgs.RUN.synth_dir:
+    # training resumed from the checkpoints of an interrupted run: they are all saved during the training on the real
+    # data, after the synthetic pretraining
+    resuming = cfgs.RUN.train and cfgs.RUN.ckpt_dir is not None
+    cfgs.RUN.wandb_id = None
+    if cfgs.RUN.mode == "classification" and cfgs.RUN.synth_dir and not resuming:
         cfgs.define_optimizer(model, cfgs.OPTIMIZATION.synth_total_steps, len(train_dataloader))
     else:
         cfgs.define_optimizer(model, cfgs.OPTIMIZATION.total_steps, len(train_dataloader))
@@ -307,6 +326,19 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
 
         if topk == "initialize":
             topk = cfgs.OPTIMIZATION.batch_size
+
+        if resuming:
+            resume_state = ckpt.load_resume_state(ckpt_dir=cfgs.RUN.ckpt_dir, backbone=cfgs.MODEL.backbone)
+            # the checkpoint is saved at the end of epoch `step`: continue with the next one
+            step += 1
+            if cfgs.OPTIMIZATION.scheduler is not None and resume_state.get("scheduler") is not None:
+                cfgs.OPTIMIZATION.scheduler.load_state_dict(resume_state["scheduler"])
+            cfgs.RUN.wandb_id = resume_state.get("wandb_id")
+            dict_dir = join(cfgs.RUN.save_dir, "statistics", run_name)
+            loss_list_dict = misc.load_log_dicts(directory=join(dict_dir, "train"), file_name="losses.npy", ph=loss_list_dict)
+            metric_dict_during_train = misc.load_log_dicts(directory=join(dict_dir, "valid"), file_name="test_stats.npy", ph=metric_dict_during_train)
+            if global_rank == 0:
+                logger.info("Resuming training at epoch {step}".format(step=step))
 
     if cfgs.RUN.ckpt_dir is None:
         if local_rank == 0:
@@ -378,7 +410,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # pretrain model with the synthetic dataset
     # -----------------------------------------------------------------------------
-    if cfgs.RUN.mode == "classification" and cfgs.RUN.synth_dir:
+    if cfgs.RUN.mode == "classification" and cfgs.RUN.synth_dir and not resuming:
         if cfgs.RUN.train:
             if global_rank == 0:
                 logger.info("Pretraining model!")
@@ -394,6 +426,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             step = 0
 
             worker.evaluate(step=step, writing=True, training=True)
+            worker.reset_best()
 
             if global_rank == 0:
                 logger.info("End of pretraining!")
@@ -401,9 +434,13 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     # reset optimizer if synthetic pretraining is used
     # -----------------------------------------------------------------------------
-    if cfgs.RUN.mode == "classification" and cfgs.RUN.synth_dir:
+    if cfgs.RUN.mode == "classification" and cfgs.RUN.synth_dir and not resuming:
         cfgs.define_optimizer(model, cfgs.OPTIMIZATION.total_steps, len(train_dataloader))
         worker.reset_optimizer(cfgs.OPTIMIZATION)
+
+    if resuming:
+        # loss scaler and random number generators as they were when the checkpoint was saved
+        worker.load_resume_state(resume_state)
 
     # -----------------------------------------------------------------------------
     # train model
@@ -417,6 +454,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
 
         worker.prepare_train_iter(epoch_counter=epoch)
         while step < cfgs.OPTIMIZATION.total_steps:
+            worker.set_epoch(worker.train_dataloader, step)
             top1, top10, loss = worker.train_step(step)
 
             if global_rank == 0 and (step + 1) % cfgs.RUN.print_every == 0:
@@ -453,7 +491,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         print(""), logger.info("-" * 80)
 
     if cfgs.RUN.test:
-        worker.evaluate(step=best_step, writing=False, training=False)
+        worker.evaluate(step=best_step, writing=True, training=False)
 
     if cfgs.RUN.save_samples:
         if global_rank == 0:
@@ -463,24 +501,20 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     if cfgs.RUN.save_dataset:
         if global_rank == 0:
             print(""), logger.info("-" * 80)
-        single_class_sampler_fabric = misc.SingleClassSamplerFabric(train_dataset)
+        # one loader for every class: its batches come class by class, sd_num batches each (starting the loader
+        # workers for every class took about 35 s per class on Windows)
+        gen_dataset, gen_labels = misc.generation_dataset(train_dataset.dataset if isinstance(train_dataset, SeededDataset) else train_dataset)
+        classes = [base_train_dataset.map_classes[sign] for sign in base_train_dataset.classes]
+        gen_dataloader = DataLoader(
+            dataset=gen_dataset,
+            batch_sampler=misc.ClassBatchSampler(gen_labels, classes, cfgs.OPTIMIZATION.batch_size, cfgs.RUN.sd_num, cfgs.RUN.seed),
+            pin_memory=True,
+            prefetch_factor=cfgs.RUN.prefetch_factor,
+            num_workers=cfgs.RUN.num_workers,
+            generator=torch.Generator().manual_seed(cfgs.RUN.seed),
+        )
         worker.prepare_generation()
-        for sign in base_train_dataset.classes:
-            class_n = base_train_dataset.map_classes[sign]
-            print(f"Generating class {class_n}")
-            single_class_sampler = single_class_sampler_fabric.get_sampler(class_n)
-            class_dataloader = DataLoader(
-                dataset=train_dataset,
-                batch_size=cfgs.OPTIMIZATION.batch_size,
-                pin_memory=True,
-                prefetch_factor=cfgs.RUN.prefetch_factor,
-                num_workers=cfgs.RUN.num_workers,
-                sampler=single_class_sampler,
-                drop_last=True,
-                # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                persistent_workers=True,
-            )
-            worker.save_dataset(class_dataloader, sign)
+        worker.save_dataset(gen_dataloader, {base_train_dataset.map_classes[sign]: sign for sign in base_train_dataset.classes})
         worker.save_metadata()
 
     if global_rank == 0:

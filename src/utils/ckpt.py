@@ -79,6 +79,22 @@ def load_model_ckpts(ckpt_dir, load_best, model, optimizer, run_name, is_train, 
     return prev_run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc, logger
 
 
+def checkpoint_seed(ckpt_dir, backbone):
+    """
+    The seed of the run that saved the last checkpoint in ckpt_dir.
+    """
+    ckpt_path = glob.glob(join(ckpt_dir, "model={model}-current-weights-step*.pth".format(model=backbone)))[0]
+    return torch.load(ckpt_path, map_location="cpu")["seed"]
+
+
+def load_resume_state(ckpt_dir, backbone):
+    """
+    The state saved by WORKER.resume_state() in the last checkpoint of a run (empty for checkpoints saved before it existed).
+    """
+    ckpt_path = glob.glob(join(ckpt_dir, "model={model}-current-weights-step*.pth".format(model=backbone)))[0]
+    return torch.load(ckpt_path, map_location="cpu").get("resume", {})
+
+
 def load_best_model(ckpt_dir, model, backbone):
     import utils.misc as misc
 

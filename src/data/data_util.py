@@ -4,6 +4,7 @@
 
 # src/data_util.py
 
+import copy
 import json
 import math
 import os
@@ -15,8 +16,9 @@ import polars as pl
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+from scipy import interpolate
 from sklearn.model_selection import train_test_split
-from torch.utils.data import Dataset, Subset
+from torch.utils.data import Dataset, Sampler, Subset, get_worker_info
 
 
 def normalize(data, pose):
@@ -282,14 +284,19 @@ class ResamplePadFrames(torch.nn.Module):
 
 class HandMaskInterpolate(torch.nn.Module):
     """
-    Replaces the hand keypoints of a random fraction p of the frames with a linear interpolation
+    Replaces the hand keypoints of a random fraction p of the frames with an interpolation
     of the remaining frames, simulating frames where the hand detector failed.
+    By default the interpolation is linear. If `wrists` (the index of the wrist keypoint of each hand) is given,
+    the frames are filled as HWGAT does (https://github.com/suvajit-patra/sl-hwgat): a quadratic spline through
+    the remaining frames, and the hand placed at its wrist in the masked frames before the first or after the
+    last remaining frame.
     """
 
-    def __init__(self, p, hand_slices):
+    def __init__(self, p, hand_slices, wrists=None):
         super().__init__()
         self.p = p
         self.hand_slices = hand_slices
+        self.wrists = wrists
 
     def forward(self, img):
         n = img.shape[0]
@@ -297,17 +304,32 @@ class HandMaskInterpolate(torch.nn.Module):
         if k == 0 or n - k < 2:
             return img
         masked = np.sort(np.random.choice(n, size=k, replace=False))
+        return self.fill(img, masked)
+
+    def fill(self, img, masked):
+        n = img.shape[0]
         kept = np.setdiff1d(np.arange(n), masked)
+        # a quadratic spline needs 3 frames
+        spline = self.wrists is not None and len(kept) >= 3
+        inner = masked[(masked > kept[0]) & (masked < kept[-1])]
+        outer = np.setdiff1d(masked, inner)
         out = img.clone()
-        for start, end in self.hand_slices:
+        for i, (start, end) in enumerate(self.hand_slices):
             hand = img[:, start:end].flatten(1).float().numpy()
             for d in range(hand.shape[1]):
-                hand[masked, d] = np.interp(masked, kept, hand[kept, d])
-            out[:, start:end] = torch.from_numpy(hand).reshape(n, end - start, -1).to(img.dtype)
+                if spline:
+                    if len(inner):
+                        hand[inner, d] = interpolate.splev(inner, interpolate.splrep(kept, hand[kept, d], k=2))
+                else:
+                    hand[masked, d] = np.interp(masked, kept, hand[kept, d])
+            hand = torch.from_numpy(hand).reshape(n, end - start, -1).to(img.dtype)
+            if spline and len(outer):
+                hand[outer] = img[outer, self.wrists[i]].unsqueeze(1)
+            out[:, start:end] = hand
         return out
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(p={self.p})"
+        return f"{self.__class__.__name__}(p={self.p},interp={'spline' if self.wrists is not None else 'linear'})"
 
 
 def hand_slices(poses):
@@ -345,6 +367,64 @@ class RandomShearRotate(torch.nn.Module):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(shear_std={self.shear_std},rot_std={self.rot_std})"
+
+
+class PivotShearRotate(torch.nn.Module):
+    """
+    Random 2D shear and rotation as in HWGAT (https://github.com/suvajit-patra/sl-hwgat): each one is applied
+    around its own random pivot, drawn per coordinate from N(pivot_mean, pivot_std) and clipped to [0, 1], the
+    shear only moves y in proportion to x, and both are sampled from normal distributions.
+    Meant for norm='box', where the body is inside the unit square.
+    """
+
+    def __init__(self, shear_std=0.0, rot_std=0.0, pivot=(0.5, 0.1)):
+        super().__init__()
+        self.shear_std = shear_std
+        self.rot_std = rot_std
+        self.pivot_mean, self.pivot_std = pivot
+
+    def random_pivot(self, dims):
+        return torch.tensor(np.clip(np.random.normal(self.pivot_mean, self.pivot_std, dims), 0, 1), dtype=torch.float32)
+
+    def forward(self, sample):
+        sample = sample.type(torch.float32)
+        dims = sample.shape[-1]
+        if self.shear_std:
+            pivot = self.random_pivot(dims)
+            mat = torch.eye(dims)
+            mat[0, 1] = float(np.random.normal(0, self.shear_std))
+            sample = (sample - pivot) @ mat + pivot
+        if self.rot_std:
+            pivot = self.random_pivot(dims)
+            theta = float(np.random.normal(0, self.rot_std))
+            mat = torch.eye(dims)
+            mat[:2, :2] = torch.tensor([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]], dtype=torch.float32)
+            sample = (sample - pivot) @ mat + pivot
+        return sample
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(shear_std={self.shear_std},rot_std={self.rot_std},pivot=({self.pivot_mean},{self.pivot_std}))"
+
+
+class FlipX(torch.nn.Module):
+    """
+    Horizontal flip with probability p: reflects x around `center`. The keypoints are not swapped,
+    so the left hand of a flipped clip is still in the left hand's keypoints (the flip of HWGAT).
+    """
+
+    def __init__(self, p, center=0.0):
+        super().__init__()
+        self.p = p
+        self.center = center
+
+    def forward(self, sample):
+        if random.random() < self.p:
+            sample = sample.clone()
+            sample[..., 0] = 2 * self.center - sample[..., 0]
+        return sample
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(p={self.p},center={self.center})"
 
 
 class Mirror(torch.nn.Module):
@@ -390,6 +470,28 @@ MIRROR_PAIRS = {
     ],
     'face': [(61, 291), (33, 263), (159, 386), (133, 362), (145, 374)],
 }
+
+
+# MediaPipe pose index of the wrist each hand is attached to
+WRIST = {'left_hand': 15, 'right_hand': 16}
+
+
+def wrist_indexes(poses):
+    """
+    Index, in the concatenated keypoints of `poses`, of the wrist of each hand, in the order of hand_slices().
+    """
+    total, body = 0, None
+    for pose, keypoints in poses:
+        if pose == 'pose':
+            body = (total, list(range(33)) if keypoints == 'all' else list(keypoints))
+        total += 21 if keypoints == 'all' and 'hand' in pose else len(keypoints)
+    indexes = []
+    for pose, _ in poses:
+        if 'hand' in pose:
+            if body is None or WRIST[pose] not in body[1]:
+                raise ValueError("spline hand masking needs the wrist of '{}' among the selected pose keypoints".format(pose))
+            indexes.append(body[0] + body[1].index(WRIST[pose]))
+    return indexes
 
 
 def mirror_permutation(poses):
@@ -453,6 +555,11 @@ class Dataset_(Dataset):
         rot_std=0.0,
         mirror_p=0.0,
         coords=3,
+        pixel_coords=False,
+        aug_pivot=None,
+        xflip_p=0.0,
+        missing_hand=None,
+        hand_mask_interp="linear",
         mode="classification",
     ):
         super(Dataset_, self).__init__()
@@ -469,7 +576,11 @@ class Dataset_(Dataset):
         self.max_len = max_len
         self.norm = norm
         self.coords = coords
+        self.pixel_coords = pixel_coords
+        self.missing_hand = missing_hand
         self.centers = []
+        if pixel_coords and norm != "box":
+            raise ValueError("pixel_coords is only supported with norm 'box'")
 
         self.load_dataset()
 
@@ -493,8 +604,20 @@ class Dataset_(Dataset):
                 self.pose_data.append(self.pre_trsf(value))
                 self.labels.append(label)
 
+        # transforms without augmentation, used by eval_view(): the same frames every time and no random changes
+        if temporal_sampling == "uniform":
+            eval_sampling = UniformSampleFrames(self.max_len)
+        elif temporal_sampling == "pad":
+            eval_sampling = ResamplePadFrames(self.max_len)
+        else:
+            eval_sampling = CropFrames(self.max_len)
+        self.eval_trsf = transforms.Compose(self.trsf_list + [eval_sampling])
+
         if hand_mask_p > 0:
-            self.trsf_list += [HandMaskInterpolate(hand_mask_p, hand_slices(self.poses))]
+            if hand_mask_interp == "spline":
+                self.trsf_list += [HandMaskInterpolate(hand_mask_p, hand_slices(self.poses), wrist_indexes(self.poses))]
+            else:
+                self.trsf_list += [HandMaskInterpolate(hand_mask_p, hand_slices(self.poses))]
         if temporal_sampling == "uniform":
             self.trsf_list += [UniformSampleFrames(self.max_len, speed)]
         elif temporal_sampling == "pad":
@@ -506,7 +629,13 @@ class Dataset_(Dataset):
         if flip_p > 0 or scale > 0 or rot > 0:
             self.trsf_list += [RandomAffine(flip_p, scale, rot)]
         if shear_std > 0 or rot_std > 0:
-            self.trsf_list += [RandomShearRotate(shear_std, rot_std)]
+            if aug_pivot:
+                self.trsf_list += [PivotShearRotate(shear_std, rot_std, aug_pivot)]
+            else:
+                self.trsf_list += [RandomShearRotate(shear_std, rot_std)]
+        if xflip_p > 0:
+            # the box of norm "box" spans [0, 1]; the other normalizations are centred on 0
+            self.trsf_list += [FlipX(xflip_p, center=0.5 if norm == "box" else 0.0)]
         if mirror_p > 0:
             self.trsf_list += [Mirror(mirror_p, mirror_permutation(self.poses))]
         if drop_frame > 0:
@@ -514,6 +643,15 @@ class Dataset_(Dataset):
         if drop_keypoint > 0:
             self.trsf_list += [DropKeypoints(block_size, drop_keypoint)]
         self.trsf = transforms.Compose(self.trsf_list)
+
+    def eval_view(self):
+        """
+        The same dataset without augmentation (it shares the data). Used for the validation clips,
+        which are taken from the training set.
+        """
+        view = copy.copy(self)
+        view.trsf = self.eval_trsf
+        return view
 
     def load_dataset(self):
         mode = "train" if self.train is True else "test"
@@ -562,6 +700,47 @@ class Dataset_(Dataset):
         if not self.map_classes:
             self.map_classes = {i: j for i, j in zip(self.classes, range(len(self.classes)), strict=True)}
 
+        if self.pixel_coords:
+            # (width, height) of the video of every clip, written by scripts/data/video_sizes.py
+            sizes = pl.read_csv(os.path.join(self.data_dir, 'metadata', 'video_sizes.csv'), schema_overrides={"id": pl.Utf8})
+            self.video_sizes = {i: (w, h) for i, w, h in sizes.select('id', 'width', 'height').iter_rows()}
+
+    def load_box_normalized(self, index):
+        """
+        Normalization of HWGAT (https://github.com/suvajit-patra/sl-hwgat): one box per clip, 6 shoulder widths
+        wide, placed so that the nose of the first frame is at (0.5, 1/3). The shoulder width is taken from that
+        frame. With pixel_coords, x and y are first converted to pixels, so the box is square in the video.
+        With missing_hand "wrist", a hand that was not detected in any frame is placed at its wrist.
+        """
+        sample_id = str(self.data[index]['id'].item())
+        body = np.load(os.path.join(self.data_dir, 'poses', 'pose', sample_id + '.npy'))
+        size = np.ones(3)
+        if self.pixel_coords:
+            size[:2] = self.video_sizes[sample_id]
+        body = body * size
+
+        # first frame where the nose and both shoulders were detected
+        valid = (body[:, [0, 11, 12], :2] != 0).all(axis=(1, 2))
+        frame = body[np.argmax(valid)]
+        unit = np.linalg.norm(frame[11, :2] - frame[12, :2]) + 1e-6
+        left_top = frame[0] - 3 * unit
+        left_top[1] = frame[0, 1] - 2 * unit
+
+        poses_data = []
+        for pose, keypoints in self.poses:
+            pose_data = body if pose == 'pose' else np.load(os.path.join(self.data_dir, 'poses', pose, sample_id + '.npy')) * size
+            if self.missing_hand == "wrist" and 'hand' in pose and not pose_data.any():
+                pose_data = np.repeat(body[:, WRIST[pose], None, :], pose_data.shape[1], axis=1)
+            if keypoints != 'all':
+                pose_data = pose_data[:, keypoints, :]
+            pose_data = (pose_data - left_top) / (6 * unit)
+            if 'hand' in pose:
+                pose_data[:, :, 2] = 0
+            poses_data.append(pose_data)
+        value = np.concatenate(poses_data, axis=1)
+        label = self.data[index, 'sign']
+        return value, self.map_classes[label]
+
     def load_shoulder_normalized(self, index):
         """
         Centre on the shoulder midpoint and scale by the mean shoulder width of the clip.
@@ -594,6 +773,8 @@ class Dataset_(Dataset):
     def load_all_coords(self, index):
         if self.norm in ("shoulder", "shoulder_clip"):
             return self.load_shoulder_normalized(index)
+        if self.norm == "box":
+            return self.load_box_normalized(index)
         poses_data = []
         take_center = True
         for pose, keypoints in self.poses:
@@ -650,6 +831,65 @@ class Dataset_(Dataset):
             return self.get_cond_prediction_item(index)
         else:
             raise NotImplementedError
+
+
+class SeededSampler(Sampler):
+    """
+    Yields (index, sample seed) pairs. The order of the indexes (shuffled or not) and the seed of every sample depend
+    only on the run seed and the epoch set with set_epoch(), so the data of an epoch is the same whatever the number of
+    data loader workers, and a run resumed from a checkpoint sees the same data as an uninterrupted one.
+    Use with SeededDataset.
+    """
+
+    def __init__(self, length, seed, shuffle):
+        self.length = length
+        self.seed = seed
+        self.shuffle = shuffle
+        self.epoch = 0
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def __iter__(self):
+        generator = torch.Generator().manual_seed(self.seed * 1_000_003 + self.epoch)
+        order = torch.randperm(self.length, generator=generator) if self.shuffle else torch.arange(self.length)
+        seeds = torch.randint(0, 2**31 - 1, (self.length,), generator=generator)
+        return iter(zip(order.tolist(), seeds.tolist(), strict=True))
+
+    def __len__(self):
+        return self.length
+
+
+class SeededDataset(Dataset):
+    """
+    Wraps a dataset for SeededSampler: seeds the random number generators with the sample seed before loading the
+    sample, so its random augmentations depend only on that seed.
+    """
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        index, seed = index
+        if get_worker_info() is not None:
+            # in a data loader worker the generators only serve the data pipeline
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            return self.dataset[index]
+        # in the main process, keep the generators of the training (dropout, ...) untouched
+        state = random.getstate(), np.random.get_state()
+        with torch.random.fork_rng(devices=[]):
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            sample = self.dataset[index]
+        random.setstate(state[0])
+        np.random.set_state(state[1])
+        return sample
 
 
 class OversamplingWrapper(torch.utils.data.Dataset):

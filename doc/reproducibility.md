@@ -38,6 +38,8 @@ The metrics logged during training are validation metrics, on 10% of the trainin
 
 The INCLUDE and LSFB accuracies in the logs of the HandCraft paper experiments are validation accuracies: none of those runs was evaluated on the test split. For INCLUDE, the paper's Transformer-SL result (86.4%) is the validation accuracy of `ViT/original-pad-128x2`; the same config gets 81.0% on the test set of the paper's split and 84.8% on the official test set. Published results of other papers are test accuracies.
 
+The same holds on Weights & Biases: runs made before the commit "Log validation and test separately on wandb" logged every validation as `test_loss`, `test_top1` and `test_top10`, and never logged the evaluation on the test split. Their `test_top1` is validation accuracy. Newer runs log validation as `valid_*` and the test split as `test_*`.
+
 ## Known issues in the data
 
 The processing scripts in this repository fix problems that the datasets used for the existing results have. Regenerating a dataset therefore gives better, but not identical, data.

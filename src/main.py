@@ -4,6 +4,7 @@
 
 # src/main.py
 
+import os
 import random
 from argparse import ArgumentParser
 
@@ -12,6 +13,7 @@ import torch.multiprocessing as mp
 
 import configs.config as config
 import loader
+import utils.ckpt as ckpt
 import utils.log as log
 import utils.misc as misc
 
@@ -20,8 +22,8 @@ RUN_NAME_FORMAT = "{data_name}-{framework}-{phase}-{timestamp}"
 
 def load_configs_initialize_training():
     parser = ArgumentParser(add_help=True)
-    parser.add_argument("--entity", type=str, default=None, help="entity for wandb logging")
-    parser.add_argument("--project", type=str, default=None, help="project name for wandb logging")
+    parser.add_argument("--entity", type=str, default=None, help="entity for wandb logging (default: WANDB_ENTITY or the account's default)")
+    parser.add_argument("--project", type=str, default=None, help="project name for wandb logging (default: handcraft-<backbone>-<dataset>)")
 
     parser.add_argument("-cfg", "--cfg_file", type=str, required=True)
     parser.add_argument("-data", "--data_dir", type=str, required=True)
@@ -83,16 +85,29 @@ def load_configs_initialize_training():
     cfgs.DATA.batch_size = cfgs.OPTIMIZATION.batch_size
     cfgs.check_compatability()
 
-    run_name = log.make_run_name(RUN_NAME_FORMAT, data_name=cfgs.DATA.name, framework=cfgs.RUN.cfg_file.split("/")[-1][:-5], phase="train")
-
-    misc.prepare_folder(names=cfgs.MISC.base_folders, save_dir=cfgs.RUN.save_dir)
-    misc.download_data_if_possible(data_name=cfgs.DATA.name, data_dir=cfgs.RUN.data_dir)
+    if cfgs.RUN.train and cfgs.RUN.ckpt_dir is not None:
+        # resuming: the split, the data order and the augmentations depend on the seed, so it must be the checkpoint's
+        assert not cfgs.RUN.load_best, "resume a training from its last checkpoint: -ckpt without -best"
+        seed = ckpt.checkpoint_seed(cfgs.RUN.ckpt_dir, cfgs.MODEL.backbone)
+        if cfgs.RUN.seed not in (-1, seed):
+            print("--seed {} ignored: the run is resumed with the seed of its checkpoint, {}".format(cfgs.RUN.seed, seed))
+        cfgs.RUN.seed = seed
 
     if cfgs.RUN.seed == -1:
         cfgs.RUN.seed = random.randint(1, 4096)
         cfgs.RUN.fix_seed = False
     else:
         cfgs.RUN.fix_seed = True
+
+    if cfgs.RUN.project is None:
+        cfgs.RUN.project = "handcraft-{backbone}-{dataset}".format(backbone=cfgs.MODEL.backbone, dataset=cfgs.DATA.name)
+
+    # the seed is part of the name so that the runs of one config with different seeds can be told apart
+    framework = "{cfg}-seed{seed}".format(cfg=os.path.splitext(os.path.basename(cfgs.RUN.cfg_file))[0], seed=cfgs.RUN.seed)
+    run_name = log.make_run_name(RUN_NAME_FORMAT, data_name=cfgs.DATA.name, framework=framework, phase="train")
+
+    misc.prepare_folder(names=cfgs.MISC.base_folders, save_dir=cfgs.RUN.save_dir)
+    misc.download_data_if_possible(data_name=cfgs.DATA.name, data_dir=cfgs.RUN.data_dir)
 
     if cfgs.OPTIMIZATION.world_size == 1:
         print("You have chosen a specific GPU. This will completely disable data parallelism.")

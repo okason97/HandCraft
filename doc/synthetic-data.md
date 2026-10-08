@@ -29,7 +29,7 @@ Each run writes its checkpoints to `$HANDCRAFT_SAVE/INCLUDE/CsiMLPe-<config>/che
     --sd_num 100 --seed 42
 ```
 
-`-ckpt` is the forward generator, `-tg -r_ckpt` adds the reversed one. For every sign, `--sd_num` batches of real training clips are taken. From each clip:
+`-ckpt` is the forward generator, `-tg -r_ckpt` adds the reversed one. For every sign, `--sd_num` batches of real training clips are taken. A sign with fewer training clips than that is shuffled and repeated, so every sign gets the same number of synthetic clips; the clips used depend only on `--seed`. From each clip:
 
 - the forward generator predicts the second half from the real first half,
 - the reversed generator predicts the first half from the real second half,

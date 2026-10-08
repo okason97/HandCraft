@@ -11,6 +11,7 @@
 | [results-include.md](results-include.md) | Experiments on the official INCLUDE split and comparison with published results |
 | [reproducibility.md](reproducibility.md) | Seeds, what is deterministic, and known issues in the data and in earlier results |
 | [development.md](development.md) | Linting, type checking, and how changes are checked for regressions |
+| [roadmap.md](roadmap.md) | Plans for the classifier and the generator, and every test that has not been run yet |
 
 The shortest path from a fresh clone to a trained and tested model is in the [README](../README.md#getting-started).
 

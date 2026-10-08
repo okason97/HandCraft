@@ -23,7 +23,7 @@ import torch.nn.functional as F
 from torch import linalg as LA
 from torch.nn import DataParallel
 from torch.nn.parallel import DistributedDataParallel
-from torch.utils.data import Sampler
+from torch.utils.data import Sampler, Subset
 
 import utils.ckpt as ckpt
 
@@ -75,6 +75,25 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+def cfgs_to_dict(cfgs):
+    """
+    The options of every config section as a nested dict of plain values, for the wandb run config.
+    Values that are objects (models, optimizers, modules) are left out.
+    """
+    plain = (str, int, float, bool, type(None))
+
+    def is_plain(value):
+        if isinstance(value, (list, tuple)):
+            return all(is_plain(v) for v in value)
+        return isinstance(value, plain)
+
+    return {
+        section: {name: value for name, value in vars(obj).items() if is_plain(value)}
+        for section, obj in cfgs.super_cfgs.items()
+        if section in ("DATA", "MODEL", "LOSS", "OPTIMIZATION", "RUN")
+    }
 
 
 def accm_values_convert_dict(list_dict, value_dict, step, interval):
@@ -707,27 +726,54 @@ def classifier_free_guidance(pred, guidance_scale):
     return pred
 
 
-class SingleClassSamplerFabric:
-    def __init__(self, dataset):
-        self.dataset = dataset
-        self.class_indices = [[] for _ in range(len(self.dataset.classes))]
-        for i, (_, _, label) in enumerate(dataset):
-            self.class_indices[int(label.item())].append(i)
+def generation_dataset(dataset):
+    """
+    The training clips a synthetic dataset is generated from, and the class of each one.
+    `dataset` is the training dataset of the loader: a Subset of a Dataset_ (nested when --dset_used is set), possibly
+    in an OversamplingWrapper (not needed here: ClassBatchSampler gives every class the same number of batches).
+    Returns (subset, labels), where labels[i] is the class index of subset[i], read from the metadata without
+    loading the clip.
+    """
+    while not isinstance(dataset, Subset):
+        dataset = dataset.dataset
+    subset, rows = dataset, list(range(len(dataset)))
+    while isinstance(dataset, Subset):
+        rows = [dataset.indices[i] for i in rows]
+        dataset = dataset.dataset
+    signs = dataset.data['sign'].to_list()
+    return subset, [dataset.map_classes[signs[row]] for row in rows]
 
-    def get_sampler(self, class_label):
-        return SingleClassSampler(self.class_indices[class_label])
 
+class ClassBatchSampler(Sampler):
+    """
+    Batch sampler for dataset generation: for every class, in the order of `classes`, `batches_per_class` batches of
+    `batch_size` clips of that class. A class with fewer clips than it needs is shuffled and repeated, so every class
+    gets the same number of clips. The order depends only on `seed`.
+    """
 
-class SingleClassSampler(Sampler):
-    def __init__(self, indices):
-        self.indices = indices
+    def __init__(self, labels, classes, batch_size, batches_per_class, seed):
+        self.classes = classes
+        self.batch_size = batch_size
+        self.batches_per_class = batches_per_class
+        self.seed = seed
+        self.class_indices = {c: [i for i, label in enumerate(labels) if label == c] for c in classes}
+        empty = [c for c in classes if not self.class_indices[c]]
+        if empty:
+            raise ValueError("no training clips for classes {}".format(empty))
 
     def __iter__(self):
-        random.shuffle(self.indices)
-        return iter(self.indices)
+        generator = torch.Generator().manual_seed(self.seed)
+        needed = self.batch_size * self.batches_per_class
+        for c in self.classes:
+            indices = self.class_indices[c]
+            order = []
+            while len(order) < needed:
+                order += [indices[i] for i in torch.randperm(len(indices), generator=generator).tolist()]
+            for b in range(self.batches_per_class):
+                yield order[b * self.batch_size : (b + 1) * self.batch_size]
 
     def __len__(self):
-        return len(self.indices)
+        return len(self.classes) * self.batches_per_class
 
 
 def prepare_save_folder(directory):

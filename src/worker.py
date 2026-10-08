@@ -4,9 +4,9 @@
 
 # src/worker.py
 
-import itertools
 import json
 import os
+import random
 import shutil
 from datetime import datetime
 from os.path import join
@@ -18,6 +18,11 @@ import torch.distributed as dist
 import wandb
 
 import utils.misc as misc
+
+
+def numpy_rng_state():
+    name, keys, pos, has_gauss, cached_gaussian = np.random.get_state()
+    return name, torch.from_numpy(keys.astype(np.int64)), int(pos), int(has_gauss), float(cached_gaussian)
 
 
 class WORKER(object):
@@ -105,7 +110,16 @@ class WORKER(object):
             self.scaler = torch.amp.GradScaler('cuda')
 
         if self.global_rank == 0:
-            wandb.init(project=self.RUN.project, entity=self.RUN.entity, name=self.run_name, dir=self.RUN.save_dir, resume=self.best_step > 0)
+            wandb.init(
+                project=self.RUN.project,
+                entity=self.RUN.entity,
+                name=self.run_name,
+                dir=self.RUN.save_dir,
+                # a resumed run continues the wandb run of the checkpoint
+                id=self.RUN.wandb_id,
+                resume="allow" if self.RUN.wandb_id else None,
+                config=misc.cfgs_to_dict(cfgs),
+            )
 
         self.start_time = datetime.now()
 
@@ -114,6 +128,39 @@ class WORKER(object):
         if self.DDP:
             self.train_dataloader.sampler.set_epoch(self.epoch_counter)
         self.train_iter = self.train_dataloader
+
+    def set_epoch(self, dataloader, epoch):
+        # the samplers of the training and validation loaders draw the order and the augmentation from the epoch
+        if not self.DDP and hasattr(dataloader.sampler, "set_epoch"):
+            dataloader.sampler.set_epoch(epoch)
+
+    def resume_state(self):
+        """
+        State needed to continue the training exactly where it stopped, saved with every checkpoint.
+        """
+        return {
+            "scheduler": self.OPTIMIZATION.scheduler.state_dict() if self.OPTIMIZATION.scheduler else None,
+            "scaler": self.scaler.state_dict() if self.RUN.mixed_precision else None,
+            "rng": {
+                "python": random.getstate(),
+                # stored as a tuple of plain values and a tensor, so the checkpoint loads with weights_only=True
+                "numpy": numpy_rng_state(),
+                "torch": torch.get_rng_state(),
+                "cuda": torch.cuda.get_rng_state_all(),
+            },
+            "wandb_id": wandb.run.id if wandb.run is not None else None,
+        }
+
+    def load_resume_state(self, state):
+        if self.RUN.mixed_precision and state.get("scaler") is not None:
+            self.scaler.load_state_dict(state["scaler"])
+        rng = state.get("rng")
+        if rng is not None:
+            random.setstate(rng["python"])
+            name, keys, pos, has_gauss, cached_gaussian = rng["numpy"]
+            np.random.set_state((name, keys.numpy().astype(np.uint32), pos, has_gauss, cached_gaussian))
+            torch.set_rng_state(rng["torch"])
+            torch.cuda.set_rng_state_all(rng["cuda"])
 
     def prepare_synthtrain_iter(self, epoch_counter):
         self.epoch_counter = epoch_counter
@@ -135,6 +182,13 @@ class WORKER(object):
         if self.RUN.mixed_precision:
             self.scaler = torch.amp.GradScaler('cuda')
 
+    def reset_best(self):
+        """
+        Forget the best validation result, so that the best checkpoint is chosen among the epochs of the training on
+        the real data and not compared with the model at the end of the synthetic pretraining.
+        """
+        self.best_loss, self.best_mpjpe, self.best_t1acc, self.best_t10acc, self.best_step = None, None, 0, 0, 0
+
     # -----------------------------------------------------------------------------
     # train model
     # -----------------------------------------------------------------------------
@@ -149,8 +203,8 @@ class WORKER(object):
         # sample real values and labels, then train for an epoch
         for values, labels in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
-                values = values.to(self.local_rank, non_blocking=True)
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
+                values = values.to(self.local_rank, non_blocking=True).float()
                 labels = labels.to(self.local_rank, non_blocking=True)
 
                 if self.DATA.pad_mode == 'pad':
@@ -216,9 +270,9 @@ class WORKER(object):
         # sample real values and targets, then train for an epoch
         for values, targets in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
-                values = values.to(self.local_rank, non_blocking=True)
-                targets = targets.to(self.local_rank, non_blocking=True)
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
+                values = values.to(self.local_rank, non_blocking=True).float()
+                targets = targets.to(self.local_rank, non_blocking=True).float()
 
                 if self.RUN.reverse:
                     r_values = torch.flip(values, [1])
@@ -264,10 +318,10 @@ class WORKER(object):
         # sample real values, targets and labels, then train for an epoch
         for values, targets, labels in self.train_iter:
             self.OPTIMIZATION.optimizer.zero_grad()
-            with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values, targets and labels onto the GPU memory
-                values = values.to(self.local_rank, non_blocking=True)
-                targets = targets.to(self.local_rank, non_blocking=True)
+                values = values.to(self.local_rank, non_blocking=True).float()
+                targets = targets.to(self.local_rank, non_blocking=True).float()
                 labels = labels.to(self.local_rank, non_blocking=True)
 
                 if self.RUN.reverse:
@@ -373,14 +427,20 @@ class WORKER(object):
 
         is_best = False
 
-        top1_acc, top10_acc, mpjpe, loss = self.evaluate_step(self.valid_dataloader if training else self.test_dataloader)
+        dataloader = self.valid_dataloader if training else self.test_dataloader
+        self.set_epoch(dataloader, step)
+        top1_acc, top10_acc, mpjpe, loss = self.evaluate_step(dataloader)
 
+        # the keys of the saved statistics; validation used the "test_" names, so they are kept for old runs
         metric_dict = {
             "test_loss": loss,
             "test_mpjpe": mpjpe,
             "test_top1": top1_acc,
             "test_top10": top10_acc,
         }
+        # on wandb, validation is logged as "valid_*" and the final evaluation on the test set as "test_*"
+        prefix = "valid" if training else "test"
+        wandb_dict = {"{}_{}".format(prefix, name[len("test_") :]): value for name, value in metric_dict.items()}
 
         if self.global_rank == 0:
             if self.RUN.mode == "classification":
@@ -390,11 +450,12 @@ class WORKER(object):
             if self.best_loss is None or loss <= self.best_loss:
                 self.best_loss, self.best_mpjpe, self.best_t1acc, self.best_t10acc, self.best_step, is_best = loss, mpjpe, top1_acc, top10_acc, step, True
             if writing:
-                wandb.log(metric_dict, step=self.wandb_step)
+                wandb.log(wandb_dict, step=self.wandb_step)
             if training:
                 if self.RUN.mode == "classification":
                     self.logger.info(
-                        "Best Top 1-acc {top1:.4f}\tBest Top 10-acc {top10:.4f}\tBest Loss (Step: {step}): {loss}".format(
+                        # the best checkpoint is the one with the lowest validation loss; the accuracies are those of that epoch
+                        "Best Top 1-acc {top1:.4f}\tBest Top 10-acc {top10:.4f}\tBest Loss (Step: {step}): {loss} (best = lowest validation loss)".format(
                             step=self.best_step, loss=self.best_loss, top1=self.best_t1acc, top10=self.best_t10acc
                         )
                     )
@@ -439,6 +500,7 @@ class WORKER(object):
             "best_t1acc": self.best_t1acc,
             "best_t10acc": self.best_t10acc,
             "best_loss_ckpt": self.RUN.ckpt_dir,
+            "resume": self.resume_state(),
         }
 
         misc.save_model(model=self.MODEL.backbone, when=when, step=step, ckpt_dir=self.RUN.ckpt_dir, states=states)
@@ -458,9 +520,9 @@ class WORKER(object):
         self.model.eval()
         top1_acc, top10_acc, loss = misc.AverageMeter(), misc.AverageMeter(), misc.AverageMeter()
         for values, labels in dataloader:
-            with torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and labels onto the GPU memory
-                values = values.to(self.local_rank)
+                values = values.to(self.local_rank).float()
                 labels = labels.to(self.local_rank)
 
                 if self.DATA.pad_mode == 'pad':
@@ -496,10 +558,10 @@ class WORKER(object):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
         for values, targets in dataloader:
-            with torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and targets onto the GPU memory
-                values = values.to(self.local_rank)
-                targets = targets.to(self.local_rank)
+                values = values.to(self.local_rank).float()
+                targets = targets.to(self.local_rank).float()
 
                 if self.RUN.reverse:
                     r_values = torch.flip(values, [1])
@@ -527,10 +589,10 @@ class WORKER(object):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
         for values, targets, labels in dataloader:
-            with torch.autocast("cuda"):
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and labels onto the GPU memory
-                values = values.to(self.local_rank)
-                targets = targets.to(self.local_rank)
+                values = values.to(self.local_rank).float()
+                targets = targets.to(self.local_rank).float()
                 labels = labels.to(self.local_rank)
 
                 if self.RUN.reverse:
@@ -570,10 +632,10 @@ class WORKER(object):
             values, targets, labels = next(iter(self.test_dataloader))
         else:
             raise NotImplementedError
-        with torch.autocast("cuda"):
+        with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
             # load values and labels onto the GPU memory
-            values = values.to(self.local_rank)
-            targets = targets.to(self.local_rank)
+            values = values.to(self.local_rank).float()
+            targets = targets.to(self.local_rank).float()
             if self.RUN.mode == "cond_prediction":
                 labels = labels.to(self.local_rank)
 
@@ -615,10 +677,10 @@ class WORKER(object):
             values, targets, labels = next(iter(self.test_dataloader))
         else:
             raise NotImplementedError
-        with torch.autocast("cuda"):
+        with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
             # load values and labels onto the GPU memory
-            values = values.to(self.local_rank)
-            targets = targets.to(self.local_rank)
+            values = values.to(self.local_rank).float()
+            targets = targets.to(self.local_rank).float()
             if self.RUN.mode == "cond_prediction":
                 labels = labels.to(self.local_rank)
 
@@ -635,7 +697,7 @@ class WORKER(object):
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             if self.RUN.twin_generator:
-                r_values = torch.flip(targets.to(self.local_rank), [1])
+                r_values = torch.flip(targets.to(self.local_rank).float(), [1])
 
                 if self.RUN.mode == "prediction":
                     r_outputs = misc.generate_poses(self.model, r_values, self.transform, self.DATA.target_len)
@@ -698,26 +760,33 @@ class WORKER(object):
             directory = join(self.base_save_dir, "poses/{pose}/".format(pose=pose))
             misc.prepare_save_folder(directory)
 
-    def save_dataset(self, class_dataloader, sign):
+    def save_dataset(self, dataloader, signs):
+        """
+        Generate a clip from every clip of `dataloader`, whose batches each hold clips of one class
+        (misc.ClassBatchSampler), and save it. `signs` maps a class index to its sign.
+        """
         if self.global_rank == 0:
-            self.logger.info("Save {s_dataset_len} generated poses.".format(s_dataset_len=self.RUN.sd_num * self.OPTIMIZATION.batch_size))
+            self.logger.info("Generate {n} poses per class for {c} classes.".format(n=self.RUN.sd_num * self.OPTIMIZATION.batch_size, c=len(signs)))
 
-        # generate fake
         self.model.eval()
-        data_iter = itertools.cycle(class_dataloader)
-        ids = []
+        ids, current = [], None
 
-        for _ in range(self.RUN.sd_num):
-            values, targets, labels = next(data_iter)
-            with torch.autocast("cuda"):
+        for values, targets, labels in dataloader:
+            label = int(labels[0])
+            if label != current:
+                if current is not None:
+                    self.update_metadata(ids, signs[current])
+                    ids = []
+                current = label
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and labels onto the GPU memory
-                values = values.to(self.local_rank)
+                values = values.to(self.local_rank).float()
                 labels = labels.to(self.local_rank)
 
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
                 if self.RUN.twin_generator:
-                    r_values = torch.flip(targets.to(self.local_rank), [1])
+                    r_values = torch.flip(targets.to(self.local_rank).float(), [1])
 
                     r_outputs = misc.cond_generate_poses(self.model, r_values, labels, self.transform, self.DATA.target_len)
 
@@ -729,10 +798,11 @@ class WORKER(object):
                     ids.append(str(self.gen_curr_id))
                     self.gen_curr_id += 1
 
-        self.update_metadata(ids, sign)
+        if current is not None:
+            self.update_metadata(ids, signs[current])
 
         if self.global_rank == 0:
-            self.logger.info("Dataset saved.")
+            self.logger.info("Dataset saved: {n} poses.".format(n=self.gen_curr_id))
 
     def update_metadata(self, ids, sign):
         sti = pl.read_csv(os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv'))
