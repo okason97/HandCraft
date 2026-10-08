@@ -74,8 +74,23 @@ class Configurations(object):
         self.DATA.speed_range = None
         # fraction of training frames whose hand keypoints are replaced by interpolation
         self.DATA.hand_mask_p = 0.0
-        # keypoint normalization \in ["dataset", "shoulder", "shoulder_clip"]
+        # how the masked frames are filled: "linear" or "spline" (the method of HWGAT)
+        self.DATA.hand_mask_interp = "linear"
+        # apply the training augmentations to the validation clips, which are taken from the training set
+        self.DATA.augment_valid = False
+        # keypoint normalization \in ["dataset", "shoulder", "shoulder_clip", "box"]
+        # "box" is the per-clip normalization of HWGAT: a box 6 shoulder widths wide, anchored at the nose of the first frame
         self.DATA.norm = "dataset"
+        # for norm "box": convert x,y to pixels before normalizing (needs metadata/video_sizes.csv, see scripts/data/video_sizes.py)
+        self.DATA.pixel_coords = False
+        # [mean, std] of the random pivot of the shear and the rotation, as in HWGAT (None = around the origin)
+        self.DATA.aug_pivot = None
+        # probability of a horizontal flip of x that does not swap left/right keypoints
+        self.DATA.xflip_p = 0.0
+        # for norm "box": where to put a hand that was not detected in any frame of the clip \in [None, "wrist"]
+        self.DATA.missing_hand = None
+        # drop the last incomplete batch of the test set (False, the default, evaluates every test clip)
+        self.DATA.test_drop_last = False
         # number of coordinates per keypoint used as input (2 = x,y; 3 = x,y,z), must match input_size[2]
         self.DATA.coords = 3
         # encode the data by applying a transformation ["DCT","DWT",None]
@@ -182,8 +197,10 @@ class Configurations(object):
 
         # type of the optimizer for training \in ["SGD", "RMSprop", "Adam", "RAdam", "AdamW"]
         self.OPTIMIZATION.type_ = "RAdam"
-        # lr scheduler \in ["OneCycle"]
+        # lr scheduler \in ["OneCycle", "Cosine"]
         self.OPTIMIZATION.lrscheduler = None
+        # for "Cosine": epochs from the initial lr down to 0; the lr then goes back up and repeats, as CosineAnnealingLR does
+        self.OPTIMIZATION.cosine_epochs = 20
         self.OPTIMIZATION.max_lr = 0.1
         self.OPTIMIZATION.pct_start = 0.3
         # number of batch size for training,
@@ -377,6 +394,11 @@ class Configurations(object):
                 three_phase=False,
                 steps_per_epoch=len_dataloader,
                 epochs=epochs,
+            )
+        elif self.OPTIMIZATION.lrscheduler == "Cosine":
+            # the scheduler is stepped every batch
+            self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.OPTIMIZATION.optimizer, T_max=self.OPTIMIZATION.cosine_epochs * len_dataloader
             )
         else:
             self.OPTIMIZATION.scheduler = None

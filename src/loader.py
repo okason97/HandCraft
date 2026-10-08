@@ -13,7 +13,7 @@ import torch
 import torch.distributed as dist
 import wandb
 from torch.backends import cudnn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
 
 import models.model as model_generator
@@ -107,6 +107,11 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         rot_std=cfgs.DATA.rot_std,
         mirror_p=cfgs.DATA.mirror_p,
         coords=cfgs.DATA.coords,
+        pixel_coords=cfgs.DATA.pixel_coords,
+        aug_pivot=cfgs.DATA.aug_pivot,
+        xflip_p=cfgs.DATA.xflip_p,
+        missing_hand=cfgs.DATA.missing_hand,
+        hand_mask_interp=cfgs.DATA.hand_mask_interp,
         mode=cfgs.RUN.mode,
     )
 
@@ -115,6 +120,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     train_dataset, valid_dataset = train_val_dataset(
         dataset=base_train_dataset, val_split=0.1, random_state=cfgs.RUN.seed, stratify=base_train_dataset.data['sign'].to_list()
     )
+    if not cfgs.DATA.augment_valid:
+        valid_dataset = Subset(base_train_dataset.eval_view(), valid_dataset.indices)
 
     if cfgs.RUN.dset_used > 1:
         dset_used = int(cfgs.RUN.dset_used)
@@ -175,6 +182,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         temporal_sampling=cfgs.DATA.temporal_sampling,
         norm=cfgs.DATA.norm,
         coords=cfgs.DATA.coords,
+        pixel_coords=cfgs.DATA.pixel_coords,
+        missing_hand=cfgs.DATA.missing_hand,
         mode=cfgs.RUN.mode,
     )
     if local_rank == 0:
@@ -262,7 +271,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         num_workers=cfgs.RUN.num_workers,
         sampler=test_sampler,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-        drop_last=True,
+        drop_last=cfgs.DATA.test_drop_last,
         persistent_workers=True,
     )
 

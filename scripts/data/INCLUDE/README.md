@@ -48,6 +48,14 @@ The scripts need the `extract` dependencies (`uv sync --extra extract`) and the 
 
    For each video in `raw/`, it detects the pose and then the hands and face in crops around the pose landmarks. Missing detections are filled in by linear interpolation, and a Savitzky-Golay filter (window 15, order 3) smooths each track. Each track is saved as a `(frames, keypoints, 3)` array: 33 pose, 21 per hand and 478 face keypoints.
 
+4. **Video sizes** (only for configs with `pixel_coords: True`, such as `stgcn/hwgat-*`):
+
+   ```bash
+   python ../video_sizes.py -data_dir <data_dir>
+   ```
+
+   It writes `metadata/video_sizes.csv` with the width and height of every video in `raw/`. Run it before `make_official_split.py`, which links the file into the official split directory.
+
 Then train as with any other dataset (see [doc/training.md](../../../doc/training.md)).
 
 ## Train/test split: official vs. the one used here

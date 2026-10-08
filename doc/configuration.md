@@ -34,8 +34,13 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | `speed` | `None` | For uniform sampling: minimum fraction of the clip covered by the random training window (None = whole clip) |
 | `speed_range` | `None` | For pad sampling: [min, max] random speed factor applied to the clip length during training (None = off) |
 | `hand_mask_p` | `0.0` | Fraction of training frames whose hand keypoints are replaced by interpolation |
-| `norm` | `"dataset"` | `"dataset"`: subtract the first frame's nose and divide by dataset constants. `"shoulder"`: centre every frame on the shoulder midpoint and scale by the mean shoulder width. `"shoulder_clip"`: the same with one centre per clip |
+| `norm` | `"dataset"` | `"dataset"`: subtract the first frame's nose and divide by dataset constants. `"shoulder"`: centre every frame on the shoulder midpoint and scale by the mean shoulder width. `"shoulder_clip"`: the same with one centre per clip. `"box"`: the per-clip normalization of HWGAT, a box 6 shoulder widths wide placed so the nose of the first frame is at (0.5, 1/3) |
 | `coords` | `3` | Number of coordinates per keypoint used as input (2 = x,y; 3 = x,y,z), must match input_size[2] |
+| `pixel_coords` | `False` | For norm "box": convert x and y to pixels before normalizing, so the box is square in the video. Needs `metadata/video_sizes.csv`, written by `scripts/data/video_sizes.py` |
+| `aug_pivot` | `None` | `[mean, std]` of a random pivot for `shear_std` and `rot_std`, as in HWGAT: the shear and the rotation are applied around their own pivot and the shear only moves y. `None` applies them around the origin |
+| `xflip_p` | `0.0` | Probability of reflecting x without swapping left and right keypoints, around 0.5 for norm "box" and around 0 otherwise |
+| `missing_hand` | `None` | For norm "box": `"wrist"` places a hand that was not detected in any frame of the clip at its wrist |
+| `test_drop_last` | `True` | Drop the last incomplete batch of the test set. `False` evaluates every test clip |
 | `transform` | `None` | `"DCT"` applies a discrete cosine transform over the frames; anything else leaves the frames unchanged |
 | `batch_size` | `128` | Set from `OPTIMIZATION.batch_size` |
 
@@ -97,7 +102,8 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | Option | Default | Description |
 |---|---|---|
 | `type_` | `"RAdam"` | Type of the optimizer for training in ["SGD", "RMSprop", "Adam", "RAdam", "AdamW"] |
-| `lrscheduler` | `None` | `"OneCycle"` or none |
+| `lrscheduler` | `None` | `"OneCycle"`, `"Cosine"` or none |
+| `cosine_epochs` | `20` | For `"Cosine"`: epochs from the initial learning rate down to 0. The rate then rises again and the cycle repeats |
 | `max_lr` | `0.1` | Peak learning rate of OneCycle |
 | `pct_start` | `0.3` | Fraction of training spent increasing the learning rate (OneCycle) |
 | `batch_size` | `128` | Batch size |

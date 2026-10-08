@@ -1,0 +1,44 @@
+# official-lr5 with the training augmentations applied to the validation clips, as before augment_valid existed (roadmap test 1.5).
+DATA:
+  name: "INCLUDE"
+  poses: [["pose",[0,2,5,11,12,13,14,15,16]],["left_hand",[0,4,5,8,9,12,13,16,17,20]],["right_hand",[0,4,5,8,9,12,13,16,17,20]]]
+  num_keypoints: 29
+  num_classes: 253
+  min_samples: 5
+  oversample: True
+  max_len: 32
+  pad_frames: True
+  pad_mode: "pad"
+  input_size: [32, 29, 2]
+  drop_frame: 0.0
+  drop_keypoint: 0.0
+  block_size: 9
+  flip_p: 0.0
+  scale: 0.0
+  rot: 0
+  transform: "none"
+  coords: 2
+  temporal_sampling: "uniform"
+  speed: 0.8
+  norm: "shoulder"
+  shear_std: 0.1
+  rot_std: 0.1
+  augment_valid: True
+MODEL:
+  backbone: "stgcn"
+  representation_size: 256
+  dropout: 0.05
+LOSS:
+  loss_type: "CCE"
+  label_smoothing: 0.1
+OPTIMIZATION:
+  type_: "RAdam"
+  batch_size: 16
+  lr: 0.005
+  weight_decay: 0.0001
+  beta1: 0.9
+  beta2: 0.999
+  total_steps: 400
+  lrscheduler: "OneCycle"
+  max_lr: 0.005
+  pct_start: 0.1

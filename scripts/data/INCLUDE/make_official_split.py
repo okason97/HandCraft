@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import shutil
 import urllib.request
 
 import polars as pl
@@ -22,11 +23,28 @@ splits_dir = os.path.join(args.out_dir, 'metadata', 'splits')
 os.makedirs(lists_dir, exist_ok=True)
 os.makedirs(splits_dir, exist_ok=True)
 
-# reutilizar poses, instances.csv y sign_to_index.csv del dataset original
-for name in ['poses', 'instances.csv', os.path.join('metadata', 'sign_to_index.csv')]:
-    dst = os.path.join(args.out_dir, name)
-    if not os.path.lexists(dst):
-        os.symlink(os.path.join(data_dir, name), dst)
+
+def link(src, dst):
+    """
+    Symlink dst to src. Windows only allows symlinks in developer mode or as administrator:
+    there a directory is linked with a junction and a file is copied.
+    """
+    try:
+        os.symlink(src, dst)
+    except OSError:
+        if os.path.isdir(src):
+            import _winapi
+
+            _winapi.CreateJunction(src, dst)
+        else:
+            shutil.copyfile(src, dst)
+
+
+# reutilizar poses, instances.csv, sign_to_index.csv y video_sizes.csv (si existe) del dataset original
+for name in ['poses', 'instances.csv', os.path.join('metadata', 'sign_to_index.csv'), os.path.join('metadata', 'video_sizes.csv')]:
+    src, dst = os.path.join(data_dir, name), os.path.join(args.out_dir, name)
+    if os.path.exists(src) and not os.path.lexists(dst):
+        link(src, dst)
 
 
 def read_ids(split):

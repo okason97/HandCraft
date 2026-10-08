@@ -1,0 +1,53 @@
+# Data pipeline of HWGAT (https://github.com/suvajit-patra/sl-hwgat) for its 29 keypoints: pixel coordinates, one box
+# per clip, 64 frames padded with the edge frames, random speed, hand masking refilled with a spline, shear, rotation
+# and flip around a random pivot, every class and every test clip. The model and the training settings are those of
+# official-lr5.
+DATA:
+  name: "INCLUDE"
+  poses: [["pose",[0,2,5,11,12,13,14,15,16]],["left_hand",[0,4,5,8,9,12,13,16,17,20]],["right_hand",[0,4,5,8,9,12,13,16,17,20]]]
+  num_keypoints: 29
+  num_classes: 262
+  min_samples: 0
+  oversample: False
+  max_len: 64
+  pad_frames: True
+  pad_mode: "pad"
+  input_size: [64, 29, 2]
+  drop_frame: 0.0
+  drop_keypoint: 0.0
+  block_size: 9
+  flip_p: 0.0
+  scale: 0.0
+  rot: 0
+  transform: "none"
+  coords: 2
+  temporal_sampling: "pad"
+  speed_range: [0.5, 1.5]
+  hand_mask_p: 0.2
+  hand_mask_interp: "spline"
+  norm: "box"
+  shear_std: 0.1
+  rot_std: 0.1
+  aug_pivot: [0.5, 0.1]
+  xflip_p: 0.5
+  pixel_coords: True
+  missing_hand: "wrist"
+  test_drop_last: False
+MODEL:
+  backbone: "stgcn"
+  representation_size: 256
+  dropout: 0.05
+LOSS:
+  loss_type: "CCE"
+  label_smoothing: 0.1
+OPTIMIZATION:
+  type_: "RAdam"
+  batch_size: 16
+  lr: 0.005
+  weight_decay: 0.0001
+  beta1: 0.9
+  beta2: 0.999
+  total_steps: 400
+  lrscheduler: "OneCycle"
+  max_lr: 0.005
+  pct_start: 0.1
