@@ -12,7 +12,7 @@ import utils.ops as ops
 class Conv1DBlock(nn.Module):
     def __init__(self, in_channels, out_channels, MODEL, MODULES):
         super(Conv1DBlock, self).__init__()
-        self.res = (in_channels==out_channels)
+        self.res = in_channels == out_channels
         expanded_channels = out_channels * MODEL.expand_ratio
 
         self.in_linear = MODULES.linear(in_features=in_channels, out_features=expanded_channels)
@@ -23,7 +23,7 @@ class Conv1DBlock(nn.Module):
         self.bn = MODULES.feature_norm(in_features=expanded_channels)
         self.out_linear = MODULES.linear(in_features=expanded_channels, out_features=out_channels)
         self.dropout = MODULES.dropout(p=MODEL.dropout)
-        self.drop_path = MODULES.drop_path(p=MODEL.drop_path,mode="batch")
+        self.drop_path = MODULES.drop_path(p=MODEL.drop_path, mode="batch")
 
         self.activation = MODULES.act_fn
 
@@ -33,11 +33,11 @@ class Conv1DBlock(nn.Module):
 
         x = self.activation(self.in_linear(x))
         # (n, f, embeding) -> (n, c, f)
-        x = self.activation(self.conv1d(torch.transpose(x,1,2)))
+        x = self.activation(self.conv1d(torch.transpose(x, 1, 2)))
         x = self.eca(x)
         x = self.bn(x)
         # (n, c, f) -> (n, f, embeding)
-        x = torch.transpose(x,1,2)
+        x = torch.transpose(x, 1, 2)
         if masks is not None:
             x[masks] = 0
         x = self.dropout(self.out_linear(x))
@@ -46,6 +46,7 @@ class Conv1DBlock(nn.Module):
             return self.drop_path(x) + x0
         else:
             return x
+
 
 class Block(nn.Module):
     def __init__(self, in_channels, out_channels, MODEL, MODULES):
@@ -63,6 +64,7 @@ class Block(nn.Module):
 
         return x
 
+
 class Model(nn.Module):
     # buffer registered in __init__; torch types buffer attributes as Tensor | Module
     class_mask: torch.Tensor
@@ -70,9 +72,9 @@ class Model(nn.Module):
     def __init__(self, DATA, RUN, MODULES, MODEL):
         super(Model, self).__init__()
 
-        f_input_size = DATA.input_size[1]*DATA.input_size[2]
-        self.in_dims = [MODEL.embed_size]+[MODEL.conv_dim]*(MODEL.depth-1)
-        self.out_dims = [MODEL.conv_dim]*MODEL.depth
+        f_input_size = DATA.input_size[1] * DATA.input_size[2]
+        self.in_dims = [MODEL.embed_size] + [MODEL.conv_dim] * (MODEL.depth - 1)
+        self.out_dims = [MODEL.conv_dim] * MODEL.depth
 
         self.mixed_precision = RUN.mixed_precision
 
@@ -80,12 +82,7 @@ class Model(nn.Module):
         self.attns = []
         self.apply_attn = MODEL.apply_attn
         for index in range(len(self.in_dims)):
-            self.blocks += [
-                Block(in_channels=self.in_dims[index],
-                            out_channels=self.out_dims[index],
-                            MODEL=MODEL,
-                            MODULES=MODULES)
-            ]
+            self.blocks += [Block(in_channels=self.in_dims[index], out_channels=self.out_dims[index], MODEL=MODEL, MODULES=MODULES)]
 
             if self.apply_attn:
                 self.attns += [
@@ -97,7 +94,7 @@ class Model(nn.Module):
 
         self.inlinear = MODULES.linear(f_input_size, self.in_dims[0], bias=False)
         self.bn = MODULES.feature_norm(in_features=DATA.input_size[0])
-        self.top_linear = MODULES.linear(self.out_dims[-1], self.out_dims[-1]*2)
+        self.top_linear = MODULES.linear(self.out_dims[-1], self.out_dims[-1] * 2)
         self.outlinear = MODULES.linear(DATA.input_size[0], DATA.num_classes)
         self.class_token = nn.Parameter(torch.zeros(1, 1, f_input_size))
         class_mask = torch.full((1, 1, f_input_size), True)
@@ -118,7 +115,7 @@ class Model(nn.Module):
             if masks is not None:
                 batch_class_mask = self.class_mask.expand(n, -1, -1)
                 masks = torch.cat([masks, batch_class_mask], dim=1)
-                masks = masks.any(dim=-1) 
+                masks = masks.any(dim=-1)
                 ft = misc.keep_first_true(masks)
                 x = F.pad(input=x, pad=(0, 0, 0, 1, 0, 0), mode='constant', value=0)
                 x[masks] = 0

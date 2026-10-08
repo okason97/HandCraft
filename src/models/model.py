@@ -21,17 +21,16 @@ def load_model(DATA, MODEL, MODULES, RUN, device, logger):
     if device == 0:
         logger.info("Modules are located on './src/models.{backbone}'.".format(backbone=MODEL.backbone))
 
-        model = module.Model(DATA=DATA,
-                                RUN=RUN,
-                                MODULES=MODULES,
-                                MODEL=MODEL)
+        model = module.Model(DATA=DATA, RUN=RUN, MODULES=MODULES, MODEL=MODEL)
         if MODEL.apply_ema:
-            model = EMA(model,
-                        beta = MODEL.ema_beta,              # exponential moving average factor
-                        update_after_step = MODEL.ema_update_after_step,    # only after this number of .update() calls will it start updating
-                        update_every = MODEL.ema_update_every,          # how often to actually update, to save on compute (updates every 10th .update() call)
-                        power=MODEL.ema_power)              # exponential factor of EMA warmup. Default: 2/3.
-            
+            model = EMA(
+                model,
+                beta=MODEL.ema_beta,  # exponential moving average factor
+                update_after_step=MODEL.ema_update_after_step,  # only after this number of .update() calls will it start updating
+                update_every=MODEL.ema_update_every,  # how often to actually update, to save on compute (updates every 10th .update() call)
+                power=MODEL.ema_power,
+            )  # exponential factor of EMA warmup. Default: 2/3.
+
     if device == 0:
         logger.info(misc.count_parameters(model))
     if device == 0:
@@ -45,9 +44,7 @@ def prepare_parallel_training(model, world_size, distributed_data_parallel, sync
             process_group = torch.distributed.new_group([w for w in range(world_size)])
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model, process_group)
 
-        model = DDP(model, device_ids=[device],
-                  broadcast_buffers=synchronized_bn,
-                  find_unused_parameters=False)
+        model = DDP(model, device_ids=[device], broadcast_buffers=synchronized_bn, find_unused_parameters=False)
     else:
         model = DataParallel(model, output_device=device)
 

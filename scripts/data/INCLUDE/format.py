@@ -28,11 +28,11 @@ if __name__ == '__main__':
 
     # mover archivos a raw y renombrar a <Category>_<sign>#<video>.<ext>
     # original/<Category>/<N>. <sign>/[Extra/]<video>.<ext> (some folders have no '<N>. ' prefix)
-    list_paths = glob.glob(os.path.join(original_dir, '**', '*.MOV'), recursive=True)+glob.glob(os.path.join(original_dir, '**', '*.MP4'), recursive=True)
+    list_paths = glob.glob(os.path.join(original_dir, '**', '*.MOV'), recursive=True) + glob.glob(os.path.join(original_dir, '**', '*.MP4'), recursive=True)
     for path in list_paths:
         split_path = os.path.relpath(path, original_dir).split(os.sep)
         category, sign_dir, video = split_path[0], split_path[1], split_path[-1]
-        new_name = category+'_'+sign_dir.split('. ', 1)[-1].replace(" ", "_")+'#'+video
+        new_name = category + '_' + sign_dir.split('. ', 1)[-1].replace(" ", "_") + '#' + video
         new_path = os.path.join(raw_dir, new_name)
         if os.path.exists(new_path):
             print('Skipping {}: {} already exists'.format(path, new_path))
@@ -42,17 +42,11 @@ if __name__ == '__main__':
     # crear instances.csv
     # columnas id,sign,signer,start,end
     list_paths = list_videos(raw_dir)
-    instances = {
-        'id': [],
-        'sign': [],
-        'signer': [],
-        'start': [],
-        'end': []
-    }
+    instances = {'id': [], 'sign': [], 'signer': [], 'start': [], 'end': []}
     for path in list_paths:
         video_id = os.path.splitext(os.path.basename(path))[0]
         instances['id'].append(video_id)
-        instances['sign'].append(video_id[:video_id.find('#')])
+        instances['sign'].append(video_id[: video_id.find('#')])
         instances['signer'].append("Bender")
         instances['start'].append(0)
         instances['end'].append(1)
@@ -63,10 +57,7 @@ if __name__ == '__main__':
     # crear metadata/sign_to_index.csv
     # columnas sign,class
     unique_signs = sorted(set(instances['sign']))
-    sign_to_index = {
-        'sign': [],
-        'class': []
-    }
+    sign_to_index = {'sign': [], 'class': []}
     for i, sign in enumerate(unique_signs):
         sign_to_index['sign'].append(sign)
         sign_to_index['class'].append(i)

@@ -12,8 +12,10 @@ from mediapipe_keypoints import extract_clips
 def list_clips(original_dir):
     return sorted(glob.glob(os.path.join(original_dir, 'Signs*', '*', '')))
 
+
 def clip_id(clip_path):
     return os.path.basename(os.path.normpath(clip_path))
+
 
 def list_frames(clip_path):
     """
@@ -22,8 +24,10 @@ def list_frames(clip_path):
     frame_paths = glob.glob(os.path.join(clip_path, '02 Color Frames', '*.jpg'))
     return sorted(frame_paths, key=frame_number)
 
+
 def frame_number(frame_path):
     return int(os.path.basename(frame_path).split('.')[-2])
+
 
 def read_times(times_path):
     """
@@ -37,8 +41,9 @@ def read_times(times_path):
             if len(fields) < 5 or not all(field.strip() for field in fields[:5]):
                 continue
             days, hours, minutes, seconds, milliseconds = [int(field.split(' ')[-2]) for field in fields[:5]]
-            times.append((((days*24+hours)*60+minutes)*60+seconds)*1000+milliseconds)
+            times.append((((days * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000 + milliseconds)
     return times
+
 
 def clip_frames(clip_path):
     """
@@ -47,16 +52,17 @@ def clip_frames(clip_path):
     times = read_times(os.path.join(clip_path, '01 Times', 'Times.csv'))
     # Times.csv can have more rows than there are colour frames
     for frame_path, time in zip(list_frames(clip_path), times, strict=False):
-        yield cv2.imread(frame_path), time-times[0]
+        yield cv2.imread(frame_path), time - times[0]
+
 
 def extract_all(data_dir, model_dir, workers=1):
     """
     Extract MediaPipe keypoints for every clip in <data_dir>/original and save them
     as <data_dir>/poses/{pose,right_hand,left_hand,face}/<clip_id>.npy
     """
-    clips = [(clip_frames, clip_path, clip_id(clip_path))
-             for clip_path in list_clips(os.path.join(data_dir, 'original'))]
+    clips = [(clip_frames, clip_path, clip_id(clip_path)) for clip_path in list_clips(os.path.join(data_dir, 'original'))]
     extract_clips(clips, data_dir, model_dir, workers)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Extract MediaPipe keypoints from the DiSPLaY clips in <data_dir>/original")

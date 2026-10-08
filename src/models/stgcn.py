@@ -43,6 +43,7 @@ class ConvTemporalGraphical(nn.Module):
             :math:`T_{in}/T_{out}` is a length of input/output sequence,
             :math:`V` is the number of graph nodes.
     """
+
     def __init__(
         self,
         in_channels,
@@ -105,9 +106,8 @@ class STGCN_BLOCK(nn.Module):
             :math:`T_{in}/T_{out}` is a length of input/output sequence,
             :math:`V` is the number of graph nodes.
     """
-    def __init__(
-        self, in_channels, out_channels, kernel_size, stride=1, dropout=0, residual=True
-    ):
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, dropout=0, residual=True):
         super().__init__()
 
         assert len(kernel_size) == 2
@@ -151,6 +151,7 @@ class STGCN_BLOCK(nn.Module):
 
         return self.relu(x), A
 
+
 class FC(nn.Module):
     """
     Fully connected layer head
@@ -160,6 +161,7 @@ class FC(nn.Module):
         dropout_ratio (float): Dropout ratio to use. Default: 0.2.
         batch_norm (bool): Whether to use batch norm or not. Default: ``False``.
     """
+
     def __init__(self, n_features, num_class, dropout_ratio=0.2, batch_norm=False):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout_ratio)
@@ -175,7 +177,7 @@ class FC(nn.Module):
         """
         Args:
             x (torch.Tensor): Input tensor of shape: (batch_size, n_features)
-        
+
         returns:
             torch.Tensor: logits for classification.
         """
@@ -186,14 +188,20 @@ class FC(nn.Module):
         x = self.classifier(x)
         return x
 
+
 # keypoints and skeleton edges of the 29 keypoint graph used by sl-hwgat (MediaPipe indexes):
 # nose, eyes, shoulders, elbows and wrists, then 10 keypoints per hand (wrist, fingertips and finger bases)
-HWGAT29_POSES = [["pose", [0, 2, 5, 11, 12, 13, 14, 15, 16]],
-                 ["left_hand", [0, 4, 5, 8, 9, 12, 13, 16, 17, 20]],
-                 ["right_hand", [0, 4, 5, 8, 9, 12, 13, 16, 17, 20]]]
+HWGAT29_POSES = [
+    ["pose", [0, 2, 5, 11, 12, 13, 14, 15, 16]],
+    ["left_hand", [0, 4, 5, 8, 9, 12, 13, 16, 17, 20]],
+    ["right_hand", [0, 4, 5, 8, 9, 12, 13, 16, 17, 20]],
+]
 HAND_EDGES = [[0, 1], [0, 2], [2, 3], [2, 4], [4, 5], [0, 4], [4, 6], [0, 6], [6, 7], [6, 8], [0, 8], [8, 9]]
-HWGAT29_EDGES = [[2, 0], [1, 0], [0, 3], [0, 4], [3, 5], [4, 6], [5, 7], [6, 8], [7, 9], [8, 19]] + \
-                [[i+9, j+9] for i, j in HAND_EDGES] + [[i+19, j+19] for i, j in HAND_EDGES]
+HWGAT29_EDGES = (
+    [[2, 0], [1, 0], [0, 3], [0, 4], [3, 5], [4, 6], [5, 7], [6, 8], [7, 9], [8, 19]]
+    + [[i + 9, j + 9] for i, j in HAND_EDGES]
+    + [[i + 19, j + 19] for i, j in HAND_EDGES]
+)
 
 
 class Model(nn.Module):
@@ -206,6 +214,7 @@ class Model(nn.Module):
     Expects DATA.poses to be HWGAT29_POSES. The input is a sequence of raw frames, so it
     should be used with DATA.transform "none" and a sampling that returns no padded frames.
     """
+
     # buffer registered in __init__; torch types buffer attributes as Tensor | Module
     A: torch.Tensor
 
@@ -226,22 +235,71 @@ class Model(nn.Module):
         self.data_bn = nn.BatchNorm1d(self.in_channels * A.size(1))
         self.st_gcn_networks = nn.ModuleList(
             (
-                STGCN_BLOCK(self.in_channels, 64, kernel_size, 1, residual=False,),
-                STGCN_BLOCK(64, 64, kernel_size, 1,),
-                STGCN_BLOCK(64, 64, kernel_size, 1,),
-                STGCN_BLOCK(64, 64, kernel_size, 1,),
-                STGCN_BLOCK(64, 128, kernel_size, 2,),
-                STGCN_BLOCK(128, 128, kernel_size, 1,),
-                STGCN_BLOCK(128, 128, kernel_size, 1,),
-                STGCN_BLOCK(128, 256, kernel_size, 2,),
-                STGCN_BLOCK(256, 256, kernel_size, 1,),
-                STGCN_BLOCK(256, self.n_out_features, kernel_size, 1,),
+                STGCN_BLOCK(
+                    self.in_channels,
+                    64,
+                    kernel_size,
+                    1,
+                    residual=False,
+                ),
+                STGCN_BLOCK(
+                    64,
+                    64,
+                    kernel_size,
+                    1,
+                ),
+                STGCN_BLOCK(
+                    64,
+                    64,
+                    kernel_size,
+                    1,
+                ),
+                STGCN_BLOCK(
+                    64,
+                    64,
+                    kernel_size,
+                    1,
+                ),
+                STGCN_BLOCK(
+                    64,
+                    128,
+                    kernel_size,
+                    2,
+                ),
+                STGCN_BLOCK(
+                    128,
+                    128,
+                    kernel_size,
+                    1,
+                ),
+                STGCN_BLOCK(
+                    128,
+                    128,
+                    kernel_size,
+                    1,
+                ),
+                STGCN_BLOCK(
+                    128,
+                    256,
+                    kernel_size,
+                    2,
+                ),
+                STGCN_BLOCK(
+                    256,
+                    256,
+                    kernel_size,
+                    1,
+                ),
+                STGCN_BLOCK(
+                    256,
+                    self.n_out_features,
+                    kernel_size,
+                    1,
+                ),
             )
         )
 
-        self.edge_importance = nn.ParameterList(
-            [nn.Parameter(torch.ones(self.A.size())) for i in self.st_gcn_networks]
-        )
+        self.edge_importance = nn.ParameterList([nn.Parameter(torch.ones(self.A.size())) for i in self.st_gcn_networks])
 
         self.head = FC(self.n_out_features, DATA.num_classes, MODEL.dropout)
 
@@ -253,11 +311,11 @@ class Model(nn.Module):
         """
         N, T, _ = x.size()
         x = x.float().view(N, T, self.num_nodes, self.in_channels)
-        x = x.permute(0, 2, 3, 1).contiguous() # NTVC -> NVCT
+        x = x.permute(0, 2, 3, 1).contiguous()  # NTVC -> NVCT
         x = x.view(N, self.num_nodes * self.in_channels, T)
         x = self.data_bn(x)
         x = x.view(N, self.num_nodes, self.in_channels, T)
-        x = x.permute(0, 2, 3, 1).contiguous() # NVCT -> NCTV
+        x = x.permute(0, 2, 3, 1).contiguous()  # NVCT -> NCTV
 
         for gcn, importance in zip(self.st_gcn_networks, self.edge_importance, strict=True):
             x, _ = gcn(x, self.A * importance)

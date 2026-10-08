@@ -53,23 +53,19 @@ def load_ckpt(model, optimizer, ckpt_path, load_model=False, load_opt=False, loa
         return seed, run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc
 
 
-def load_model_ckpts(ckpt_dir, load_best, model, optimizer, run_name,
-                         is_train, RUN, logger, global_rank, device, cfg_file, backbone):
+def load_model_ckpts(ckpt_dir, load_best, model, optimizer, run_name, is_train, RUN, logger, global_rank, device, cfg_file, backbone):
     import utils.misc as misc
+
     when = "best" if load_best is True else "current"
-    ckpt_path = glob.glob(join(ckpt_dir, "model={model}-{when}-weights-step*.pth".format(model=backbone,when=when)))[0]
+    ckpt_path = glob.glob(join(ckpt_dir, "model={model}-{when}-weights-step*.pth".format(model=backbone, when=when)))[0]
     prev_run_name = torch.load(ckpt_path, map_location=lambda storage, loc: storage)["run_name"]
 
-    seed, prev_run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc =\
-        load_ckpt(model=model,
-                  optimizer=optimizer,
-                  ckpt_path=ckpt_path,
-                  load_model=True,
-                  load_opt=False if not is_train else True,
-                  load_misc=True)
+    seed, prev_run_name, step, epoch, topk, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc = load_ckpt(
+        model=model, optimizer=optimizer, ckpt_path=ckpt_path, load_model=True, load_opt=False if not is_train else True, load_misc=True
+    )
 
     if not is_train:
-        prev_run_name = cfg_file[cfg_file.rindex("/")+1:cfg_file.index(".yaml")]+prev_run_name[prev_run_name.index("-train"):]
+        prev_run_name = cfg_file[cfg_file.rindex("/") + 1 : cfg_file.index(".yaml")] + prev_run_name[prev_run_name.index("-train") :]
 
     if is_train and RUN.seed != seed:
         RUN.seed = seed + global_rank
@@ -85,15 +81,11 @@ def load_model_ckpts(ckpt_dir, load_best, model, optimizer, run_name,
 
 def load_best_model(ckpt_dir, model, backbone):
     import utils.misc as misc
+
     model = misc.peel_model(model)
     ckpt_path = glob.glob(join(ckpt_dir, "model={model}-best-weights-step*.pth".format(model=backbone)))[0]
 
-    _, _, _, _, _, best_step, _, _, _, _ = load_ckpt(model=model,
-                                                  optimizer=None,
-                                                  ckpt_path=ckpt_path,
-                                                  load_model=True,
-                                                  load_opt=False,
-                                                  load_misc=True)
+    _, _, _, _, _, best_step, _, _, _, _ = load_ckpt(model=model, optimizer=None, ckpt_path=ckpt_path, load_model=True, load_opt=False, load_misc=True)
 
     return best_step
 

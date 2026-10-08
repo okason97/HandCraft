@@ -21,9 +21,27 @@ import utils.misc as misc
 
 
 class WORKER(object):
-    def __init__(self, cfgs, run_name, model, r_model, train_dataloader, valid_dataloader, test_dataloader, synth_dataloader,
-                 global_rank, local_rank, logger, best_step, best_loss, best_mpjpe, best_t1acc, best_t10acc,
-                 loss_list_dict, metric_dict_during_train):
+    def __init__(
+        self,
+        cfgs,
+        run_name,
+        model,
+        r_model,
+        train_dataloader,
+        valid_dataloader,
+        test_dataloader,
+        synth_dataloader,
+        global_rank,
+        local_rank,
+        logger,
+        best_step,
+        best_loss,
+        best_mpjpe,
+        best_t1acc,
+        best_t10acc,
+        loss_list_dict,
+        metric_dict_during_train,
+    ):
         self.cfgs = cfgs
         self.run_name = run_name
         self.model = model
@@ -46,13 +64,7 @@ class WORKER(object):
         self.wandb_step = None
         self.gen_curr_id = 0
         self.base_save_dir = join(cfgs.RUN.save_dir, "generated_datasets/{run_name}".format(run_name=self.run_name))
-        self.metadata = {
-            'id': [],
-            'sign': [],
-            'signer': [],
-            'start': [],
-            'end': []
-        }
+        self.metadata = {'id': [], 'sign': [], 'signer': [], 'start': [], 'end': []}
 
         if cfgs.RUN.mode == "classification":
             self.train_step = self.classification_train_step
@@ -71,7 +83,7 @@ class WORKER(object):
         else:
             self.transform = misc.Identity()
 
-        #self.cfgs.define_augments(local_rank)
+        # self.cfgs.define_augments(local_rank)
         self.cfgs.define_losses()
         self.DATA = cfgs.DATA
         self.MODEL = cfgs.MODEL
@@ -93,11 +105,7 @@ class WORKER(object):
             self.scaler = torch.amp.GradScaler('cuda')
 
         if self.global_rank == 0:
-            wandb.init(project=self.RUN.project,
-                       entity=self.RUN.entity,
-                       name=self.run_name,
-                       dir=self.RUN.save_dir,
-                       resume=self.best_step > 0)
+            wandb.init(project=self.RUN.project, entity=self.RUN.entity, name=self.run_name, dir=self.RUN.save_dir, resume=self.best_step > 0)
 
         self.start_time = datetime.now()
 
@@ -144,7 +152,7 @@ class WORKER(object):
             with torch.amp.autocast('cuda') if self.RUN.mixed_precision else torch.autocast("cuda"):
                 values = values.to(self.local_rank, non_blocking=True)
                 labels = labels.to(self.local_rank, non_blocking=True)
-                
+
                 if self.DATA.pad_mode == 'pad':
                     masks = torch.isnan(values)
                     values = torch.nan_to_num(values)
@@ -178,9 +186,11 @@ class WORKER(object):
             valid_loss.update(loss.item(), values.size(0))
 
         if self.local_rank == 0:
-            self.logger.info("Train Top 1-acc {top1.avg:.4f}\t"
-                            "Train Top 10-acc {top10.avg:.4f}\t"
-                            "Train Loss {loss.avg:.4f}".format(top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss))
+            self.logger.info(
+                "Train Top 1-acc {top1.avg:.4f}\tTrain Top 10-acc {top10.avg:.4f}\tTrain Loss {loss.avg:.4f}".format(
+                    top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss
+                )
+            )
 
         # apply late dropout when reaching the indicated step
         self.apply_l_drop(step)
@@ -190,12 +200,12 @@ class WORKER(object):
 
         top1 = valid_top1_acc.avg
         top10 = valid_top10_acc.avg
-        #del values
-        #del labels
-        #del masks
-        #del outputs
+        # del values
+        # del labels
+        # del masks
+        # del outputs
         return top1, top10, valid_loss.avg
-    
+
     def prediction_train_step(self, step):
         # make the model be trainable before starting training
         self.model.train()
@@ -216,7 +226,7 @@ class WORKER(object):
                     values = r_targets
                     targets = r_values
 
-                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)        
+                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
 
             # calculate Loss
             loss = self.loss(outputs, targets)
@@ -266,8 +276,8 @@ class WORKER(object):
                     values = r_targets
                     targets = r_values
 
-                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)        
-              
+                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
+
             # calculate Loss
             loss = self.loss(outputs, targets)
 
@@ -317,25 +327,17 @@ class WORKER(object):
         self.wandb_step = current_step + 1
 
         if self.RUN.mode == "classification":
-            LOG_FORMAT = ("Step: {step:>6} "
-                        "Progress: {progress:<.1%} "
-                        "Elapsed: {elapsed} "
-                        "Loss: {loss:<.4} "
-                        "Top1: {top1:<.4} "
-                        "Top10: {top10:<.4} ")
+            LOG_FORMAT = "Step: {step:>6} Progress: {progress:<.1%} Elapsed: {elapsed} Loss: {loss:<.4} Top1: {top1:<.4} Top10: {top10:<.4} "
             log_message = LOG_FORMAT.format(
                 step=current_step + 1,
                 progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
                 elapsed=misc.elapsed_time(self.start_time),
                 loss=loss,
                 top1=top1,
-                top10=top10
+                top10=top10,
             )
         else:
-            LOG_FORMAT = ("Step: {step:>6} "
-                        "Progress: {progress:<.1%} "
-                        "Elapsed: {elapsed} "
-                        "Loss: {loss:<.4} ")
+            LOG_FORMAT = "Step: {step:>6} Progress: {progress:<.1%} Elapsed: {elapsed} Loss: {loss:<.4} "
             log_message = LOG_FORMAT.format(
                 step=current_step + 1,
                 progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
@@ -358,21 +360,16 @@ class WORKER(object):
 
         wandb.log(dict, step=self.wandb_step)
 
-        save_dict = misc.accm_values_convert_dict(list_dict=self.loss_list_dict,
-                                            value_dict=dict,
-                                            step=current_step + 1,
-                                            interval=self.RUN.print_every)
+        save_dict = misc.accm_values_convert_dict(list_dict=self.loss_list_dict, value_dict=dict, step=current_step + 1, interval=self.RUN.print_every)
 
-        misc.save_dict_npy(directory=join(self.RUN.save_dir, "statistics", self.run_name, "train"),
-                           name="losses",
-                           dictionary=save_dict)
+        misc.save_dict_npy(directory=join(self.RUN.save_dir, "statistics", self.run_name, "train"), name="losses", dictionary=save_dict)
 
     # -----------------------------------------------------------------------------
     # evaluate model.
     # -----------------------------------------------------------------------------
     def evaluate(self, step, writing=True, training=False):
         if self.global_rank == 0:
-            self.logger.info("Start {mode} ({step} Step): {run_name}".format(mode='Validation' if training else 'Testing',step=step, run_name=self.run_name))
+            self.logger.info("Start {mode} ({step} Step): {run_name}".format(mode='Validation' if training else 'Testing', step=step, run_name=self.run_name))
 
         is_best = False
 
@@ -387,42 +384,36 @@ class WORKER(object):
 
         if self.global_rank == 0:
             if self.RUN.mode == "classification":
-                self.logger.info("Test Top 1-acc {top1:.4f}\t"
-                                "Test Top 10-acc {top10:.4f}\t"
-                                "Test Loss {loss}".format(top1=top1_acc, top10=top10_acc, loss=loss))
+                self.logger.info("Test Top 1-acc {top1:.4f}\tTest Top 10-acc {top10:.4f}\tTest Loss {loss}".format(top1=top1_acc, top10=top10_acc, loss=loss))
             else:
-                self.logger.info("Test Loss {loss}\t"
-                                 "Test Loss {mpjpe}".format(loss=loss, mpjpe=mpjpe))
+                self.logger.info("Test Loss {loss}\tTest Loss {mpjpe}".format(loss=loss, mpjpe=mpjpe))
             if self.best_loss is None or loss <= self.best_loss:
                 self.best_loss, self.best_mpjpe, self.best_t1acc, self.best_t10acc, self.best_step, is_best = loss, mpjpe, top1_acc, top10_acc, step, True
             if writing:
                 wandb.log(metric_dict, step=self.wandb_step)
             if training:
                 if self.RUN.mode == "classification":
-                    self.logger.info("Best Top 1-acc {top1:.4f}\t"
-                                    "Best Top 10-acc {top10:.4f}\t"
-                                    "Best Loss (Step: {step}): {loss}".format(
-                        step=self.best_step, loss=self.best_loss, top1=self.best_t1acc, top10=self.best_t10acc))
+                    self.logger.info(
+                        "Best Top 1-acc {top1:.4f}\tBest Top 10-acc {top10:.4f}\tBest Loss (Step: {step}): {loss}".format(
+                            step=self.best_step, loss=self.best_loss, top1=self.best_t1acc, top10=self.best_t10acc
+                        )
+                    )
                 else:
-                    self.logger.info("Best MPJPE {mpjpe}\t"
-                                     "Best Loss (Step: {step}): {loss}\t".format(
-                        step=self.best_step, mpjpe=self.best_mpjpe, loss=self.best_loss))
+                    self.logger.info(
+                        "Best MPJPE {mpjpe}\tBest Loss (Step: {step}): {loss}\t".format(step=self.best_step, mpjpe=self.best_mpjpe, loss=self.best_loss)
+                    )
 
         if self.global_rank == 0:
             if training:
-                save_dict = misc.accm_values_convert_dict(list_dict=self.metric_dict_during_train,
-                                                            value_dict=metric_dict,
-                                                            step=step,
-                                                            interval=self.RUN.save_every)
+                save_dict = misc.accm_values_convert_dict(
+                    list_dict=self.metric_dict_during_train, value_dict=metric_dict, step=step, interval=self.RUN.save_every
+                )
             else:
-                save_dict = misc.accm_values_convert_dict(list_dict=self.metric_dict_during_final_eval,
-                                                            value_dict=metric_dict,
-                                                            step=None,
-                                                            interval=None)
+                save_dict = misc.accm_values_convert_dict(list_dict=self.metric_dict_during_final_eval, value_dict=metric_dict, step=None, interval=None)
 
-            misc.save_dict_npy(directory=join(self.RUN.save_dir, "statistics", self.run_name, "valid" if training else "test"),
-                                name="test_stats",
-                                dictionary=save_dict)
+            misc.save_dict_npy(
+                directory=join(self.RUN.save_dir, "statistics", self.run_name, "valid" if training else "test"), name="test_stats", dictionary=save_dict
+            )
 
         self.model.train()
         return is_best
@@ -447,7 +438,7 @@ class WORKER(object):
             "best_mpjpe": self.best_mpjpe,
             "best_t1acc": self.best_t1acc,
             "best_t10acc": self.best_t10acc,
-            "best_loss_ckpt": self.RUN.ckpt_dir
+            "best_loss_ckpt": self.RUN.ckpt_dir,
         }
 
         misc.save_model(model=self.MODEL.backbone, when=when, step=step, ckpt_dir=self.RUN.ckpt_dir, states=states)
@@ -516,7 +507,7 @@ class WORKER(object):
                     values = r_targets
                     targets = r_values
 
-                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)        
+                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
 
             # calculate Loss
             batch_loss = self.loss(outputs, targets)
@@ -548,7 +539,7 @@ class WORKER(object):
                     values = r_targets
                     targets = r_values
 
-                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)        
+                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             # calculate Cross Entropy Loss
             batch_loss = self.loss(outputs, targets)
@@ -571,7 +562,7 @@ class WORKER(object):
         if self.global_rank == 0:
             self.logger.info("Visualize fake poses.")
 
-        #generate fake
+        # generate fake
         self.model.eval()
         if self.RUN.mode == "prediction":
             values, targets = next(iter(self.test_dataloader))
@@ -594,9 +585,9 @@ class WORKER(object):
 
             # get model output for the current batch
             if self.RUN.mode == "prediction":
-                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)        
+                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
             elif self.RUN.mode == "cond_prediction":
-                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)        
+                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             outputs = torch.cat((values, outputs), dim=-2)
 
@@ -616,7 +607,7 @@ class WORKER(object):
         if self.global_rank == 0:
             self.logger.info("Visualize fake poses.")
 
-        #generate fake
+        # generate fake
         self.model.eval()
         if self.RUN.mode == "prediction":
             values, targets = next(iter(self.test_dataloader))
@@ -639,9 +630,9 @@ class WORKER(object):
 
             # get model output for the current batch
             if self.RUN.mode == "prediction":
-                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)        
+                outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
             elif self.RUN.mode == "cond_prediction":
-                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)        
+                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             if self.RUN.twin_generator:
                 r_values = torch.flip(targets.to(self.local_rank), [1])
@@ -658,7 +649,6 @@ class WORKER(object):
 
             outputs = torch.cat((output_values, outputs), dim=-2)
 
-
             if self.RUN.reverse:
                 outputs = torch.flip(outputs, [1])
 
@@ -673,23 +663,19 @@ class WORKER(object):
 
     def split_keypoints(self, raw_keypoints):
         input = torch.unflatten(raw_keypoints, 1, (self.DATA.num_keypoints, 3)).detach().cpu()
-        body_kp = misc.i_normalize(input[:,:self.len_body_kp,:], 'pose')
-        rhand_kp = misc.i_normalize(input[:,self.len_body_kp:(self.len_body_kp+21),:], 'right_hand')
-        lhand_kp = misc.i_normalize(input[:,(self.len_body_kp+21):(self.len_body_kp+21+21),:], 'left_hand')
-        face_kp = misc.i_normalize(input[:,(self.len_body_kp+21+21):,:], 'face')
+        body_kp = misc.i_normalize(input[:, : self.len_body_kp, :], 'pose')
+        rhand_kp = misc.i_normalize(input[:, self.len_body_kp : (self.len_body_kp + 21), :], 'right_hand')
+        lhand_kp = misc.i_normalize(input[:, (self.len_body_kp + 21) : (self.len_body_kp + 21 + 21), :], 'left_hand')
+        face_kp = misc.i_normalize(input[:, (self.len_body_kp + 21 + 21) :, :], 'face')
         return body_kp, rhand_kp, lhand_kp, face_kp
 
     def animate_save_poses(self, keypoints, step, mode):
         body_kp, rhand_kp, lhand_kp, face_kp = self.split_keypoints(keypoints)
         ani = misc.animate_all_keypoints(body_kp, rhand_kp, lhand_kp, face_kp)
 
-        save_path = join(self.RUN.save_dir,
-                        "figures/{run_name}/{mode}_keypoints_{step}.gif".format(run_name=self.run_name, mode=mode, step=step))
+        save_path = join(self.RUN.save_dir, "figures/{run_name}/{mode}_keypoints_{step}.gif".format(run_name=self.run_name, mode=mode, step=step))
 
-        misc.save_gif(ani=ani,
-                      save_path=save_path,
-                      logger=self.logger,
-                      logging=self.global_rank == 0 and self.logger)
+        misc.save_gif(ani=ani, save_path=save_path, logger=self.logger, logging=self.global_rank == 0 and self.logger)
 
         if self.wandb_step:
             wandb.log({"{mode}_poses".format(mode=mode): wandb.Video(save_path, format='gif')}, step=self.wandb_step)
@@ -714,10 +700,9 @@ class WORKER(object):
 
     def save_dataset(self, class_dataloader, sign):
         if self.global_rank == 0:
-            self.logger.info("Save {s_dataset_len} generated poses.".format(
-                s_dataset_len=self.RUN.sd_num*self.OPTIMIZATION.batch_size))
+            self.logger.info("Save {s_dataset_len} generated poses.".format(s_dataset_len=self.RUN.sd_num * self.OPTIMIZATION.batch_size))
 
-        #generate fake
+        # generate fake
         self.model.eval()
         data_iter = itertools.cycle(class_dataloader)
         ids = []
@@ -729,7 +714,7 @@ class WORKER(object):
                 values = values.to(self.local_rank)
                 labels = labels.to(self.local_rank)
 
-                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)        
+                outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
                 if self.RUN.twin_generator:
                     r_values = torch.flip(targets.to(self.local_rank), [1])
@@ -775,7 +760,7 @@ class WORKER(object):
         src = os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv')
         dst_dir = os.path.join(self.base_save_dir, 'metadata')
         dst = os.path.join(dst_dir, 'sign_to_index.csv')
-        
+
         os.makedirs(dst_dir, exist_ok=True)
         shutil.copyfile(src, dst)
 

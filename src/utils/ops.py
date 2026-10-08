@@ -14,11 +14,12 @@ from torchvision.ops.stochastic_depth import StochasticDepth
 class eca(nn.Module):
     """Constructs a ECA module. by BangguWu
     https://github.com/BangguWu/ECANet/blob/master/models/eca_module.py
-    
+
     Args:
         channel: Number of channels of the input feature map
         k_size: Adaptive selection of kernel size
     """
+
     def __init__(self, k_size=3):
         super(eca, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -37,21 +38,22 @@ class eca(nn.Module):
 
         return x * y.expand_as(x)
 
+
 def init_weights(modules, initialize):
     for module in modules():
-        if (isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d) or isinstance(module, nn.Linear)):
+        if isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d) or isinstance(module, nn.Linear):
             if initialize == "ortho":
                 init.orthogonal_(module.weight)
                 if module.bias is not None:
-                    module.bias.data.fill_(0.)
+                    module.bias.data.fill_(0.0)
             elif initialize == "N02":
                 init.normal_(module.weight, 0, 0.02)
                 if module.bias is not None:
-                    module.bias.data.fill_(0.)
+                    module.bias.data.fill_(0.0)
             elif initialize in ["glorot", "xavier"]:
                 init.xavier_uniform_(module.weight)
                 if module.bias is not None:
-                    module.bias.data.fill_(0.)
+                    module.bias.data.fill_(0.0)
             else:
                 pass
         elif isinstance(module, nn.Embedding):
@@ -66,20 +68,26 @@ def init_weights(modules, initialize):
         else:
             pass
 
+
 def transformer_layer(in_features, nhead, dim_feedforward, dropout):
     return nn.TransformerEncoderLayer(in_features, nhead, dim_feedforward=dim_feedforward, dropout=dropout)
+
 
 def linear(in_features, out_features, bias=True):
     return nn.Linear(in_features=in_features, out_features=out_features, bias=bias)
 
+
 def snlinear(in_features, out_features, bias=True):
     return spectral_norm(nn.Linear(in_features=in_features, out_features=out_features, bias=bias), eps=1e-6)
+
 
 def dropout(p):
     return nn.Dropout(p)
 
-def drop_path(p,mode):
-    return StochasticDepth(p,mode)
+
+def drop_path(p, mode):
+    return StochasticDepth(p, mode)
+
 
 def conv1dbasic(in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
     return nn.Conv1d(
@@ -106,7 +114,7 @@ def snconv1dbasic(in_channels, out_channels, k_size, stride=1, padding=0, dilati
 class conv1d(nn.Module):
     def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
         super(conv1d, self).__init__()
-        self.pad = nn.ConstantPad1d((dilation*(k_size-1),0),0)
+        self.pad = nn.ConstantPad1d((dilation * (k_size - 1), 0), 0)
         self.conv = conv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
 
     def forward(self, x):
@@ -114,22 +122,24 @@ class conv1d(nn.Module):
         x = self.conv(x)
         return x
 
+
 class snconv1d(nn.Module):
     def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
         super(snconv1d, self).__init__()
-        self.pad = nn.ConstantPad1d((dilation*(k_size-1),0),0)
+        self.pad = nn.ConstantPad1d((dilation * (k_size - 1), 0), 0)
         self.conv = snconv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
 
     def forward(self, x):
         x = self.pad(x)
         x = self.conv(x)
         return x
+
 
 class dwconv1d(nn.Module):
     def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
         super(dwconv1d, self).__init__()
         groups = in_channels
-        self.pad = nn.ConstantPad1d((dilation*(k_size-1),0),0)
+        self.pad = nn.ConstantPad1d((dilation * (k_size - 1), 0), 0)
         self.conv = conv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
 
     def forward(self, x):
@@ -137,11 +147,12 @@ class dwconv1d(nn.Module):
         x = self.conv(x)
         return x
 
+
 class sndwconv1d(nn.Module):
     def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
         super(sndwconv1d, self).__init__()
         groups = in_channels
-        self.pad = nn.ConstantPad1d((dilation*(k_size-1),0),0)
+        self.pad = nn.ConstantPad1d((dilation * (k_size - 1), 0), 0)
         self.conv = snconv1dbasic(in_channels, out_channels, k_size, stride, padding, dilation, groups, bias, padding_mode)
 
     def forward(self, x):
@@ -149,10 +160,11 @@ class sndwconv1d(nn.Module):
         x = self.conv(x)
         return x
 
+
 class dwsepconv1d(nn.Module):
     def __init__(self, in_channels, out_channels, k_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'):
-        super(dwsepconv1d, self).__init__() 
-        self.pad = nn.ConstantPad1d((dilation*(k_size-1),0),0)
+        super(dwsepconv1d, self).__init__()
+        self.pad = nn.ConstantPad1d((dilation * (k_size - 1), 0), 0)
         self.depthwise = conv1dbasic(
             in_channels=in_channels,
             out_channels=in_channels,
@@ -175,21 +187,24 @@ class dwsepconv1d(nn.Module):
             padding_mode=padding_mode,
         )
 
-    def forward(self, x): 
+    def forward(self, x):
         x = self.pad(x)
-        x = self.depthwise(x) 
-        x = self.pointwise(x) 
+        x = self.depthwise(x)
+        x = self.pointwise(x)
         return x
- 
+
+
 def batchnorm(in_features, eps=1e-4, momentum=0.1, affine=True):
     if not isinstance(in_features, int):
         in_features = in_features[0]
     return nn.BatchNorm1d(in_features, eps=eps, momentum=momentum, affine=affine, track_running_stats=True)
 
+
 def layernorm(in_features, eps=1e-4, elementwise_affine=True, bias=True):
     if not isinstance(in_features, int):
         in_features = in_features[-1]
     return nn.LayerNorm(in_features, eps=eps, elementwise_affine=elementwise_affine, bias=bias)
+
 
 class SLayerNorm(nn.Module):
     def __init__(self, dims, epsilon=1e-5):
@@ -207,6 +222,7 @@ class SLayerNorm(nn.Module):
         y = y * self.alpha + self.beta
         return y
 
+
 class TLayerNorm(nn.Module):
     def __init__(self, dims, epsilon=1e-5):
         super().__init__()
@@ -223,6 +239,7 @@ class TLayerNorm(nn.Module):
         y = y * self.alpha + self.beta
         return y
 
+
 class Spatial_FC(nn.Module):
     def __init__(self, dims):
         super(Spatial_FC, self).__init__()
@@ -236,6 +253,7 @@ class Spatial_FC(nn.Module):
         x = self.arr1(x)
         return x
 
+
 class Temporal_FC(nn.Module):
     def __init__(self, dims):
         super(Temporal_FC, self).__init__()
@@ -244,6 +262,7 @@ class Temporal_FC(nn.Module):
     def forward(self, x):
         x = self.fc(x)
         return x
+
 
 def adjust_learning_rate(optimizer, lr_org, epoch, total_epoch, dataset):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
@@ -258,18 +277,20 @@ def adjust_learning_rate(optimizer, lr_org, epoch, total_epoch, dataset):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
+
 class DropBlock(torch.nn.Module):
     """Incomplete/Untested"""
+
     def __init__(self, p, block_size=3):
         super().__init__()
-        self.p = 1-p
+        self.p = 1 - p
         self.block_size = block_size
 
     def forward(self, img):
-        invalid = (1 - self.p) / (self.block_size ** 2)
-        valid = (img.shape[1] ** 2) / ((img.shape[1] - self.block_size + 1) ** 2)        
-        gamma = invalid * valid 
-        mask = torch.bernoulli(torch.ones((img.shape[0],img.shape[1])) * gamma)
+        invalid = (1 - self.p) / (self.block_size**2)
+        valid = (img.shape[1] ** 2) / ((img.shape[1] - self.block_size + 1) ** 2)
+        gamma = invalid * valid
+        mask = torch.bernoulli(torch.ones((img.shape[0], img.shape[1])) * gamma)
         mask_block = 1 - F.max_pool1d(
             mask,
             kernel_size=self.block_size,
@@ -282,7 +303,7 @@ class DropBlock(torch.nn.Module):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(p={self.p},block_size={self.block_size})"
-    
+
 
 class Conv1dNormActivation(nn.Sequential):
     """
@@ -321,20 +342,11 @@ class Conv1dNormActivation(nn.Sequential):
     ) -> None:
         if padding is None:
             padding = (kernel_size - 1) // 2 * dilation  # ty: ignore[unsupported-operator]  (only called with int sizes)
-        
+
         if bias is None:
             bias = norm_layer is None
 
-        layers = [nn.Conv1d(
-            in_channels, 
-            out_channels, 
-            kernel_size, 
-            stride, 
-            padding, 
-            dilation=dilation, 
-            groups=groups, 
-            bias=bias
-        )]
+        layers = [nn.Conv1d(in_channels, out_channels, kernel_size, stride, padding, dilation=dilation, groups=groups, bias=bias)]
 
         if norm_layer is not None:
             layers.append(norm_layer(out_channels))

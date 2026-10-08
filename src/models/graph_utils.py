@@ -40,6 +40,7 @@ def edge2mat(link, num_node):
         A[j, i] = 1
     return A
 
+
 def get_spatial_graph(num_node, self_link, inward, outward):
     identity = edge2mat(self_link, num_node)
     In = normalize_digraph(edge2mat(inward, num_node))
@@ -47,8 +48,9 @@ def get_spatial_graph(num_node, self_link, inward, outward):
     A = np.stack((identity, In, Out))
     return A
 
+
 class GraphWithPartition:  # Unidirected, connections with hop limit
-    """The Graph to model the skeletons 
+    """The Graph to model the skeletons
     Args:
         num_nodes (int): Number of spatial nodes in the graph.
         center (int): Index of the center node.
@@ -59,7 +61,7 @@ class GraphWithPartition:  # Unidirected, connections with hop limit
         - spatial: Spatial Configuration
         For more information, please refer to the section 'Partition
         Strategies' in the ST-GCN paper (https://arxiv.org/abs/1801.07455).
-        
+
         max_hop (int): the maximal distance between two connected nodes. Default: 1
         dilation (int): controls the spacing between the kernel points. Default: 1
     """
@@ -110,15 +112,9 @@ class GraphWithPartition:  # Unidirected, connections with hop limit
                 for i in range(self.num_nodes):
                     for j in range(self.num_nodes):
                         if self.hop_dis[j, i] == hop:
-                            if (
-                                self.hop_dis[j, self.center]
-                                == self.hop_dis[i, self.center]
-                            ):
+                            if self.hop_dis[j, self.center] == self.hop_dis[i, self.center]:
                                 a_root[j, i] = normalize_adjacency[j, i]
-                            elif (
-                                self.hop_dis[j, self.center]
-                                > self.hop_dis[i, self.center]
-                            ):
+                            elif self.hop_dis[j, self.center] > self.hop_dis[i, self.center]:
                                 a_close[j, i] = normalize_adjacency[j, i]
                             else:
                                 a_further[j, i] = normalize_adjacency[j, i]
@@ -132,6 +128,7 @@ class GraphWithPartition:  # Unidirected, connections with hop limit
         else:
             raise ValueError("This Graph construction strategy is not supported")
 
+
 class SpatialGraph:
     """
     Graph construction with equal weight to all the nodes.
@@ -139,6 +136,7 @@ class SpatialGraph:
         num_nodes (int): Number of spatial nodes in the graph.
         inward_edges (list): List of spatial edges connecting the skeleton.
     """
+
     def __init__(self, num_nodes, inward_edges, strategy="spatial"):
         self.num_nodes = num_nodes
         self.strategy = strategy
@@ -149,8 +147,6 @@ class SpatialGraph:
 
     def get_adjacency_matrix(self):
         if self.strategy == "spatial":
-            return get_spatial_graph(
-                self.num_nodes, self.self_edges, self.inward_edges, self.outward_edges
-            )
+            return get_spatial_graph(self.num_nodes, self.self_edges, self.inward_edges, self.outward_edges)
         else:
             raise ValueError()

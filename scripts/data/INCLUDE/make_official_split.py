@@ -28,6 +28,7 @@ for name in ['poses', 'instances.csv', os.path.join('metadata', 'sign_to_index.c
     if not os.path.lexists(dst):
         os.symlink(os.path.join(data_dir, name), dst)
 
+
 def read_ids(split):
     """
     Download an official list and convert its paths to the ids used by format.py:
@@ -36,7 +37,7 @@ def read_ids(split):
     file_name = '{dataset}_{split}.txt'.format(dataset=args.dataset, split=split)
     list_path = os.path.join(lists_dir, file_name)
     if not os.path.exists(list_path):
-        urllib.request.urlretrieve(LISTS_URL+file_name, list_path)
+        urllib.request.urlretrieve(LISTS_URL + file_name, list_path)
     ids = []
     with open(list_path, 'r') as file:
         for line in file:
@@ -44,8 +45,9 @@ def read_ids(split):
                 continue
             split_path = line.strip().split('/')
             category, sign_dir, video = split_path[0], split_path[1], split_path[-1]
-            ids.append(category+'_'+sign_dir.split('. ', 1)[-1].replace(" ", "_")+'#'+os.path.splitext(video)[0])
+            ids.append(category + '_' + sign_dir.split('. ', 1)[-1].replace(" ", "_") + '#' + os.path.splitext(video)[0])
     return ids
+
 
 # solo se pueden usar los videos que tienen poses extraidas
 instances = set(pl.read_csv(os.path.join(data_dir, 'instances.csv'))['id'].to_list())
@@ -53,11 +55,11 @@ available = {os.path.splitext(f)[0] for f in os.listdir(os.path.join(data_dir, '
 
 # crear metadata/splits/train.json y /metadata/splits/test.json
 # train incluye el split de validacion oficial, el entrenamiento separa su propio 10% para validar
-splits = {'train': read_ids('train')+read_ids('val'), 'test': read_ids('test')}
+splits = {'train': read_ids('train') + read_ids('val'), 'test': read_ids('test')}
 for split, ids in splits.items():
     kept = [i for i in ids if i in available]
     print('{split}: {kept} of {total} videos have poses'.format(split=split, kept=len(kept), total=len(ids)))
-    with open(os.path.join(splits_dir, split+'.json'), "w") as file:
+    with open(os.path.join(splits_dir, split + '.json'), "w") as file:
         json.dump(kept, file)
 
 print('Finished!')

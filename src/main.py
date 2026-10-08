@@ -15,7 +15,7 @@ import loader
 import utils.log as log
 import utils.misc as misc
 
-RUN_NAME_FORMAT = ("{data_name}-" "{framework}-" "{phase}-" "{timestamp}")
+RUN_NAME_FORMAT = "{data_name}-{framework}-{phase}-{timestamp}"
 
 
 def load_configs_initialize_training():
@@ -52,8 +52,13 @@ def load_configs_initialize_training():
     parser.add_argument("-tg", "--twin_generator", action="store_true")
     parser.add_argument("--ss_num", type=int, default=1)
     parser.add_argument("--sd_num", type=int, default=10)
-    parser.add_argument("-empty_cache", "--empty_cache", action="store_true", help="empty cuda caches after training step of generator and discriminator, \
-                        slightly reduces memory usage but slows training speed. (not recommended for normal use)")
+    parser.add_argument(
+        "-empty_cache",
+        "--empty_cache",
+        action="store_true",
+        help="empty cuda caches after training step of generator and discriminator, \
+                        slightly reduces memory usage but slows training speed. (not recommended for normal use)",
+    )
     parser.add_argument("-l", "--load_data_in_memory", action="store_true", help="put the whole train dataset on the main memory for fast I/O")
 
     parser.add_argument("--print_every", type=int, default=5, help="logging interval")
@@ -78,10 +83,7 @@ def load_configs_initialize_training():
     cfgs.DATA.batch_size = cfgs.OPTIMIZATION.batch_size
     cfgs.check_compatability()
 
-    run_name = log.make_run_name(RUN_NAME_FORMAT,
-                                 data_name=cfgs.DATA.name,
-                                 framework=cfgs.RUN.cfg_file.split("/")[-1][:-5],
-                                 phase="train")
+    run_name = log.make_run_name(RUN_NAME_FORMAT, data_name=cfgs.DATA.name, framework=cfgs.RUN.cfg_file.split("/")[-1][:-5], phase="train")
 
     misc.prepare_folder(names=cfgs.MISC.base_folders, save_dir=cfgs.RUN.save_dir)
     misc.download_data_if_possible(data_name=cfgs.DATA.name, data_dir=cfgs.RUN.data_dir)
@@ -96,6 +98,7 @@ def load_configs_initialize_training():
         print("You have chosen a specific GPU. This will completely disable data parallelism.")
     return cfgs, gpus_per_node, run_name, rank
 
+
 if __name__ == "__main__":
     cfgs, gpus_per_node, run_name, rank = load_configs_initialize_training()
 
@@ -103,15 +106,8 @@ if __name__ == "__main__":
         mp.set_start_method("spawn", force=True)
         print("Train the models through DistributedDataParallel (DDP) mode.")
         try:
-            torch.multiprocessing.spawn(fn=loader.load_worker,
-                                        args=(cfgs,
-                                              gpus_per_node,
-                                              run_name),
-                                        nprocs=gpus_per_node)
+            torch.multiprocessing.spawn(fn=loader.load_worker, args=(cfgs, gpus_per_node, run_name), nprocs=gpus_per_node)
         except KeyboardInterrupt:
             misc.cleanup()
     else:
-        loader.load_worker(local_rank=rank,
-                           cfgs=cfgs,
-                           gpus_per_node=gpus_per_node,
-                           run_name=run_name)
+        loader.load_worker(local_rank=rank, cfgs=cfgs, gpus_per_node=gpus_per_node, run_name=run_name)

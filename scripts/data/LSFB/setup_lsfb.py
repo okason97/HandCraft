@@ -33,40 +33,40 @@ print('Download finished')
 
 print('Train data: filter out empty values and samples with more than 60 frames')
 
-root_ids = os.path.join(lsfb_dir, 'metadata', 'splits', "train"+'.json')
+root_ids = os.path.join(lsfb_dir, 'metadata', 'splits', "train" + '.json')
 with open(root_ids) as f:
     data_ids = json.load(f)
 kept_ids = []
 for index in data_ids:
-    pose_data = np.load(os.path.join(lsfb_dir, 'poses', "pose", index+'.npy'))
-    if not (0 in pose_data.shape or pose_data.shape[0]>60):
+    pose_data = np.load(os.path.join(lsfb_dir, 'poses', "pose", index + '.npy'))
+    if not (0 in pose_data.shape or pose_data.shape[0] > 60):
         kept_ids.append(index)
-print(len(data_ids)-len(kept_ids))
+print(len(data_ids) - len(kept_ids))
 data_ids = kept_ids
 
 # Serializing json
 json_object = json.dumps(data_ids, indent=4)
- 
+
 # Writing to sample.json
 with open(root_ids, "w") as outfile:
     outfile.write(json_object)
 
 print('Test data: filter out empty values and samples with more than 60 frames')
 
-root_ids = os.path.join(lsfb_dir, 'metadata', 'splits', "test"+'.json')
+root_ids = os.path.join(lsfb_dir, 'metadata', 'splits', "test" + '.json')
 with open(root_ids) as f:
     data_ids = json.load(f)
 kept_ids = []
 for index in data_ids:
-    pose_data = np.load(os.path.join(lsfb_dir, 'poses', "pose", index+'.npy'))
-    if not (0 in pose_data.shape or pose_data.shape[0]>60):
+    pose_data = np.load(os.path.join(lsfb_dir, 'poses', "pose", index + '.npy'))
+    if not (0 in pose_data.shape or pose_data.shape[0] > 60):
         kept_ids.append(index)
-print(len(data_ids)-len(kept_ids))
+print(len(data_ids) - len(kept_ids))
 data_ids = kept_ids
 
 # Serializing json
 json_object = json.dumps(data_ids, indent=4)
- 
+
 # Writing to sample.json
 with open(root_ids, "w") as outfile:
     outfile.write(json_object)

@@ -71,3 +71,5 @@ exclude = ["src/sync_batchnorm"]
 
 [tool.ruff.format]
 quote-style = "preserve"
+# vendored third-party code (https://github.com/vacancy/Synchronized-BatchNorm-PyTorch)
+exclude = ["src/sync_batchnorm/*.py"]

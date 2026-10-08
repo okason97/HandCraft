@@ -9,7 +9,8 @@ class Lookahead(Optimizer):
     PyTorch implementation of the lookahead wrapper.
     Lookahead Optimizer: https://arxiv.org/abs/1907.08610
     '''
-    def __init__(self, optimizer,alpha=0.5, k=6,pullback_momentum="none"):
+
+    def __init__(self, optimizer, alpha=0.5, k=6, pullback_momentum="none"):
         '''
         :param optimizer:inner optimizer
         :param k (int): number of lookahead steps
@@ -42,8 +43,8 @@ class Lookahead(Optimizer):
             'optimizer': self.optimizer,
             'alpha': self.alpha,
             'step_counter': self.step_counter,
-            'k':self.k,
-            'pullback_momentum': self.pullback_momentum
+            'k': self.k,
+            'pullback_momentum': self.pullback_momentum,
         }
 
     def zero_grad(self, set_to_none: bool = True):
@@ -56,8 +57,7 @@ class Lookahead(Optimizer):
         self.optimizer.load_state_dict(state_dict)
 
     def _backup_and_load_cache(self):
-        """Useful for performing evaluation on the slow weights (which typically generalize better)
-        """
+        """Useful for performing evaluation on the slow weights (which typically generalize better)"""
         for group in self.optimizer.param_groups:
             for p in group['params']:
                 param_state = self.state[p]
@@ -91,8 +91,7 @@ class Lookahead(Optimizer):
                     param_state['cached_params'].copy_(p.data)
                     if self.pullback_momentum == "pullback":
                         internal_momentum = self.optimizer.state[p]["momentum_buffer"]
-                        self.optimizer.state[p]["momentum_buffer"] = internal_momentum.mul_(self.alpha).add_(
-                            1.0 - self.alpha, param_state["cached_mom"])
+                        self.optimizer.state[p]["momentum_buffer"] = internal_momentum.mul_(self.alpha).add_(1.0 - self.alpha, param_state["cached_mom"])
                         param_state["cached_mom"] = self.optimizer.state[p]["momentum_buffer"]
                     elif self.pullback_momentum == "reset":
                         self.optimizer.state[p]["momentum_buffer"] = torch.zeros_like(p.data)
