@@ -35,7 +35,7 @@ The processing scripts in this repository fix problems that the datasets used fo
 
 ### INCLUDE
 
-- **Missing videos.** An earlier `format.py` gave every video of an `Extra/` subfolder the same name, so they overwrote each other. The keypoints used for the existing results lack 25 such videos, the 8 videos of `Second (Number)` and 2 others: 4,257 of 4,292 clips, and 262 of 263 signs. The current script keeps them all.
+- **Missing videos.** An earlier `format.py` gave every video of an `Extra/` subfolder the same name, so they overwrote each other. The keypoints used for the existing results lack 25 such videos, the 8 videos of `Second (Number)` and 2 others: 4,257 of 4,292 clips, and 262 of 263 signs. The current script keeps every video of the Zenodo record, but the record has no `Second (Number)` folder: the official lists name 4,292 videos and 263 signs, and the Zenodo zips contain 4,284 videos and 262 signs. A regenerated dataset therefore has 4,284 clips and 262 signs, and its official split 3,468 train (train and val lists) and 816 test videos.
 - **The random split cannot be regenerated.** The paper's 70/30 split was drawn from an unsorted file list, so it depended on the file system. The current script sorts the list and gives a different, reproducible split. Its split files are the only record of the original one.
 - **The official split is reproducible.** `make_official_split.py` writes the same split files that were used for [results-include.md](results-include.md).
 

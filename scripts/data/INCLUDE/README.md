@@ -1,6 +1,6 @@
 # INCLUDE data processing
 
-Scripts to download [INCLUDE](https://zenodo.org/record/4010759) (Indian Sign Language, 263 signs, 4292 videos) and convert it into the layout HandCraft's data loader ([data_util.py](../../../src/data/data_util.py)) expects:
+Scripts to download [INCLUDE](https://zenodo.org/record/4010759) (Indian Sign Language, 263 signs, 4292 videos; the Zenodo record lacks the 8 videos of `Second (Number)`, so it has 262 signs and 4284 videos) and convert it into the layout HandCraft's data loader ([data_util.py](../../../src/data/data_util.py)) expects:
 
 ```
 <data_dir>/

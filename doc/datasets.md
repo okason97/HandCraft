@@ -18,7 +18,7 @@ There is no separate validation split on disk. Training holds out a stratified 1
 | Dataset | Language | Signs | Clips | Source | Keypoints |
 |---|---|---|---|---|---|
 | LSFB | French Belgian | 4,657 (610 after `min_samples`) | 120,739 | `lsfb-dataset` package | provided by the dataset |
-| INCLUDE | Indian | 263 | 4,292 | [Zenodo 4010759](https://zenodo.org/record/4010759) | extracted here |
+| INCLUDE | Indian | 263 (262 on Zenodo) | 4,292 (4,284 on Zenodo) | [Zenodo 4010759](https://zenodo.org/record/4010759) | extracted here |
 | DiSPLaY | Persian medical | 54 | 1,728 | [IEEE DataPort](https://doi.org/10.21227/5gsb-fb69) | extracted here |
 
 The steps below assume `HANDCRAFT_DATA` is set (see [installation.md](installation.md#paths)).
