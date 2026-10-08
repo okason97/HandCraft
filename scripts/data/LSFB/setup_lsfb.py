@@ -20,6 +20,9 @@ lsfb_dir = os.path.join(args.data_dir, 'LSFB')
 
 print('Downloading LSFB')
 
+# the Downloader fails if the destination does not exist
+os.makedirs(lsfb_dir, exist_ok=True)
+
 # downloader = Downloader(dataset='isol', destination=args.data_dir, include_videos=False, timeout=None, check_ssl=False)
 # timeout=None disables the download timeout
 downloader = Downloader(dataset='isol', destination=lsfb_dir, include_videos=False, timeout=None)  # ty: ignore[invalid-argument-type]

@@ -1,6 +1,6 @@
 # INCLUDE data processing
 
-Scripts to download [INCLUDE](https://zenodo.org/record/4010759) (Indian Sign Language, 263 signs, 4292 videos) and convert it into the layout HandCraft's data loader ([data_util.py](../../../src/data/data_util.py)) expects:
+Scripts to download [INCLUDE](https://zenodo.org/record/4010759) (Indian Sign Language, 263 signs, 4292 videos; the Zenodo record lacks the 8 videos of `Second (Number)`, so it has 262 signs and 4284 videos) and convert it into the layout HandCraft's data loader ([data_util.py](../../../src/data/data_util.py)) expects:
 
 ```
 <data_dir>/
@@ -38,12 +38,12 @@ The scripts need the `extract` dependencies (`uv sync --extra extract`) and the 
    - moves every video from `original/` to `raw/` and renames it to `<Category>_<sign>#<video>` (for example, `original/Places/19. House/Extra/MVI_3439.MOV` becomes `raw/Places_House#MVI_3439.MOV`)
    - writes `instances.csv` (signer is a placeholder, and `start`/`end` are always `0`/`1`) and `metadata/sign_to_index.csv` (classes in alphabetical order)
    - writes a random train/test split to `metadata/splits/` (see below). Change it with `-test_size` (default `0.3`) and `-seed` (default `42`)
-   - runs the keypoint extraction
+   - runs the keypoint extraction. `-workers N` (default `1`) extracts N videos in parallel and gives the same keypoints
 
 3. **Re-extract keypoints only** (for example, after changing the MediaPipe models):
 
    ```bash
-   python extract_keypoints.py -data_dir <data_dir> -model_dir <mediapipe_models>
+   python extract_keypoints.py -data_dir <data_dir> -model_dir <mediapipe_models> [-workers N]
    ```
 
    For each video in `raw/`, it detects the pose and then the hands and face in crops around the pose landmarks. Missing detections are filled in by linear interpolation, and a Savitzky-Golay filter (window 15, order 3) smooths each track. Each track is saved as a `(frames, keypoints, 3)` array: 33 pose, 21 per hand and 478 face keypoints.
