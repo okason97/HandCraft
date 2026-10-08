@@ -501,24 +501,20 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     if cfgs.RUN.save_dataset:
         if global_rank == 0:
             print(""), logger.info("-" * 80)
-        single_class_sampler_fabric = misc.SingleClassSamplerFabric(train_dataset)
+        # one loader for every class: its batches come class by class, sd_num batches each (starting the loader
+        # workers for every class took about 35 s per class on Windows)
+        gen_dataset, gen_labels = misc.generation_dataset(train_dataset.dataset if isinstance(train_dataset, SeededDataset) else train_dataset)
+        classes = [base_train_dataset.map_classes[sign] for sign in base_train_dataset.classes]
+        gen_dataloader = DataLoader(
+            dataset=gen_dataset,
+            batch_sampler=misc.ClassBatchSampler(gen_labels, classes, cfgs.OPTIMIZATION.batch_size, cfgs.RUN.sd_num, cfgs.RUN.seed),
+            pin_memory=True,
+            prefetch_factor=cfgs.RUN.prefetch_factor,
+            num_workers=cfgs.RUN.num_workers,
+            generator=torch.Generator().manual_seed(cfgs.RUN.seed),
+        )
         worker.prepare_generation()
-        for sign in base_train_dataset.classes:
-            class_n = base_train_dataset.map_classes[sign]
-            print(f"Generating class {class_n}")
-            single_class_sampler = single_class_sampler_fabric.get_sampler(class_n)
-            class_dataloader = DataLoader(
-                dataset=train_dataset,
-                batch_size=cfgs.OPTIMIZATION.batch_size,
-                pin_memory=True,
-                prefetch_factor=cfgs.RUN.prefetch_factor,
-                num_workers=cfgs.RUN.num_workers,
-                sampler=single_class_sampler,
-                drop_last=True,
-                # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-                persistent_workers=True,
-            )
-            worker.save_dataset(class_dataloader, sign)
+        worker.save_dataset(gen_dataloader, {base_train_dataset.map_classes[sign]: sign for sign in base_train_dataset.classes})
         worker.save_metadata()
 
     if global_rank == 0:

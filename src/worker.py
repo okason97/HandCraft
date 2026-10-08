@@ -4,7 +4,6 @@
 
 # src/worker.py
 
-import itertools
 import json
 import os
 import random
@@ -761,18 +760,25 @@ class WORKER(object):
             directory = join(self.base_save_dir, "poses/{pose}/".format(pose=pose))
             misc.prepare_save_folder(directory)
 
-    def save_dataset(self, class_dataloader, sign):
+    def save_dataset(self, dataloader, signs):
+        """
+        Generate a clip from every clip of `dataloader`, whose batches each hold clips of one class
+        (misc.ClassBatchSampler), and save it. `signs` maps a class index to its sign.
+        """
         if self.global_rank == 0:
-            self.logger.info("Save {s_dataset_len} generated poses.".format(s_dataset_len=self.RUN.sd_num * self.OPTIMIZATION.batch_size))
+            self.logger.info("Generate {n} poses per class for {c} classes.".format(n=self.RUN.sd_num * self.OPTIMIZATION.batch_size, c=len(signs)))
 
-        # generate fake
         self.model.eval()
-        data_iter = itertools.cycle(class_dataloader)
-        ids = []
+        ids, current = [], None
 
-        for _ in range(self.RUN.sd_num):
-            values, targets, labels = next(data_iter)
-            with torch.autocast("cuda"):
+        for values, targets, labels in dataloader:
+            label = int(labels[0])
+            if label != current:
+                if current is not None:
+                    self.update_metadata(ids, signs[current])
+                    ids = []
+                current = label
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
                 # load values and labels onto the GPU memory
                 values = values.to(self.local_rank).float()
                 labels = labels.to(self.local_rank)
@@ -792,10 +798,11 @@ class WORKER(object):
                     ids.append(str(self.gen_curr_id))
                     self.gen_curr_id += 1
 
-        self.update_metadata(ids, sign)
+        if current is not None:
+            self.update_metadata(ids, signs[current])
 
         if self.global_rank == 0:
-            self.logger.info("Dataset saved.")
+            self.logger.info("Dataset saved: {n} poses.".format(n=self.gen_curr_id))
 
     def update_metadata(self, ids, sign):
         sti = pl.read_csv(os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv'))
