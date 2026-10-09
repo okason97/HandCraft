@@ -201,6 +201,10 @@ class Configurations(object):
         self.OPTIMIZATION.lrscheduler = None
         # for "Cosine": epochs from the initial lr down to 0; the lr then goes back up and repeats, as CosineAnnealingLR does
         self.OPTIMIZATION.cosine_epochs = 20
+        # when the scheduler is stepped \in ["batch", "epoch"]; "epoch" is only for "Cosine", and keeps the lr constant during an epoch
+        self.OPTIMIZATION.scheduler_step = "batch"
+        # stop the training when the validation loss has not improved for this number of epochs (None = train for total_steps epochs)
+        self.OPTIMIZATION.early_stopping = None
         self.OPTIMIZATION.max_lr = 0.1
         self.OPTIMIZATION.pct_start = 0.3
         # number of batch size for training,
@@ -386,6 +390,9 @@ class Configurations(object):
         else:
             raise NotImplementedError
 
+        assert self.OPTIMIZATION.scheduler_step in ("batch", "epoch"), "OPTIMIZATION.scheduler_step is 'batch' or 'epoch'"
+        assert self.OPTIMIZATION.scheduler_step == "batch" or self.OPTIMIZATION.lrscheduler == "Cosine", "scheduler_step 'epoch' needs lrscheduler 'Cosine'"
+
         if self.OPTIMIZATION.lrscheduler == "OneCycle":
             self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 self.OPTIMIZATION.optimizer,
@@ -397,8 +404,9 @@ class Configurations(object):
             )
         elif self.OPTIMIZATION.lrscheduler == "Cosine":
             # the scheduler is stepped every batch
+            per_epoch = self.OPTIMIZATION.scheduler_step == "epoch"
             self.OPTIMIZATION.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                self.OPTIMIZATION.optimizer, T_max=self.OPTIMIZATION.cosine_epochs * len_dataloader
+                self.OPTIMIZATION.optimizer, T_max=self.OPTIMIZATION.cosine_epochs * (1 if per_epoch else len_dataloader)
             )
         else:
             self.OPTIMIZATION.scheduler = None

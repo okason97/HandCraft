@@ -104,6 +104,8 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | `type_` | `"RAdam"` | Type of the optimizer for training in ["SGD", "RMSprop", "Adam", "RAdam", "AdamW"] |
 | `lrscheduler` | `None` | `"OneCycle"`, `"Cosine"` or none |
 | `cosine_epochs` | `20` | For `"Cosine"`: epochs from the initial learning rate down to 0. The rate then rises again and the cycle repeats |
+| `scheduler_step` | `"batch"` | When the learning rate scheduler is stepped: `"batch"` or `"epoch"`. `"epoch"` only works with `"Cosine"` and keeps the learning rate constant during an epoch, as HWGAT's code does |
+| `early_stopping` | `None` | Stop the training when the validation loss has not improved for this number of epochs. The best checkpoint is tested as usual. `None` trains for `total_steps` epochs |
 | `max_lr` | `0.1` | Peak learning rate of OneCycle |
 | `pct_start` | `0.3` | Fraction of training spent increasing the learning rate (OneCycle) |
 | `batch_size` | `128` | Batch size |

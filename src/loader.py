@@ -460,6 +460,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             if global_rank == 0 and (step + 1) % cfgs.RUN.print_every == 0:
                 worker.log_train_statistics(current_step=step, loss=loss, top1=top1, top10=top10)
 
+            worker.epoch_scheduler_step()
+
             # validate and save every save_every epochs, and after the last one
             if (step + 1) % cfgs.RUN.save_every == 0 or step == cfgs.OPTIMIZATION.total_steps - 1:
                 if global_rank == 0 and "prediction" in cfgs.RUN.mode:
@@ -475,6 +477,16 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                 # stop processes until all processes arrive
                 if cfgs.RUN.distributed_data_parallel:
                     dist.barrier(worker.group)
+
+            patience = cfgs.OPTIMIZATION.early_stopping
+            if patience and step - worker.best_step >= patience:
+                if global_rank == 0:
+                    logger.info(
+                        "Early stopping after epoch {epoch}: the validation loss has not improved for {patience} epochs (best: epoch {best})".format(
+                            epoch=step + 1, patience=patience, best=worker.best_step + 1
+                        )
+                    )
+                break
 
             step += 1
 

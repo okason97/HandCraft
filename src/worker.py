@@ -179,7 +179,12 @@ class WORKER(object):
             self.scaler.update()
         else:
             self.OPTIMIZATION.optimizer.step()
-        if self.OPTIMIZATION.scheduler:
+        if self.OPTIMIZATION.scheduler and self.OPTIMIZATION.scheduler_step == "batch":
+            self.OPTIMIZATION.scheduler.step()
+
+    def epoch_scheduler_step(self):
+        # with scheduler_step "epoch" the learning rate changes once per epoch, after the training and before the validation
+        if self.OPTIMIZATION.scheduler and self.OPTIMIZATION.scheduler_step == "epoch":
             self.OPTIMIZATION.scheduler.step()
 
     def reset_optimizer(self, OPTIMIZATION):
