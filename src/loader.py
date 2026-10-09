@@ -336,7 +336,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             loss_list_dict = misc.load_log_dicts(directory=join(dict_dir, "train"), file_name="losses.npy", ph=loss_list_dict)
             metric_dict_during_train = misc.load_log_dicts(directory=join(dict_dir, "valid"), file_name="test_stats.npy", ph=metric_dict_during_train)
             if global_rank == 0:
-                logger.info("Resuming training at epoch {step}".format(step=step))
+                logger.info("Resuming training at epoch {epoch}".format(epoch=step + 1))
 
     if cfgs.RUN.ckpt_dir is None:
         if local_rank == 0:
@@ -413,6 +413,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             if global_rank == 0:
                 logger.info("Pretraining model!")
 
+            worker.phase = "pretrain"
             worker.prepare_synthtrain_iter(epoch_counter=epoch)
             while step < cfgs.OPTIMIZATION.synth_total_steps:
                 top1, top10, loss = worker.train_step(step)
@@ -421,10 +422,11 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
                     worker.log_train_statistics(current_step=step, loss=loss, top1=top1, top10=top10)
 
                 step += 1
-            step = 0
 
-            worker.evaluate(step=step, writing=True, training=True)
+            worker.evaluate(step=step - 1, writing=True, training=True)
             worker.reset_best()
+            worker.phase = "train"
+            step = 0
 
             if global_rank == 0:
                 logger.info("End of pretraining!")
@@ -458,7 +460,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             if global_rank == 0 and (step + 1) % cfgs.RUN.print_every == 0:
                 worker.log_train_statistics(current_step=step, loss=loss, top1=top1, top10=top10)
 
-            if step % cfgs.RUN.save_every == 0:
+            # validate and save every save_every epochs, and after the last one
+            if (step + 1) % cfgs.RUN.save_every == 0 or step == cfgs.OPTIMIZATION.total_steps - 1:
                 if global_rank == 0 and "prediction" in cfgs.RUN.mode:
                     worker.visualize_fake_poses(step=step)
 

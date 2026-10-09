@@ -52,8 +52,10 @@ Found in a review of the whole pipeline on 2026-10-08. Each was confirmed by rea
 | T3 | Mixed precision could not be turned off: autocast was on in both branches, `-mpc` only switched the loss scaler | fixed |
 | T4 | After synthetic pretraining, the real training had to beat the best validation loss of the pretrained model, or no best checkpoint was saved and the final test failed | fixed |
 | T5 | A resumed run reloaded its loss and metric history from the wrong directory, and without `--seed` it built a different train/validation split. It now takes the seed of the checkpoint | fixed |
-| T6 | On wandb, validation is logged one epoch before the training metrics of the same epoch, and synthetic pretraining reuses the steps of the real training | next |
-| T7 | Evaluation builds autograd graphs (`torch.no_grad()` missing): memory and time only | next |
+| T6 | On wandb, validation was logged one epoch before the training metrics of the same epoch when the print and save intervals differed, and synthetic pretraining reused the steps of the real training. The text log called the validation "Test" and counted epochs from 0 or 1 depending on the line. One line per epoch now, epochs from 1, and separate `pretrain_*` keys and steps | fixed |
+| T7 | Evaluation, visualization and generation built autograd graphs (`torch.no_grad()` missing): memory and time only | fixed |
+| T8 | With `-every` above 1, the last epochs were not validated or saved (validation ran on epochs 0, n, 2n, ...). Validation now runs after every n epochs and after the last one | fixed |
+| T9 | On Windows a run spent about 100 s starting data loader workers: every worker imported the whole training code (9.4 s), and the validation and test sets had 4 workers each. Workers now import only the data code (3.1 s), validation and test load in the main process by default (`--eval_workers`), and `--num_workers 0` works. A 3-epoch run takes 80 s instead of 222 s, with the same results | fixed |
 
 ### Synthetic data
 

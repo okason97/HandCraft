@@ -24,7 +24,7 @@ run(){ # name, data, extra args...
   n=$1; d=$2; shift 2
   python src/main.py -data $d -cfg $OUT/cfg/$n.yaml -save $OUT/$n/ --project ref --num_workers 2 --prefetch_factor 2 -every 1 --print_every 1 -mpc --seed 42 "$@" > $OUT/$n.out 2> $OUT/$n.err
   echo "== $n (exit $?)" >> $OUT/metrics.txt
-  grep -E "Test Top 1-acc|Test Loss|Best Top|Best MPJPE|dataset size|Dataset saved" $OUT/$n.out | sed -E 's/^\[INFO\] [0-9-]+ [0-9:]+ > //' >> $OUT/metrics.txt
+  grep -E "valid loss|Test of the checkpoint|dataset size|Dataset saved" $OUT/$n.out | sed -E 's/^\[INFO\] [0-9-]+ [0-9:]+ > //' >> $OUT/metrics.txt
 }
 OFF=$DATA_DIR/INCLUDE_official/; ORI=$DATA_DIR/INCLUDE/
 for n in vit_new vit_pad64 vit_handmask vit_all stgcn; do run $n $OFF --mode classification -t --test; done

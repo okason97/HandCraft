@@ -24,4 +24,4 @@ echo Testing
 python src/main.py --mode $1 --test -data $DATA_DIR/$4/ -cfg ./src/configs/$4/$2/$3.yaml -save $SAVE_DIR/$4/$2-$3/ -best --project handcraft-$2-$4 --num_workers 4 --prefetch_factor 2 -mpc "${@:5}" > $LOG.out 2> $LOG.err
 
 # Show the test results
-grep "Test" $LOG.out | tail -1
+grep "Test of the checkpoint" $LOG.out | tail -1

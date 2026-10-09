@@ -86,10 +86,13 @@ What a run records:
 
 | Key | Contents |
 |---|---|
-| `train_loss`, `train_top1`, `train_top10` | Training metrics of every epoch |
+| `train_loss`, `train_top1`, `train_top10`, `epoch`, `lr` | Training metrics of every epoch, its number and the learning rate at its end |
 | `valid_loss`, `valid_top1`, `valid_top10`, `valid_mpjpe` | Validation metrics of every epoch, on the 10% of the training split held out for validation |
 | `test_loss`, `test_top1`, `test_top10`, `test_mpjpe` | The final evaluation of the best checkpoint on the test split (only with `--test`) |
+| `pretrain_train_loss`, `pretrain_train_top1`, `pretrain_train_top10`, `pretrain_epoch`, `pretrain_valid_*` | The same for the epochs of the pretraining on synthetic data, and the validation at its end |
 | config | Every option of the `DATA`, `MODEL`, `LOSS`, `OPTIMIZATION` and `RUN` sections, including the seed and the data directory |
+
+The training and the validation of an epoch are logged at the same step. With synthetic pretraining, the pretraining epochs take the first steps and the training on the real data continues after them.
 
 The run name is `<dataset>-<config>-seed<seed>-train-<timestamp>`.
 
