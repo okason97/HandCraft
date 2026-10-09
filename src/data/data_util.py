@@ -15,9 +15,6 @@ import numpy as np
 import polars as pl
 import torch
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-from scipy import interpolate
-from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, Sampler, Subset, get_worker_info
 
 
@@ -40,6 +37,40 @@ def normalize(data, pose):
     normalized_data = (data - mean) / std
 
     return normalized_data
+
+
+# This module is imported by every data loader worker, so it only imports torch, numpy and polars at the top:
+# scipy and scikit-learn are imported where they are used, and Compose and ToTensor replace the torchvision ones.
+
+
+class Compose:
+    """
+    Applies the transforms in order.
+    """
+
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, sample):
+        for transform in self.transforms:
+            sample = transform(sample)
+        return sample
+
+    def __repr__(self) -> str:
+        return "{}({})".format(self.__class__.__name__, ", ".join(repr(t) for t in self.transforms))
+
+
+class ToTensor:
+    """
+    (frames, keypoints, coordinates) array to a (coordinates, frames, keypoints) tensor, as torchvision's ToTensor
+    does with a float array.
+    """
+
+    def __call__(self, array):
+        return torch.from_numpy(array.transpose((2, 0, 1))).contiguous()
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + "()"
 
 
 class DropFrames(torch.nn.Module):
@@ -319,6 +350,8 @@ class HandMaskInterpolate(torch.nn.Module):
             for d in range(hand.shape[1]):
                 if spline:
                     if len(inner):
+                        from scipy import interpolate
+
                         hand[inner, d] = interpolate.splev(inner, interpolate.splrep(kept, hand[kept, d], k=2))
                 else:
                     hand[masked, d] = np.interp(masked, kept, hand[kept, d])
@@ -586,7 +619,7 @@ class Dataset_(Dataset):
 
         self.load_data_in_memory = load_data_in_memory
 
-        self.trsf_list += [transforms.ToTensor()]
+        self.trsf_list += [ToTensor()]
         self.trsf_list += [Permute([1, 2, 0])]
         self.trsf_list += [Half()]
         # uniform and pad sampling always return max_len frames, so no padding is needed
@@ -594,7 +627,7 @@ class Dataset_(Dataset):
             self.trsf_list += [PadFrames(self.max_len, pad_mode)]
 
         if self.load_data_in_memory:
-            self.pre_trsf = transforms.Compose(self.trsf_list)
+            self.pre_trsf = Compose(self.trsf_list)
 
             self.trsf_list = []
             self.pose_data = []
@@ -611,7 +644,7 @@ class Dataset_(Dataset):
             eval_sampling = ResamplePadFrames(self.max_len)
         else:
             eval_sampling = CropFrames(self.max_len)
-        self.eval_trsf = transforms.Compose(self.trsf_list + [eval_sampling])
+        self.eval_trsf = Compose(self.trsf_list + [eval_sampling])
 
         if hand_mask_p > 0:
             if hand_mask_interp == "spline":
@@ -642,7 +675,7 @@ class Dataset_(Dataset):
             self.trsf_list += [DropFrames(drop_frame)]
         if drop_keypoint > 0:
             self.trsf_list += [DropKeypoints(block_size, drop_keypoint)]
-        self.trsf = transforms.Compose(self.trsf_list)
+        self.trsf = Compose(self.trsf_list)
 
     def eval_view(self):
         """
@@ -885,7 +918,8 @@ class SeededDataset(Dataset):
         with torch.random.fork_rng(devices=[]):
             random.seed(seed)
             np.random.seed(seed)
-            torch.manual_seed(seed)
+            # only the CPU generator: torch.manual_seed would also reseed the GPU generators the model uses
+            torch.default_generator.manual_seed(seed)
             sample = self.dataset[index]
         random.setstate(state[0])
         np.random.set_state(state[1])
@@ -922,5 +956,7 @@ class OversamplingWrapper(torch.utils.data.Dataset):
 
 
 def train_val_dataset(dataset, val_split=0.25, train_size=None, random_state=42, stratify=None):
+    from sklearn.model_selection import train_test_split
+
     train_idx, val_idx = train_test_split(list(range(len(dataset))), test_size=val_split, train_size=train_size, random_state=random_state, stratify=stratify)
     return Subset(dataset, train_idx), Subset(dataset, val_idx)

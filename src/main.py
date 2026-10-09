@@ -8,14 +8,8 @@ import os
 import random
 from argparse import ArgumentParser
 
-import torch
-import torch.multiprocessing as mp
-
-import configs.config as config
-import loader
-import utils.ckpt as ckpt
-import utils.log as log
-import utils.misc as misc
+# Data loader workers are started with spawn on Windows, which imports this file in every worker. The imports of the
+# training code (torch, the models, wandb, ...) are therefore inside the functions: a worker only needs the dataset.
 
 RUN_NAME_FORMAT = "{data_name}-{framework}-{phase}-{timestamp}"
 
@@ -42,7 +36,13 @@ def load_configs_initialize_training():
     parser.add_argument("--reverse", action="store_true", help="reverse prediction")
     parser.add_argument("-tn", "--total_nodes", default=1, type=int, help="total number of nodes for training")
     parser.add_argument("-cn", "--current_node", default=0, type=int, help="rank of the current node")
-    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--num_workers", type=int, default=8, help="data loader workers of the training set (0 loads the data in the main process)")
+    parser.add_argument(
+        "--eval_workers",
+        type=int,
+        default=0,
+        help="data loader workers of the validation and test sets; 0 loads them in the main process, which is faster for small sets",
+    )
     parser.add_argument("--prefetch_factor", type=int, default=2)
     parser.add_argument("-sync_bn", "--synchronized_bn", action="store_true", help="turn on synchronized batchnorm")
     parser.add_argument("-mpc", "--mixed_precision", action="store_true", help="turn on mixed precision training")
@@ -76,6 +76,13 @@ def load_configs_initialize_training():
 
     args = parser.parse_args()
     run_cfgs = vars(args)
+
+    import torch
+
+    import configs.config as config
+    import utils.ckpt as ckpt
+    import utils.log as log
+    import utils.misc as misc
 
     gpus_per_node, rank = torch.cuda.device_count(), torch.cuda.current_device()
 
@@ -116,6 +123,12 @@ def load_configs_initialize_training():
 
 if __name__ == "__main__":
     cfgs, gpus_per_node, run_name, rank = load_configs_initialize_training()
+
+    import torch
+    import torch.multiprocessing as mp
+
+    import loader
+    import utils.misc as misc
 
     if cfgs.RUN.distributed_data_parallel and cfgs.OPTIMIZATION.world_size > 1:
         mp.set_start_method("spawn", force=True)

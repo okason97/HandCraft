@@ -12,7 +12,7 @@ The seed fixes:
 - the model initialization, the batch order and the data augmentation,
 - cuDNN, which is set to its deterministic mode.
 
-Keep `--num_workers` the same between runs you want to compare: the augmentation random numbers are drawn inside the data loader workers. Results can still differ between GPU models, driver versions and PyTorch versions.
+The result does not depend on `--num_workers` or `--eval_workers`: every sample draws its augmentation from its own seed, derived from the run seed and the epoch. Results can still differ between GPU models, driver versions and PyTorch versions.
 
 ### Same seed, different numbers after the PyTorch 2.7 update
 

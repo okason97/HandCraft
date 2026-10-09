@@ -217,17 +217,21 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         else:
             synth_sampler = None
 
+    def worker_options(num_workers):
+        # prefetch_factor and persistent_workers are only accepted with worker processes
+        if num_workers == 0:
+            return {"num_workers": 0}
+        return {"num_workers": num_workers, "prefetch_factor": cfgs.RUN.prefetch_factor, "persistent_workers": True}
+
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size=cfgs.OPTIMIZATION.batch_size,
         shuffle=(train_sampler is None),
         pin_memory=True,
-        prefetch_factor=cfgs.RUN.prefetch_factor,
-        num_workers=cfgs.RUN.num_workers,
         sampler=train_sampler,
         drop_last=True,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-        persistent_workers=True,
+        **worker_options(cfgs.RUN.num_workers),
         # the loaders draw their workers' seeds from their own generator, not from the one of the training
         generator=torch.Generator().manual_seed(cfgs.RUN.seed),
     )
@@ -236,14 +240,12 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         batch_size=cfgs.OPTIMIZATION.batch_size,
         shuffle=False,
         pin_memory=True,
-        prefetch_factor=cfgs.RUN.prefetch_factor,
-        num_workers=cfgs.RUN.num_workers,
         sampler=valid_sampler,
+        **worker_options(cfgs.RUN.eval_workers),
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         drop_last=False,
-        # keep the workers between evaluations: on Windows each new worker process re-imports torch,
-        # which made every validation take about 45 s
-        persistent_workers=True,
+        # the validation and test sets are loaded in the main process by default (--eval_workers 0): for a few
+        # hundred clips that takes less than starting worker processes. With workers, they are kept between evaluations
         generator=torch.Generator().manual_seed(cfgs.RUN.seed),
     )
     if synth_dataset is not None:
@@ -252,12 +254,10 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             batch_size=cfgs.OPTIMIZATION.batch_size,
             shuffle=(synth_sampler is None),
             pin_memory=True,
-            prefetch_factor=cfgs.RUN.prefetch_factor,
-            num_workers=cfgs.RUN.num_workers,
             sampler=synth_sampler,
             drop_last=True,
             # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
-            persistent_workers=True,
+            **worker_options(cfgs.RUN.num_workers),
         )
     else:
         synth_dataloader = None
@@ -272,12 +272,10 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         batch_size=cfgs.OPTIMIZATION.batch_size,
         shuffle=False,
         pin_memory=True,
-        prefetch_factor=cfgs.RUN.prefetch_factor,
-        num_workers=cfgs.RUN.num_workers,
         sampler=test_sampler,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         drop_last=cfgs.DATA.test_drop_last,
-        persistent_workers=True,
+        **worker_options(cfgs.RUN.eval_workers),
         generator=torch.Generator().manual_seed(cfgs.RUN.seed),
     )
 
@@ -509,8 +507,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             dataset=gen_dataset,
             batch_sampler=misc.ClassBatchSampler(gen_labels, classes, cfgs.OPTIMIZATION.batch_size, cfgs.RUN.sd_num, cfgs.RUN.seed),
             pin_memory=True,
-            prefetch_factor=cfgs.RUN.prefetch_factor,
-            num_workers=cfgs.RUN.num_workers,
+            **worker_options(cfgs.RUN.num_workers),
             generator=torch.Generator().manual_seed(cfgs.RUN.seed),
         )
         worker.prepare_generation()
