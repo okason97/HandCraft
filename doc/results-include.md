@@ -16,13 +16,13 @@ The dataset was downloaded and its keypoints extracted again in October 2026, an
 | `stgcn/hwgat-data-linear` | HWGAT's, hand masking refilled linearly instead of with a spline | ours | 97.30 | 97.43 | 97.4 |
 | `stgcn/official-lr5` | ours | ours | 96.19 | 97.17 | 96.7 |
 | `stgcn/official-lr5-augval` | ours, validation clips augmented | ours | 96.81 | 97.17 | 97.0 |
-| `stgcn/hwgat-full` | HWGAT's | HWGAT's | 94.98 | 94.61 | 94.8 |
+| `stgcn/hwgat-full` | HWGAT's | the defaults of HWGAT's code | 94.98 | 94.61 | 94.8 |
 
 Test top-1 accuracy (%) on the official test set, of the checkpoint with the lowest validation loss. Published results on the same split: HWGAT 97.7, HWGAT's ST-GCN 96.7, SL-GCN (OpenHands) 93.5.
 
 - **ST-GCN with HWGAT's data pipeline and our training settings reaches 97.2%**, above HWGAT's own ST-GCN result (96.7%) and 0.5 points below HWGAT (97.7%). `stgcn/hwgat-data` is the baseline classifier.
 - **HWGAT's data pipeline is worth about half a point** over ours (97.2 against 96.7). With two seeds, whose results differ by up to 1 point, this is within the noise.
-- **HWGAT's training settings are worse for this model**: 94.8% with AdamW at 5e-4, batch size 4, a repeating cosine schedule and 500 epochs, against 97.2% with RAdam and Lookahead at 5e-3, batch size 16, a one-cycle schedule and 400 epochs, on the same data.
+- **The default training settings of HWGAT's code are worse for this model**: 94.8% with AdamW at 5e-4, batch size 4, a repeating cosine schedule and 500 epochs, against 97.2% with RAdam and Lookahead at 5e-3, batch size 16, a one-cycle schedule and 400 epochs, on the same data. This is not a reproduction of their ST-GCN result (96.7%): their paper gives a learning rate of 1e-4 and up to 4,000 epochs with early stopping, their schedule is stepped once per epoch and ours every batch, they train in full precision, and their keypoints are extracted differently.
 - **Spline or linear hand masking makes no measurable difference** (97.2 against 97.4).
 - **Augmenting the validation clips makes no measurable difference** (97.0 against 96.7). With seed 43 both runs selected the same epoch, so they tested the same checkpoint.
 
