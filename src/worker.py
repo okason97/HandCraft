@@ -5,6 +5,7 @@
 # src/worker.py
 
 import json
+import math
 import os
 import random
 import shutil
@@ -96,6 +97,10 @@ class WORKER(object):
         self.PRE = cfgs.PRE
         self.AUG = cfgs.AUG
         self.RUN = cfgs.RUN
+        # "pretrain" during the pretraining on synthetic data, "train" otherwise (set by the loader)
+        self.phase = "train"
+        # epochs of synthetic pretraining before the training on the real data: its wandb steps come after them
+        self.wandb_offset = self.OPTIMIZATION.synth_total_steps if (self.RUN.mode == "classification" and self.RUN.synth_dir) else 0
         self.MISC = cfgs.MISC
         self.DDP = self.RUN.distributed_data_parallel
 
@@ -239,13 +244,6 @@ class WORKER(object):
             # accumulate loss
             valid_loss.update(loss.item(), values.size(0))
 
-        if self.local_rank == 0:
-            self.logger.info(
-                "Train Top 1-acc {top1.avg:.4f}\tTrain Top 10-acc {top10.avg:.4f}\tTrain Loss {loss.avg:.4f}".format(
-                    top1=valid_top1_acc, top10=valid_top10_acc, loss=valid_loss
-                )
-            )
-
         # apply late dropout when reaching the indicated step
         self.apply_l_drop(step)
 
@@ -297,9 +295,6 @@ class WORKER(object):
             # accumulate loss
             valid_loss.update(loss.item(), values.size(0))
 
-        if self.local_rank == 0:
-            self.logger.info("Train Loss {loss.avg:.4f}".format(loss=valid_loss))
-
         # apply late dropout when reaching the indicated step
         self.apply_l_drop(step)
 
@@ -347,9 +342,6 @@ class WORKER(object):
             # accumulate loss
             valid_loss.update(loss.item(), values.size(0))
 
-        if self.local_rank == 0:
-            self.logger.info("Train Loss {loss.avg:.4f}".format(loss=valid_loss))
-
         # apply late dropout when reaching the indicated step
         self.apply_l_drop(step)
 
@@ -377,54 +369,49 @@ class WORKER(object):
     # -----------------------------------------------------------------------------
     # log training statistics
     # -----------------------------------------------------------------------------
+    def wandb_step_of(self, step):
+        """
+        The wandb step of epoch `step` (0-based) of the current phase: the epochs of the synthetic pretraining come
+        first, then those of the training on the real data.
+        """
+        return step + 1 + (self.wandb_offset if self.phase == "train" else 0)
+
     def log_train_statistics(self, current_step, loss, top1=None, top10=None):
-        self.wandb_step = current_step + 1
+        pretrain = self.phase == "pretrain"
+        epoch = current_step + 1
+        total = self.OPTIMIZATION.synth_total_steps if pretrain else self.OPTIMIZATION.total_steps
+        lr = self.OPTIMIZATION.optimizer.param_groups[0]["lr"]
+        self.wandb_step = self.wandb_step_of(current_step)
 
+        message = "{name} {epoch:>4}/{total} | {elapsed} | lr {lr:.3g} | train loss {loss:.4f}".format(
+            name="Pretrain epoch" if pretrain else "Epoch", epoch=epoch, total=total, elapsed=misc.elapsed_time(self.start_time), lr=lr, loss=loss
+        )
         if self.RUN.mode == "classification":
-            LOG_FORMAT = "Step: {step:>6} Progress: {progress:<.1%} Elapsed: {elapsed} Loss: {loss:<.4} Top1: {top1:<.4} Top10: {top10:<.4} "
-            log_message = LOG_FORMAT.format(
-                step=current_step + 1,
-                progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
-                elapsed=misc.elapsed_time(self.start_time),
-                loss=loss,
-                top1=top1,
-                top10=top10,
-            )
-        else:
-            LOG_FORMAT = "Step: {step:>6} Progress: {progress:<.1%} Elapsed: {elapsed} Loss: {loss:<.4} "
-            log_message = LOG_FORMAT.format(
-                step=current_step + 1,
-                progress=(current_step + 1) / self.OPTIMIZATION.total_steps,
-                elapsed=misc.elapsed_time(self.start_time),
-                loss=loss,
-            )
-        self.logger.info(log_message)
+            message += " | top1 {top1:.2f} | top10 {top10:.2f}".format(top1=top1, top10=top10)
+        self.logger.info(message)
 
-        # save loss values in wandb event file and .npz format
+        # the keys of the saved statistics
+        dict = {"train_loss": loss}
         if self.RUN.mode == "classification":
-            dict = {
-                "train_loss": loss,
-                "train_top1": top1,
-                "train_top10": top10,
-            }
-        else:
-            dict = {
-                "train_loss": loss,
-            }
+            dict.update({"train_top1": top1, "train_top10": top10})
 
-        wandb.log(dict, step=self.wandb_step)
+        # on wandb the pretraining on synthetic data has its own keys
+        prefix = "pretrain_" if pretrain else ""
+        wandb.log({**{prefix + name: value for name, value in dict.items()}, prefix + "epoch": epoch, "lr": lr}, step=self.wandb_step)
 
-        save_dict = misc.accm_values_convert_dict(list_dict=self.loss_list_dict, value_dict=dict, step=current_step + 1, interval=self.RUN.print_every)
-
-        misc.save_dict_npy(directory=join(self.RUN.save_dir, "statistics", self.run_name, "train"), name="losses", dictionary=save_dict)
+        if not pretrain:
+            save_dict = misc.accm_values_convert_dict(list_dict=self.loss_list_dict, value_dict=dict, step=epoch, interval=self.RUN.print_every)
+            misc.save_dict_npy(directory=join(self.RUN.save_dir, "statistics", self.run_name, "train"), name="losses", dictionary=save_dict)
 
     # -----------------------------------------------------------------------------
     # evaluate model.
     # -----------------------------------------------------------------------------
     def evaluate(self, step, writing=True, training=False):
-        if self.global_rank == 0:
-            self.logger.info("Start {mode} ({step} Step): {run_name}".format(mode='Validation' if training else 'Testing', step=step, run_name=self.run_name))
-
+        """
+        Validation of epoch `step` (0-based) when `training`, or the evaluation on the test split of the checkpoint
+        of epoch `step`. The best checkpoint is the one with the lowest validation loss.
+        """
+        pretrain = training and self.phase == "pretrain"
         is_best = False
 
         dataloader = self.valid_dataloader if training else self.test_dataloader
@@ -438,43 +425,57 @@ class WORKER(object):
             "test_top1": top1_acc,
             "test_top10": top10_acc,
         }
-        # on wandb, validation is logged as "valid_*" and the final evaluation on the test set as "test_*"
-        prefix = "valid" if training else "test"
-        wandb_dict = {"{}_{}".format(prefix, name[len("test_") :]): value for name, value in metric_dict.items()}
+        # on wandb: "valid_*" for validation, "pretrain_valid_*" for the validation after the synthetic pretraining
+        # and "test_*" for the final evaluation on the test split
+        prefix = "pretrain_valid" if pretrain else "valid" if training else "test"
+        wandb_dict = {"{}_{}".format(prefix, name[len("test_") :]): value for name, value in metric_dict.items() if value is not None}
 
         if self.global_rank == 0:
-            if self.RUN.mode == "classification":
-                self.logger.info("Test Top 1-acc {top1:.4f}\tTest Top 10-acc {top10:.4f}\tTest Loss {loss}".format(top1=top1_acc, top10=top10_acc, loss=loss))
-            else:
-                self.logger.info("Test Loss {loss}\tTest Loss {mpjpe}".format(loss=loss, mpjpe=mpjpe))
             if self.best_loss is None or loss <= self.best_loss:
                 self.best_loss, self.best_mpjpe, self.best_t1acc, self.best_t10acc, self.best_step, is_best = loss, mpjpe, top1_acc, top10_acc, step, True
-            if writing:
-                wandb.log(wandb_dict, step=self.wandb_step)
-            if training:
-                if self.RUN.mode == "classification":
-                    self.logger.info(
-                        # the best checkpoint is the one with the lowest validation loss; the accuracies are those of that epoch
-                        "Best Top 1-acc {top1:.4f}\tBest Top 10-acc {top10:.4f}\tBest Loss (Step: {step}): {loss} (best = lowest validation loss)".format(
-                            step=self.best_step, loss=self.best_loss, top1=self.best_t1acc, top10=self.best_t10acc
-                        )
-                    )
-                else:
-                    self.logger.info(
-                        "Best MPJPE {mpjpe}\tBest Loss (Step: {step}): {loss}\t".format(step=self.best_step, mpjpe=self.best_mpjpe, loss=self.best_loss)
-                    )
 
-        if self.global_rank == 0:
-            if training:
-                save_dict = misc.accm_values_convert_dict(
-                    list_dict=self.metric_dict_during_train, value_dict=metric_dict, step=step, interval=self.RUN.save_every
+            if self.RUN.mode == "classification":
+                metrics = "loss {loss:.4f} | top1 {top1:.2f} | top10 {top10:.2f}".format(loss=loss, top1=top1_acc, top10=top10_acc)
+                best = "loss {loss:.4f}, top1 {top1:.2f}".format(loss=self.best_loss, top1=self.best_t1acc)
+            else:
+                metrics = "loss {loss:.4f} | mpjpe {mpjpe:.4f}".format(loss=loss, mpjpe=mpjpe)
+                best = "loss {loss:.4f}, mpjpe {mpjpe:.4f}".format(loss=self.best_loss, mpjpe=self.best_mpjpe)
+
+            if pretrain:
+                self.logger.info(
+                    "Pretrain epoch {epoch:>4}/{total} | valid {metrics}".format(epoch=step + 1, total=self.OPTIMIZATION.synth_total_steps, metrics=metrics)
+                )
+            elif training:
+                # "best" is the epoch with the lowest validation loss so far; its checkpoint is the one tested at the end
+                self.logger.info(
+                    "Epoch {epoch:>4}/{total} | valid {metrics} | best: epoch {best_epoch} ({best}){new}".format(
+                        epoch=step + 1,
+                        total=self.OPTIMIZATION.total_steps,
+                        metrics=metrics,
+                        best_epoch=self.best_step + 1,
+                        best=best,
+                        new=" *" if is_best else "",
+                    )
                 )
             else:
-                save_dict = misc.accm_values_convert_dict(list_dict=self.metric_dict_during_final_eval, value_dict=metric_dict, step=None, interval=None)
+                self.logger.info(
+                    "Test of the checkpoint of epoch {epoch} on {n} clips | test {metrics}".format(epoch=step + 1, n=len(dataloader.dataset), metrics=metrics)
+                )
 
-            misc.save_dict_npy(
-                directory=join(self.RUN.save_dir, "statistics", self.run_name, "valid" if training else "test"), name="test_stats", dictionary=save_dict
-            )
+            if writing:
+                # validation goes to the wandb step of its epoch, the test to the last step of the run
+                wandb.log(wandb_dict, step=self.wandb_step_of(step) if training else self.wandb_step)
+
+            if training and not pretrain:
+                # the index of this validation among those of the run: every save_every epochs, and the last epoch
+                index = math.ceil((step + 1) / self.RUN.save_every) * self.RUN.save_every
+                save_dict = misc.accm_values_convert_dict(
+                    list_dict=self.metric_dict_during_train, value_dict=metric_dict, step=index, interval=self.RUN.save_every
+                )
+                misc.save_dict_npy(directory=join(self.RUN.save_dir, "statistics", self.run_name, "valid"), name="test_stats", dictionary=save_dict)
+            elif not training:
+                save_dict = misc.accm_values_convert_dict(list_dict=self.metric_dict_during_final_eval, value_dict=metric_dict, step=None, interval=None)
+                misc.save_dict_npy(directory=join(self.RUN.save_dir, "statistics", self.run_name, "test"), name="test_stats", dictionary=save_dict)
 
         self.model.train()
         return is_best
@@ -516,6 +517,7 @@ class WORKER(object):
     # -----------------------------------------------------------------------------
     # evaluate model on a given dataset (valid or test)
     # -----------------------------------------------------------------------------
+    @torch.no_grad()
     def classification_evaluate_step(self, dataloader):
         self.model.eval()
         top1_acc, top10_acc, loss = misc.AverageMeter(), misc.AverageMeter(), misc.AverageMeter()
@@ -554,6 +556,7 @@ class WORKER(object):
 
         return top1, top10, None, loss.avg
 
+    @torch.no_grad()
     def prediction_evaluate_step(self, dataloader):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
@@ -585,6 +588,7 @@ class WORKER(object):
 
         return None, None, mpjpe.avg, loss.avg
 
+    @torch.no_grad()
     def cond_prediction_evaluate_step(self, dataloader):
         self.model.eval()
         loss, mpjpe = misc.AverageMeter(), misc.AverageMeter()
@@ -620,6 +624,7 @@ class WORKER(object):
     # -----------------------------------------------------------------------------
     # visualize fake poses for monitoring purpose.
     # -----------------------------------------------------------------------------
+    @torch.no_grad()
     def visualize_fake_poses(self, step):
         if self.global_rank == 0:
             self.logger.info("Visualize fake poses.")
@@ -665,6 +670,7 @@ class WORKER(object):
     # -----------------------------------------------------------------------------
     # visualize samples of fake and real poses.
     # -----------------------------------------------------------------------------
+    @torch.no_grad()
     def visualize_samples_poses(self, step):
         if self.global_rank == 0:
             self.logger.info("Visualize fake poses.")
@@ -760,6 +766,7 @@ class WORKER(object):
             directory = join(self.base_save_dir, "poses/{pose}/".format(pose=pose))
             misc.prepare_save_folder(directory)
 
+    @torch.no_grad()
     def save_dataset(self, dataloader, signs):
         """
         Generate a clip from every clip of `dataloader`, whose batches each hold clips of one class

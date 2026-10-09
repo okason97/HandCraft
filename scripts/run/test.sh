@@ -23,4 +23,4 @@ echo Training and testing
 python src/main.py --mode $1 -t --test -data $DATA_DIR/$4/ -cfg ./src/configs/$4/$2/$3.yaml -save $SAVE_DIR/$4/$2-$3/ --project handcraft-$2-$4 --num_workers 4 --prefetch_factor 2 -every 1 --print_every 1 -mpc "${@:5}" > $LOG.out 2> $LOG.err
 
 # Show the test results
-grep -A 30 "End of training" $LOG.out | grep "Test"
+grep "Test of the checkpoint" $LOG.out | tail -1

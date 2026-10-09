@@ -140,7 +140,8 @@ Flags of `src/main.py`. The run scripts set `--mode`, `-t`, `-data`, `-cfg`, `-s
 | `--reverse` | `off` | Generation: predict backwards in time |
 | `-tn, --total_nodes` | `1` | Distributed training: number of nodes |
 | `-cn, --current_node` | `0` | Distributed training: rank of this node |
-| `--num_workers` | `8` | Data loader workers |
+| `--num_workers` | `8` | Data loader workers of the training set. `0` loads the data in the main process: no startup time, slower epochs |
+| `--eval_workers` | `0` | Data loader workers of the validation and test sets. `0` loads them in the main process, which is faster for small sets; use workers for large ones such as LSFB's test split |
 | `--prefetch_factor` | `2` | Batches prefetched per worker |
 | `-sync_bn, --synchronized_bn` | `off` | Synchronized batch norm |
 | `-mpc, --mixed_precision` | `off` | Mixed precision training |

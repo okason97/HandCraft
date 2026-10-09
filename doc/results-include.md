@@ -27,7 +27,7 @@ Each run writes its own numbered log, `logs/INCLUDE/<model>-<config>/testN.out`.
 
 - The pipeline carves a stratified 10% validation set out of `train.json`; it doesn't use the official validation list.
 - Signs with fewer than 5 training videos are dropped (`min_samples: 5`), and the test loader drops the last incomplete batch. Together this leaves out 16 of the 816 official test videos, so 800 are evaluated.
-- The "Best Top 1-acc" printed during training is **validation** accuracy. Only the `Test Top 1-acc` printed after "End of training" is test accuracy. The INCLUDE numbers in the HandCraft paper (86.4% and 87.1% for Transformer-SL) match validation accuracies in `logs/INCLUDE`, not test accuracies.
+- In the logs of these runs, the "Best Top 1-acc" printed during training is **validation** accuracy. Only the `Test Top 1-acc` printed after "End of training" is test accuracy. The INCLUDE numbers in the HandCraft paper (86.4% and 87.1% for Transformer-SL) match validation accuracies in `logs/INCLUDE`, not test accuracies.
 
 ## Baseline: official split vs. ours
 

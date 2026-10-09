@@ -80,23 +80,33 @@ Producing a full synthetic dataset needs a second generator trained backwards in
 
 ## Validation
 
-Training holds out a stratified 10% of the training split for validation. The split depends on `--seed`. After every `-every` epochs (1 in the scripts) the model is evaluated on it and the log shows two lines:
+Training holds out a stratified 10% of the training split for validation. The split depends on `--seed`. The log has one line per epoch for the training and, every `-every` epochs (1 in the scripts) and after the last epoch, one for the validation:
 
 ```
-Test Top 1-acc 84.8214    Test Top 10-acc 97.9167    Test Loss 0.6074
-Best Top 1-acc 84.8214    Best Top 10-acc 97.9167    Best Loss (Step: 330): 0.6074 (best = lowest validation loss)
+Epoch  331/400 | 1:02:11 | lr 0.000412 | train loss 0.4391 | top1 97.12 | top10 99.94
+Epoch  331/400 | valid loss 0.6074 | top1 84.82 | top10 97.92 | best: epoch 331 (loss 0.6074, top1 84.82) *
 ```
 
-**During training both lines are validation metrics**, despite the word "Test" (on Weights & Biases they are logged as `valid_*`). The checkpoint with the lowest validation loss is kept as the best one, and "Best Top 1-acc" is the accuracy of that epoch, not the highest validation accuracy. Every validation clip is evaluated. Generation models report the loss and the MPJPE (mean per joint position error) instead of accuracies.
+- Epochs are counted from 1 in every line. The first line has the time since the start of the run and the learning rate at the end of the epoch.
+- `best` is the epoch with the lowest validation loss so far, with its loss and its accuracy (not the highest accuracy). A `*` marks the epochs that become the best one; their checkpoint is kept and tested at the end.
+- Every validation clip is evaluated, without augmentation.
+- Generation models show `mpjpe` instead of the accuracies.
+- With synthetic pretraining, the pretraining epochs come first as `Pretrain epoch   12/75 | ...`, followed by one validation line.
+
+Logs written before this format show the validation as `Test Top 1-acc ...` and `Best Top 1-acc ...` lines, with epochs counted from 0.
 
 ## Testing
 
-With `--test` (`scripts/run/test.sh` and `scripts/run/eval.sh`), the best checkpoint is loaded after training and evaluated on `test.json`. Its result is the `Test ...` line **after** `End of training!` in the log; `scripts/run/test.sh` prints it when it finishes.
+With `--test` (`scripts/run/test.sh` and `scripts/run/eval.sh`), the best checkpoint is loaded after training and evaluated on `test.json`. Its result is the last line of the log, which `scripts/run/test.sh` prints when it finishes:
+
+```
+Test of the checkpoint of epoch 331 on 816 clips | test loss 0.5712 | top1 94.24 | top10 99.39
+```
 
 Three details of the evaluation:
 
 - Signs with fewer than `DATA.min_samples` clips in the training split are removed from training, validation and test.
-- The test loader drops the last incomplete batch, so up to `batch_size - 1` test clips are not evaluated.
+- Every test clip is evaluated. `DATA.test_drop_last: True` drops the last incomplete batch, as runs before October 2026 did.
 - With `DATA.temporal_sampling: "crop"` (the default, used by the configs of the paper), clips longer than `max_len` are cropped at a random position at test time too, so the test accuracy changes slightly between evaluations of the same checkpoint. `"uniform"` and `"pad"` are deterministic: `scripts/run/eval.sh` then reproduces the test result of the training run exactly.
 
 ## Outputs
