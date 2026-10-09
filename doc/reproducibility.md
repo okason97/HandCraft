@@ -64,7 +64,8 @@ The processing scripts in this repository fix problems that the datasets used fo
 
 | Result | Can it be reproduced from a fresh clone? |
 |---|---|
-| Official INCLUDE split ([results-include.md](results-include.md)) | Yes, within seed noise. Exact numbers need the original keypoint files: regenerated keypoints include 35 more clips, and the class index fix changes the random numbers a run draws |
+| Official INCLUDE split, current baseline ([results-include.md](results-include.md#current-baseline-october-2026)) | Yes: the runs are seeded and deterministic, on the dataset as the scripts produce it (commit `0776df9`) |
+| Official INCLUDE split, earlier experiments (the other sections of results-include.md) | No. They used an earlier extraction of the keypoints, which gives lower accuracy: `stgcn/official-lr5` scored 94.3% on it and 96.7% on the dataset extracted again in October 2026. Their relative comparisons were not repeated |
 | Paper's INCLUDE split | Only with the original `metadata/splits/*.json` files |
 | DiSPLaY | The pipeline runs, but on corrected data the results will differ |
 | LSFB | Expected to: the dataset and its split are provided by `lsfb-dataset`. It was not downloaded again to check |

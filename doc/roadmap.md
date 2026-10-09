@@ -2,19 +2,19 @@
 
 The plans for the classifier and the generator, and every test that has not been run or verified yet, as of 2026-10-08. Results that exist are in [results-include.md](results-include.md); known problems of earlier results are in [reproducibility.md](reproducibility.md).
 
-Status of a test: **next** (implemented or being implemented, not run yet), **planned** (needs code or data first).
+Status of a test: **done** (with its result), **next** (implemented or being implemented, not run yet), **planned** (needs code or data first).
 
 ## Plan for the classifier
 
 Goal: the strongest classifier we can train on each dataset, evaluated like the papers we compare with. Its data configuration is the format the new generator has to produce, so this comes first.
 
-1. **Match HWGAT's data configuration on INCLUDE.** HWGAT is the best published model on INCLUDE (97.7%), and its ST-GCN baseline (96.7%) uses the same model code as ours (94.3%). The differences left are in the data pipeline and the training settings. Both were ported as config options and are measured separately (tests 1.1 to 1.5).
-2. **Evaluate like they do.** Validation without augmentation, every class and every test clip.
-3. **Close what remains.** In this order, each only if a gap is left: keypoints extracted like theirs (1.6), their training settings one at a time, the HWGAT model itself (1.7).
+1. **Match HWGAT's data configuration on INCLUDE.** Done: with HWGAT's data pipeline and our training settings, ST-GCN reaches 97.2% (`stgcn/hwgat-data`), above HWGAT's ST-GCN (96.7%) and 0.5 points below HWGAT (97.7%). Their training settings are worse for this model (94.8%).
+2. **Evaluate like they do.** Done: validation without augmentation, every class and every test clip.
+3. **Close the last half point.** Optional: keypoints extracted like theirs (1.6), the HWGAT model itself (1.7), more seeds to know what is noise.
 4. **Repeat on LSFB** (section 3). The pipeline changes that helped on INCLUDE were never tried there, and LSFB has no test-set result yet.
 5. **DiSPLaY** when its data is available (section 4).
 
-The configuration that wins on INCLUDE and LSFB is the baseline for every synthetic data test.
+The configuration that wins on INCLUDE and LSFB is the baseline for every synthetic data test. On INCLUDE it is `stgcn/hwgat-data`: 29 keypoints in 2D, pixel coordinates, one box per clip, 64 frames.
 
 ## Plan for the generator
 
@@ -89,15 +89,15 @@ Found in a review of the whole pipeline on 2026-10-08. Each was confirmed by rea
 
 ## 1. Classifier on INCLUDE
 
-All runs use the official split, seeds 42 and 43, and report test top-1. Our best so far is `stgcn/official-lr5`, 94.3%.
+All runs use the official split, seeds 42 and 43, and report test top-1. Tests 1.1 to 1.5 are done ([results-include.md](results-include.md#current-baseline-october-2026)): the baseline is `stgcn/hwgat-data`, 97.2%.
 
 | # | Test | Config | Status | Needs |
 |---|---|---|---|---|
-| 1.1 | Old best config on this machine (PyTorch 2.7, regenerated keypoints, 4,284 clips) | `stgcn/official-lr5` | next | – |
-| 1.2 | HWGAT data pipeline with our training settings | `stgcn/hwgat-data` | next | – |
-| 1.3 | HWGAT data pipeline and HWGAT training settings (AdamW 5e-4, batch 4, repeating cosine, 500 epochs, label smoothing 0.01) | `stgcn/hwgat-full` | next | – |
-| 1.4 | Hand masking refilled with a spline, as HWGAT does, instead of linear interpolation | variant of 1.2 or 1.3 | next | option being added |
-| 1.5 | Effect of validating without augmentation on 1.1 | `stgcn/official-lr5` | next | fix being added |
+| 1.1 | Old best config on this machine (PyTorch 2.7, regenerated keypoints, 4,284 clips) | `stgcn/official-lr5` | done: 96.7% (94.3% on the earlier extraction of the keypoints) | – |
+| 1.2 | HWGAT data pipeline with our training settings | `stgcn/hwgat-data` | done: 97.2%, the baseline | – |
+| 1.3 | HWGAT data pipeline and HWGAT training settings (AdamW 5e-4, batch 4, repeating cosine, 500 epochs, label smoothing 0.01) | `stgcn/hwgat-full` | done: 94.8%, worse than our training settings | – |
+| 1.4 | Hand masking refilled with a spline, as HWGAT does, instead of linear interpolation | variant of 1.2 or 1.3 | done: 97.4% with linear against 97.2% with a spline, no measurable difference | option being added |
+| 1.5 | Effect of validating without augmentation on 1.1 | `stgcn/official-lr5` | done: 97.0% with augmented validation against 96.7%, no measurable difference | fix being added |
 | 1.6 | Keypoints extracted like HWGAT: MediaPipe Holistic, not smoothed, missing hands filled when loading | new keypoints | planned | re-extract the 4,284 videos (about 3 hours); check that Holistic exists in MediaPipe 0.10.35 |
 | 1.7 | The HWGAT model itself | new backbone | planned | port the model from [sl-hwgat](https://github.com/suvajit-patra/sl-hwgat) |
 
@@ -113,7 +113,7 @@ Not covered by 1.1 to 1.7. Each was tested at most on the Transformer and one at
 | ST-GCN with a learning rate above 5e-3 | planned |
 | ST-GCN with 64 frames at learning rate 5e-3 (with our uniform sampling) | planned |
 | HWGAT's training settings on our data pipeline (the reverse of 1.2) | planned |
-| Batch size, optimizer, schedule and number of epochs separately, if 1.3 differs from 1.2 | planned |
+| Batch size, optimizer, schedule and number of epochs separately: 1.3 is 2.4 points below 1.2, so one of them hurts | planned |
 | The winning data pipeline on the Transformer (`ViT/official-kp29`) | planned |
 | More than two seeds for the final configs: differences under about 1 point are not meaningful with two | planned |
 
