@@ -34,6 +34,22 @@ What is and is not the same between these configs:
 
 Each run is on Weights & Biases in the project `handcraft-stgcn-INCLUDE`, with its config.
 
+### HWGAT's training settings
+
+`stgcn/hwgat-full` used the defaults of HWGAT's code. Their paper reports other settings, tested here on the same data and model, each change on its own and both together. The runs with early stopping stop when the validation loss has not improved for 400 epochs, and test the best checkpoint (commit `d328546`).
+
+| Config | Learning rate, epochs | Schedule stepped | Seed 42 | Seed 43 | Mean | Training time |
+|---|---|---|---|---|---|---|
+| `stgcn/hwgat-full` | 5e-4, 500 | every batch | 94.98 | 94.61 | 94.8 | 3.5 h |
+| `stgcn/hwgat-full-epochsched` | 5e-4, 500 | every epoch | 95.10 | 94.24 | 94.7 | 4 h |
+| `stgcn/hwgat-full-lr1e-4` | 1e-4, up to 4000, early stopping | every batch | 96.69 | 95.71 | **96.2** | 13 to 14 h |
+| `stgcn/hwgat-paper` | 1e-4, up to 4000, early stopping | every epoch | 95.59 | 95.34 | 95.5 | 11 to 21 h |
+| `stgcn/hwgat-data` (ours, for reference) | 5e-3 with one cycle, 400 | every batch | 97.55 | 96.81 | **97.2** | 1 h |
+
+- **The paper's learning rate and longer training are what matters: +1.4 points** (96.2 against 94.8). The runs stopped after 1,900 to 2,100 epochs, with the best checkpoints at epochs 1,510 and 1,690. Seed 42 matches the 96.7% that HWGAT reports for ST-GCN.
+- **Stepping the schedule once per epoch makes no difference** on its own (94.7 against 94.8), and both together are below the learning rate change alone (95.5 against 96.2). With two seeds this difference is within the noise.
+- **Our training settings stay the best: 97.2%**, one point above the best of HWGAT's settings, in about 1 hour instead of 13 to 21.
+
 ## Setting up the official split
 
 `format.py` writes our random split. To train on the official split, `make_official_split.py` creates a second data directory that reuses the keypoints and only replaces the split files:

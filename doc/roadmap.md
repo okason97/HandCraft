@@ -113,7 +113,8 @@ Not covered by 1.1 to 1.7. Each was tested at most on the Transformer and one at
 | ST-GCN with a learning rate above 5e-3 | planned |
 | ST-GCN with 64 frames at learning rate 5e-3 (with our uniform sampling) | planned |
 | HWGAT's training settings on our data pipeline (the reverse of 1.2) | planned |
-| Batch size, optimizer, schedule and number of epochs separately: 1.3 is 2.4 points below 1.2, so one of them hurts | planned |
+| HWGAT paper's training settings: learning rate 1e-4 with up to 4000 epochs and early stopping, and the schedule stepped per epoch | done: the learning rate and epochs give +1.4 (96.2%), the per-epoch schedule nothing; still 1 point below our settings ([results-include.md](results-include.md#hwgats-training-settings)) |
+| Batch size and optimizer of HWGAT separately | planned, low priority: our settings are already better |
 | The winning data pipeline on the Transformer (`ViT/official-kp29`) | planned |
 | More than two seeds for the final configs: differences under about 1 point are not meaningful with two | planned |
 
