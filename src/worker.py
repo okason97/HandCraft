@@ -228,7 +228,9 @@ class WORKER(object):
                 # get model output for the current batch
                 outputs = self.model(values, masks)
 
-            loss = self.loss(outputs, labels)
+            # in float32: in half precision the label smoothed cross entropy over many classes overflows to inf
+
+            loss = self.loss(outputs.float(), labels)
 
             # accumulate gradients of the model
             if self.RUN.mixed_precision:
@@ -286,7 +288,8 @@ class WORKER(object):
                 outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
 
             # calculate Loss
-            loss = self.loss(outputs, targets)
+            # in float32: in half precision the label smoothed cross entropy over many classes overflows to inf
+            loss = self.loss(outputs.float(), targets)
 
             # accumulate gradients of the model
             if self.RUN.mixed_precision:
@@ -333,7 +336,8 @@ class WORKER(object):
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             # calculate Loss
-            loss = self.loss(outputs, targets)
+            # in float32: in half precision the label smoothed cross entropy over many classes overflows to inf
+            loss = self.loss(outputs.float(), targets)
 
             # accumulate gradients of the model
             if self.RUN.mixed_precision:
@@ -544,7 +548,7 @@ class WORKER(object):
                 outputs = self.model(values, masks)
 
             # calculate Cross Entropy Loss
-            batch_loss = self.loss(outputs, labels)
+            batch_loss = self.loss(outputs.float(), labels)
 
             # calculate topk
             acc1, acc10 = misc.accuracy(outputs.data, labels, topk=(1, 10))
@@ -580,7 +584,7 @@ class WORKER(object):
                 outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
 
             # calculate Loss
-            batch_loss = self.loss(outputs, targets)
+            batch_loss = self.loss(outputs.float(), targets)
 
             # accumulate loss
             loss.update(batch_loss.item(), values.size(0))
@@ -613,7 +617,7 @@ class WORKER(object):
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             # calculate Cross Entropy Loss
-            batch_loss = self.loss(outputs, targets)
+            batch_loss = self.loss(outputs.float(), targets)
 
             # accumulate loss
             loss.update(batch_loss.item(), values.size(0))
