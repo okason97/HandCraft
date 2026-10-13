@@ -99,7 +99,7 @@ All runs use the official split, seeds 42 and 43, and report test top-1. Tests 1
 | 1.4 | Hand masking refilled with a spline, as HWGAT does, instead of linear interpolation | variant of 1.2 or 1.3 | done: 97.4% with linear against 97.2% with a spline, no measurable difference | option being added |
 | 1.5 | Effect of validating without augmentation on 1.1 | `stgcn/official-lr5` | done: 97.0% with augmented validation against 96.7%, no measurable difference | fix being added |
 | 1.6 | Keypoints extracted like HWGAT: MediaPipe Holistic, not smoothed, missing hands filled when loading | new keypoints | planned | re-extract the 4,284 videos (about 3 hours); check that Holistic exists in MediaPipe 0.10.35 |
-| 1.7 | The HWGAT model itself | `hwgat/hwgat-data` | next | the backbone is ported (`backbone: "hwgat"`) |
+| 1.7 | The HWGAT model itself | `hwgat/hwgat-data`, `hwgat/hwgat-data-lr5e-4` | done: 96.4% at learning rate 5e-4, 0.8 below ST-GCN; it does not train at 5e-3 ([results-include.md](results-include.md#the-hwgat-model)) | the backbone is `backbone: "hwgat"` |
 
 Changes in the evaluation that these runs include:
 

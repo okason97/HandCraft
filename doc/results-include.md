@@ -34,6 +34,20 @@ What is and is not the same between these configs:
 
 Each run is on Weights & Biases in the project `handcraft-stgcn-INCLUDE`, with its config.
 
+### The HWGAT model
+
+`backbone: "hwgat"` is the HWGAT model ported from its code (see [models.md](models.md#hwgat)), with the data pipeline and the training settings of `stgcn/hwgat-data` (commits `e7dd17c` and `35b3146`).
+
+| Config | Peak learning rate | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|---|
+| `hwgat/hwgat-data` | 5e-3 (as `stgcn/hwgat-data`) | 31.50 | 50.86 | 41.2 |
+| `hwgat/hwgat-data-lr5e-4` | 5e-4 (as HWGAT's code) | 97.30 | 95.59 | **96.4** |
+| `stgcn/hwgat-data` (for reference) | 5e-3 | 97.55 | 96.81 | **97.2** |
+
+- **HWGAT does not train at the learning rate of our ST-GCN settings**: above about 3.5e-3 its training loss rises again and the training accuracy stays below 35%.
+- **At 5e-4 it trains normally and reaches 96.4%**, 0.8 points below ST-GCN with the same data and settings and 1.3 below the 97.7% HWGAT reports. Its two seeds differ by 1.7 points, so this is not a reliable difference from ST-GCN. Its best validation epochs (300 and 287 of 400) came well before the end, and the learning rate was not tuned further.
+- HWGAT has 9.9M parameters and takes about twice as long per epoch as ST-GCN (3.2M).
+
 ### HWGAT's training settings
 
 `stgcn/hwgat-full` used the defaults of HWGAT's code. Their paper reports other settings, tested here on the same data and model, each change on its own and both together. The runs with early stopping stop when the validation loss has not improved for 400 epochs, and test the best checkpoint (commit `d328546`).
