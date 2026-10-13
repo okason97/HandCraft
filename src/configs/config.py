@@ -168,6 +168,14 @@ class Configurations(object):
         self.MODEL.noise_scale = 0.0
         # representation size for ViT output layers
         self.MODEL.representation_size = None
+        # hwgat backbone (defaults of HWGAT's code); its dropout is MODEL.dropout
+        self.MODEL.hwgat_embed_dim = 128
+        self.MODEL.hwgat_temporal_patch_size = 2
+        self.MODEL.hwgat_depths = [2, 2, 4]
+        self.MODEL.hwgat_heads = [2, 4, 8]
+        self.MODEL.hwgat_ff_ratio = 2.0
+        self.MODEL.hwgat_attn_dropout = 0.0
+        self.MODEL.hwgat_pe = True
         # MAMBA
         # latent state dim
         self.MODEL.d_state = 16
