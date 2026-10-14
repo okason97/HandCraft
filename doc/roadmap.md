@@ -167,7 +167,7 @@ The existing results were obtained on keypoints scrambled in time, so all of the
 
 | # | Test | Status | Needs |
 |---|---|---|---|
-| 5.1 | Mamba-SL on the improved pipeline, on any dataset | planned | Linux: `mamba-ssm` does not build on Windows and has to be rebuilt for PyTorch 2.7 |
+| 5.1 | Mamba-SL on the improved pipeline (`mamba/hwgat-data`, `-lr1e-3`), on INCLUDE then LSFB | running | the pure PyTorch `mamba_ref.py`, since `mamba-ssm` does not build on Windows |
 
 ## 6. Code and environment
 

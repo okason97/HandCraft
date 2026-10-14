@@ -7,15 +7,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# mamba-ssm is an optional dependency, built against the local CUDA toolkit
-from mamba_ssm.models.config_mamba import MambaConfig  # ty: ignore[unresolved-import]
-from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights  # ty: ignore[unresolved-import]
-from mamba_ssm.utils.generation import GenerationMixin  # ty: ignore[unresolved-import]
-
 import utils.misc as misc
 
+# mamba-ssm is an optional dependency, built against the local CUDA toolkit; without it the same model is built from
+# the pure PyTorch copy in mamba_ref.py, with a slower selective scan
+try:
+    from mamba_ssm.models.config_mamba import MambaConfig  # ty: ignore[unresolved-import]
+    from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights  # ty: ignore[unresolved-import]
+except ImportError:
+    from models.mamba_ref import MambaConfig, MixerModel, _init_weights
 
-class Model(nn.Module, GenerationMixin):
+
+class Model(nn.Module):
+    class_mask: torch.Tensor
+
     def __init__(
         self,
         DATA: Any,
