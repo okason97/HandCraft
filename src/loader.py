@@ -530,4 +530,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         worker.save_metadata()
 
     if global_rank == 0:
-        wandb.finish()
+        try:
+            wandb.finish()
+        except Exception as error:  # the wandb service may already be gone (see WORKER.wandb_log)
+            logger.warning("wandb.finish failed: {error!r}".format(error=error))
