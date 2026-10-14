@@ -61,6 +61,7 @@ class Model(nn.Module):
             **factory_kwargs,
         )
         f_input_size = DATA.input_size[1] * DATA.input_size[2]
+        self.input_norm = nn.BatchNorm1d(f_input_size) if getattr(MODEL, "input_norm", False) else None
         self.backbone.embedding = MODULES.linear(f_input_size, config.d_model, bias=True)
         self.lm_head = MODULES.linear(config.d_model, DATA.num_classes, bias=False)
         self.class_token = nn.Parameter(torch.zeros(1, 1, f_input_size))
@@ -104,6 +105,8 @@ class Model(nn.Module):
         num_last_tokens: if > 0, only return the logits for the last n tokens
         """
         n = x.shape[0]
+        if self.input_norm is not None:
+            x = self.input_norm(x.transpose(1, 2)).transpose(1, 2)
 
         # mixed precision is applied by the worker, which runs the model inside torch.autocast
 

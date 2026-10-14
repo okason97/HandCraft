@@ -1,4 +1,8 @@
-# mamba/hwgat-data with the peak learning rate of the one-cycle schedule at 1e-3 instead of 1e-2.
+# The paper's Mamba-SL for INCLUDE (mamba/original64-pad-64x2-o1024: 2 layers of 64, RAdam, 400 epochs) with label smoothing
+# 0.1 and a peak learning rate of 1e-3, on the data pipeline of stgcn/hwgat-data: HWGAT's 29 keypoints in pixel coordinates,
+# one box per clip, 64 frames padded, random speed, hand masking, shear, rotation and flip around a random pivot, every class
+# and every test clip. input_norm standardizes the [0, 1] box coordinates: without it the model stays at chance level, and
+# at the paper's 1e-2 the training diverges.
 DATA:
   name: "INCLUDE"
   poses: [["pose",[0,2,5,11,12,13,14,15,16]],["left_hand",[0,4,5,8,9,12,13,16,17,20]],["right_hand",[0,4,5,8,9,12,13,16,17,20]]]
@@ -32,6 +36,7 @@ DATA:
   test_drop_last: False
 MODEL:
   backbone: "mamba"
+  input_norm: True
   hidden_dim: 64
   representation_size: 1024
   depth: 2
