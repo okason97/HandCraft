@@ -53,6 +53,7 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | `act_fn` | `"ReLU"` | Type of activation function in ["ReLU", "Leaky_ReLU", "ELU", "GELU"] |
 | `feature_norm` | `"batchnorm"` | Feature normalization method in ["batchnorm", "layernorm", "slayernorm", "tlayernorm", None] |
 | `input_norm` | `False` | `mamba` and `ViT`: batch normalization of each input feature before the embedding, as in ST-GCN. Needed when the inputs are not centred, such as the [0, 1] coordinates of `norm: "box"`: without it Mamba-SL stays at chance level on them, and the Transformer underfits |
+| `mamba_scan` | `"chunked"` | `mamba` without `mamba-ssm`: the selective scan of `mamba_ref.py`. `"log"` computes it over the whole sequence in log space, about 4 times faster for a hidden size of 256, with gradients that differ from an exact scan by up to 1e-3 instead of 1e-6 |
 | `apply_attn` | `True` | Whether to apply transformer layers |
 | `apply_ema` | `False` | Use exponential moving average |
 | `ema_beta` | `0.9999` | Ema parameters |

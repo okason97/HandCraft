@@ -14,8 +14,12 @@ import utils.misc as misc
 try:
     from mamba_ssm.models.config_mamba import MambaConfig  # ty: ignore[unresolved-import]
     from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights  # ty: ignore[unresolved-import]
+
+    MAMBA_REF = False
 except ImportError:
     from models.mamba_ref import MambaConfig, MixerModel, _init_weights
+
+    MAMBA_REF = True
 
 
 class Model(nn.Module):
@@ -38,7 +42,8 @@ class Model(nn.Module):
             d_model=MODEL.hidden_dim,
             n_layer=MODEL.depth,
             vocab_size=1,  # placeholder value, we replace the embedding layer later
-            ssm_cfg=dict(layer="Mamba1"),
+            # MODEL.mamba_scan selects the scan of mamba_ref; mamba-ssm has its own kernel
+            ssm_cfg=dict(layer="Mamba1", **({"scan": getattr(MODEL, "mamba_scan", "chunked")} if MAMBA_REF else {})),
             rms_norm=True,
             residual_in_fp32=True,
             fused_add_norm=True,
