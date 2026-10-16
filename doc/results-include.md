@@ -1,6 +1,6 @@
 # Results on the official INCLUDE split
 
-The current baseline is in the first section, [Current baseline](#current-baseline-october-2026): ST-GCN at 97.2%. The sections after it are earlier experiments on an older extraction of the dataset; their numbers are lower and only comparable with each other.
+The current baseline is in the first section, [Current baseline](#current-baseline-october-2026): ST-GCN at 97.2%. The Transformer and Mamba-SL reach 95.0% on the same data ([The Transformer and Mamba-SL](#the-transformer-and-mamba-sl)). The results on LSFB are in [results-lsfb.md](results-lsfb.md). The sections after it are earlier experiments on an older extraction of the dataset; their numbers are lower and only comparable with each other.
 
 All numbers are top-1 accuracy on the official test set, mean of seeds 42 and 43 unless stated. How the official split differs from the random split of the HandCraft paper, and which one is harder, is analysed in [scripts/data/INCLUDE/README.md](../scripts/data/INCLUDE/README.md).
 
@@ -63,6 +63,26 @@ Each run is on Weights & Biases in the project `handcraft-stgcn-INCLUDE`, with i
 - **The paper's learning rate and longer training are what matters: +1.4 points** (96.2 against 94.8). The runs stopped after 1,900 to 2,100 epochs, with the best checkpoints at epochs 1,510 and 1,690. Seed 42 matches the 96.7% that HWGAT reports for ST-GCN.
 - **Stepping the schedule once per epoch makes no difference** on its own (94.7 against 94.8), and both together are below the learning rate change alone (95.5 against 96.2). With two seeds this difference is within the noise.
 - **Our training settings stay the best: 97.2%**, one point above the best of HWGAT's settings, in about 1 hour instead of 13 to 21.
+
+### The Transformer and Mamba-SL
+
+The two models of the HandCraft paper on the data pipeline of `stgcn/hwgat-data`, with their size from the paper (commits `a6bc38b` to `a46f5a6`). These runs compute the loss in float32 (commit `ff138e7`), unlike the runs above. Mamba-SL runs on Windows with `mamba_ref.py`, a pure PyTorch copy of the parts of `mamba-ssm` it uses (see [installation.md](installation.md#mamba)).
+
+| Config | Model | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|---|
+| `ViT/hwgat-data` | Transformer-SL | 75.12 | – | – |
+| **`ViT/hwgat-data-inorm`** | Transformer-SL with `input_norm` | **95.83** | **94.24** | **95.0** |
+| `ViT/official-nm-nodct` | Transformer-SL on its own data pipeline (rerun on the current keypoints) | 94.59 | 94.84 | 94.7 |
+| **`mamba/hwgat-data-lr3e-3`** | Mamba-SL with `input_norm`, peak learning rate 3e-3 | **95.47** | **94.61** | **95.0** |
+| `mamba/hwgat-data-lr1e-3` | the same at 1e-3 | 94.61 | 92.52 | 93.6 |
+| `stgcn/hwgat-data` (for reference) | ST-GCN | 97.55 | 96.81 | 97.2 |
+
+The HandCraft paper reports 86.4 (Transformer-SL) and 81.9 (Mamba-SL) on its own split, as validation accuracies.
+
+- **Both models need their input normalized on this pipeline.** Its coordinates are in [0, 1], not centred, and both models embed each frame with a single linear layer; ST-GCN starts with a batch normalization. Without it, the Transformer underfits (training top-1 49% at epoch 140, 75.1% on test), and Mamba-SL does not learn at all: its training loss stays at ln(262) for 400 epochs. `input_norm` adds the same batch normalization to both ([configuration.md](configuration.md)).
+- **With it, both reach 95.0%**, 0.3 points above the Transformer on its own pipeline and 2.2 below ST-GCN.
+- **Mamba-SL diverges at the paper's learning rate of 1e-2.** In the runs the loss scaler of mixed precision skipped the steps with infinite gradients, so the training looked stuck instead of failing; 3e-3 is the best of the rates tried.
+- Seed 43 of `ViT/hwgat-data` was not run.
 
 ## Setting up the official split
 
