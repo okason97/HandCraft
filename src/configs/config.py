@@ -12,6 +12,7 @@ import utils.losses as losses
 import utils.misc as misc
 import utils.ops as ops
 import utils.optimizers as optimizers
+from generation.autoregressive import AutoregressiveLoss
 
 
 class make_empty_object(object):
@@ -193,7 +194,7 @@ class Configurations(object):
         # -----------------------------------------------------------------------------
         self.LOSS = misc.make_empty_object()
 
-        # type of loss \in ["CCE", "motion"]
+        # type of loss \in ["CCE", "motion", "autoregressive"]
         self.LOSS.loss_type = "CCE"
         # start iteration for EMALosses in src/utils/EMALosses
         self.LOSS.lecam_ema_start_iter = "N/A"
@@ -203,6 +204,11 @@ class Configurations(object):
         self.LOSS.relative_motion = True
         # label smoothing for the CCE loss
         self.LOSS.label_smoothing = 0.0
+        # generator A (loss_type "autoregressive"): weights of the velocity and end-of-sign terms, and the weight of the
+        # positive end labels, about one position in ten
+        self.LOSS.vel_weight = 1.0
+        self.LOSS.end_weight = 0.1
+        self.LOSS.end_pos_weight = 10.0
 
         # -----------------------------------------------------------------------------
         # optimizer settings
@@ -303,6 +309,9 @@ class Configurations(object):
         losses_dic = {
             "CCE": nn.CrossEntropyLoss(label_smoothing=self.LOSS.label_smoothing),
             "motion": losses.MotionLoss(relative_motion=self.LOSS.relative_motion),
+            "autoregressive": AutoregressiveLoss(
+                coords=self.DATA.coords, vel_weight=self.LOSS.vel_weight, end_weight=self.LOSS.end_weight, end_pos_weight=self.LOSS.end_pos_weight
+            ),
         }
 
         self.LOSS.loss = losses_dic[self.LOSS.loss_type]
