@@ -4,11 +4,9 @@
 
 # src/worker.py
 
-import json
 import math
 import os
 import random
-import shutil
 from datetime import datetime
 from os.path import join
 
@@ -18,6 +16,7 @@ import torch
 import torch.distributed as dist
 import wandb
 
+import generation.autoregressive as ar
 import utils.misc as misc
 
 
@@ -832,13 +831,14 @@ class WORKER(object):
         if self.global_rank == 0:
             self.logger.info("Dataset saved: {n} poses.".format(n=self.gen_curr_id))
 
-    def update_metadata(self, ids, sign):
+    def update_metadata(self, ids, sign, lengths=None):
+        # `lengths`: the number of frames of each clip; the clips of the CsiMLPe generator all have input_size[0]
         sti = pl.read_csv(os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv'))
         self.metadata['id'] = self.metadata['id'] + ids
         self.metadata['sign'] = self.metadata['sign'] + [sti.filter(sti['class'] == sign)['sign'].item() for _ in ids]
         self.metadata['signer'] = self.metadata['signer'] + ['Bender' for _ in ids]
         self.metadata['start'] = self.metadata['start'] + [0 for _ in ids]
-        self.metadata['end'] = self.metadata['end'] + [self.DATA.input_size[0] for _ in ids]
+        self.metadata['end'] = self.metadata['end'] + (list(lengths) if lengths is not None else [self.DATA.input_size[0] for _ in ids])
 
     def save_keypoints(self, value_kp, output_kp):
         value_body_kp, value_rhand_kp, value_lhand_kp, value_face_kp = self.split_keypoints(value_kp)
@@ -854,20 +854,10 @@ class WORKER(object):
             np.save(f, torch.cat((value_face_kp, output_face_kp), dim=0))
 
     def save_metadata(self):
-        # copy sign_to_index from original dataset
-        src = os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv')
-        dst_dir = os.path.join(self.base_save_dir, 'metadata')
-        dst = os.path.join(dst_dir, 'sign_to_index.csv')
-
-        os.makedirs(dst_dir, exist_ok=True)
-        shutil.copyfile(src, dst)
-
-        # save metadata
-        df = pl.DataFrame(self.metadata)
-        df.write_csv(os.path.join(self.base_save_dir, 'instances.csv'), separator=",")
-
-        # save ids to root_ids .json
-        splits_dir = os.path.join(dst_dir, 'splits')
-        os.makedirs(splits_dir, exist_ok=True)
-        with open(os.path.join(splits_dir, 'train.json'), "w") as file:
-            json.dump(self.metadata['id'], file)
+        # generator A saves box-space values, which pixel_coords must leave unchanged (video size 1x1)
+        ar.write_metadata(
+            self.base_save_dir,
+            os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv'),
+            self.metadata,
+            video_sizes=self.RUN.mode == "autoregressive",
+        )
