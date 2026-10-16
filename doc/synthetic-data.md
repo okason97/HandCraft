@@ -56,5 +56,32 @@ The model is trained for `synth_total_steps` epochs on the synthetic clips, the 
 ## Things to know
 
 - **Train the generators and generate on the same data as the classifier.** A generator trained on a split that contains the classifier's test clips leaks them into pretraining. The official INCLUDE split shares 577 test clips with the training set of our random split, so a generator trained on one must not be used for the other.
-- **The generated clips are stored in the classifier's input space.** They use the dataset-level normalization (`DATA.norm: "dataset"`) and the keypoints of the generator's `DATA.poses`, and are 32 consecutive frames long. Classifier configs that use `norm: "shoulder"`, `temporal_sampling: "uniform"` or a different keypoint set (the `official-*` and `stgcn` configs) do not match that representation, so the existing pipeline cannot pretrain them yet.
+- **The generated clips are stored in the classifier's input space.** They use the dataset-level normalization (`DATA.norm: "dataset"`) and the keypoints of the generator's `DATA.poses`, and are 32 consecutive frames long. Classifier configs that use `norm: "shoulder"`, `norm: "box"` or a different keypoint set (the `official-*`, `hwgat-*` and `stgcn` configs) do not match that representation; use generator A for them.
 - **Class conditioning needed a fix.** Until the class list was sorted (see [reproducibility.md](reproducibility.md#class-indexes)), every process numbered the signs differently. Step 3 runs in a different process than steps 1 and 2, so each sign was generated with the embedding of another sign. Datasets generated before that fix are affected.
+
+## Generator A
+
+Generator A ([design](specs/2026-10-16-generator-a-design.md)) predicts a sign a few frames at a time, from real opening frames, in the data format of `stgcn/hwgat-data`: HWGAT's 29 keypoints in 2D, in the box space of `pixel_coords` and `norm: "box"`. Its clips have the length of their source clip, or stop at the learned end of the sign (`DATA.gen_stop`). There are two models, `argen_tf` and `argen_mlp` ([models.md](models.md#generator-a---mode-autoregressive)).
+
+```bash
+# 1. train (validation and test by rollouts from the opening frames)
+python src/main.py --mode autoregressive -t --test -data $HANDCRAFT_DATA/INCLUDE_official/ -cfg src/configs/INCLUDE/argen/tf.yaml \
+    -save $HANDCRAFT_SAVE/INCLUDE/argen-tf/ -every 1 --print_every 1 -mpc --seed 42
+# 2. generate sd_num x batch_size clips per sign from the best checkpoint
+python src/main.py --mode autoregressive -sd --sd_num 2 -ckpt <checkpoint directory> -best -data $HANDCRAFT_DATA/INCLUDE_official/ \
+    -cfg src/configs/INCLUDE/argen/tf.yaml -save $HANDCRAFT_SAVE/INCLUDE/argen-tf/ -mpc --seed 42
+# 3. pretrain the baseline classifier on them, then train it on the real data
+python src/main.py --mode classification -t --test -data $HANDCRAFT_DATA/INCLUDE_official/ -s_data <generated dataset>/ \
+    -cfg src/configs/INCLUDE/stgcn/hwgat-data-pretrain.yaml -save $HANDCRAFT_SAVE/INCLUDE/stgcn-hwgat-data-pretrain/ -every 1 --print_every 1 -mpc --seed 42
+```
+
+The generator uses the same training and validation split as the classifier (the split depends only on the seed), and the openings come only from its training part, so no validation clip leaks into pretraining. Use the same seed for the three steps.
+
+The generated dataset is in `<save>/generated_datasets/<run name>/`, in the layout of a real dataset:
+
+- `poses/<part>/<id>.npy` with every MediaPipe keypoint (33 for the pose, 21 per hand) and 3 channels: the generated keypoints at their indices, every other value 0. The box normalization finds the nose and the shoulders by their indices.
+- `instances.csv` with the real length of every clip, `metadata/splits/train.json` and a copy of `sign_to_index.csv`.
+- `metadata/video_sizes.csv` with a size of 1×1, so `pixel_coords` leaves the values unchanged. The opening frames are real, so their first frame defines the same box as before, and reading the clip back gives the stored values.
+
+Clips not longer than `opening_frames` cannot open a generated clip. A sign left without one gets no generated clips, with a warning, and the classifier warns about the classes missing from the synthetic dataset.
+

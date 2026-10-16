@@ -31,8 +31,8 @@ The current generator (CsiMLPe) predicts 16 frames from 16 real frames in one pa
 | A clip starts from the real opening frames of a training clip of that sign | decided |
 | Clip length: both stopping at the length of the source clip and a learned end-of-sign signal are implemented and compared | decided |
 | Robustness to its own errors: a setting for the number of rollout steps during training (1 = real context only), tuned together with x | decided |
-| Output: saved as a regular dataset in raw coordinates, so any classifier config can pretrain on it with its own normalization and sampling | proposed, not confirmed |
-| Keypoints: the 29 of HWGAT and of our ST-GCN, with depth available, as the first config. The keypoint set is a config value | proposed, not confirmed |
+| Output: saved as a regular dataset in the box space of the baseline classifier, read back with its own normalization, sampling and augmentation | decided, implemented |
+| Keypoints: the 29 of HWGAT and of our ST-GCN, in 2D. The keypoint set is a config value | decided, implemented |
 | Normalization inside the generator, and whether it uses the DCT | open: follows the classifier baseline |
 
 **Generator B: reference-guided.** A second real clip of the same sign is given to the model as a guide, to pull the generated frames towards a realistic shape of the sign. It is built and tested whatever the result of generator A. Its design starts after generator A.
@@ -63,9 +63,9 @@ Found in a review of the whole pipeline on 2026-10-08. Each was confirmed by rea
 |---|---|---|
 | S1 | The reversed generator (`-tg -r_ckpt`) is loaded but never used: both "reversed" generations call the forward model on time-flipped input. Affects every twin-generated dataset, including those of the published results | next |
 | S2 | Synthetic clips are re-centred on the right shoulder instead of the nose when loaded (their pose file has only the 6 selected body keypoints), which shifts them about 5 standard deviations in x | next |
-| S3 | The synthetic pretraining dataset ignores the classifier's data options (normalization, sampling, coordinates, class mapping) | next |
+| S3 | The synthetic pretraining dataset ignored the classifier's data options (normalization, sampling, coordinates) and numbered its classes on its own. It now gets the options and the class indexes of the real training set | fixed |
 | S4 | Dataset generation crashed on one GPU after the resume change (the seeded training dataset was passed to it) | fixed |
-| S5 | The generator's embedding noise is also applied at validation and generation; classifier-free guidance, `class_emb_size`, `init` and the DiT weight initialization are never used; "MPJPE" is a norm over the whole frame, not per joint | next |
+| S5 | The generator's embedding noise is also applied at validation and generation; classifier-free guidance, `class_emb_size`, `init` and the DiT weight initialization are never used; "MPJPE" is a norm over the whole frame, not per joint. Generator A has its own per-keypoint loss and metric, and a noise applied during generation only | next for CsiMLPe |
 | S6 | Dataset generation failed for classes with fewer training clips than the batch size (most INCLUDE classes with batch size 16), and was slow on Windows: it started new data loader workers for every class (about 35 s per class). It now uses one loader for every class and repeats the clips of small classes; 260 classes take about 75 s | fixed |
 
 ### Problems behind earlier results
@@ -124,10 +124,10 @@ Not covered by 1.1 to 1.7. Each was tested at most on the Transformer and one at
 |---|---|---|---|
 | 2.1 | Current generator (CsiMLPe, forward and reversed), regenerated with the fixed class numbering, then pretraining the paper's Transformer config: does synthetic pretraining still help? | planned | train both generators, generate, pretrain |
 | 2.2 | The same on the official split and the baseline classifier | planned | the generated clips are 32 frames in the old input format, which the `official-*` and `stgcn` configs cannot read; needs generator A or a format conversion |
-| 2.3 | Generator A: number of frames predicted per step (x) | planned | generator A |
-| 2.4 | Generator A: training on its own rollouts against real context only | planned | generator A |
-| 2.5 | Generator A: stopping at the source clip's length against the learned end-of-sign signal | planned | generator A |
-| 2.6 | Generator A: error per rollout step (how fast the quality decays), for each x | planned | generator A |
+| 2.3 | Generator A: number of frames predicted per step (x) | next | – |
+| 2.4 | Generator A: training on its own rollouts against real context only | next | – |
+| 2.5 | Generator A: stopping at the source clip's length against the learned end-of-sign signal | next | – |
+| 2.6 | Generator A: error per rollout step (how fast the quality decays), for each x | next | – |
 | 2.7 | Generator B against generator A | planned | generator B |
 | 2.8 | Baseline classifier pretrained on each synthetic dataset against no pretraining, on INCLUDE | planned | 2.3 to 2.7, section 1 |
 | 2.9 | The same on LSFB | planned | 2.8, section 3 |
