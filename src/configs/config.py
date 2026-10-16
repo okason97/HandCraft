@@ -96,6 +96,13 @@ class Configurations(object):
         self.DATA.coords = 3
         # encode the data by applying a transformation ["DCT","DWT",None]
         self.DATA.transform = None
+        # generator A (--mode autoregressive): frames predicted per step (x), real frames that open a generated clip (k),
+        # when a generated clip stops ("length": the length of its source clip, "end_signal": the learned end of the sign)
+        # and the most frames a clip can have
+        self.DATA.pred_frames = 4
+        self.DATA.opening_frames = 8
+        self.DATA.gen_stop = "length"
+        self.DATA.max_gen_len = 320
         self.DATA.batch_size = 128
 
         # -----------------------------------------------------------------------------
@@ -173,6 +180,9 @@ class Configurations(object):
         self.MODEL.apply_dw_conv = False
         # generator noise value
         self.MODEL.noise_scale = 0.0
+        # generator A: frames seen by argen_mlp (w), and the noise on the class embedding during generation
+        self.MODEL.context_frames = 8
+        self.MODEL.generation_noise = 0.0
         # representation size for ViT output layers
         self.MODEL.representation_size = None
         # hwgat backbone (defaults of HWGAT's code); its dropout is MODEL.dropout
