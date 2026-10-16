@@ -50,21 +50,23 @@ The design adds as little code as possible. Existing code and libraries used:
 Both have the usual `Model(DATA, RUN, MODULES, MODEL)` constructor and the same forward:
 
 ```
-forward(frames, mask, labels) -> drift (B, L, x, 58), end_logit (B, L)
+forward(frames, labels, last_only=False) -> drift (B, L, x, 58), end_logit (B, L)
 ```
 
-The output at position t is the drift of frames t+1 to t+x from frame t, and the logit that the clip ends within those frames.
+The output at position t is the drift of frames t+1 to t+x from frame t, and the logit that the clip ends within those frames. With `last_only`, only the last position is computed (L = 1), which is what a rollout needs.
+
+No padding mask is needed. Clips of a batch are padded at the end, and through the causal mask (Transformer) or the window (MLP), padding only affects positions after the end of a clip, whose targets are masked in the loss.
 
 - **`src/models/argen_tf.py`**
-  - Each frame goes through a linear layer from 58 to `hidden_dim`, plus a learned position embedding.
+  - Each frame goes through a linear layer from 58 to `hidden_dim`, plus a learned position embedding with `max_gen_len + 1` positions.
   - The sign is a class token at the start.
-  - `torch.nn.TransformerEncoder` with a causal mask and the padding mask.
+  - `torch.nn.TransformerEncoder` with a causal mask.
   - Two linear heads: one for the x × 58 drift, one for the end logit.
   - Defaults: hidden 256, 4 layers, 8 heads, MLP 1024.
   - With real context, one forward pass gives the predictions for every position of the clip.
 - **`src/models/argen_mlp.py`**
   - At each position, the last w frames, padded with the first frame when there are fewer.
-  - A linear layer over the features, then the CsiMLPe `TransMLP` over the w frames, with the class from `LabelEmbedder`.
+  - A linear layer over the features plus a learned embedding of the sign, then the CsiMLPe `TransMLP` over the w frames, whose blocks also get the sign through `LabelEmbedder`.
   - A temporal linear layer from w to x frames gives the drift; the pooled features give the end logit.
   - The w-frame windows of a clip are built with `unfold`, so every position is computed in one batch.
 
@@ -97,11 +99,11 @@ Plain functions on tensors:
 
 ### Generation (`-sd`)
 
-For each sign, `n_per_class` clips are generated. Each one is built as follows:
+For each sign, `sd_num × batch_size` clips are generated (the existing `--sd_num` flag). Each one is built as follows:
 - **Source clip:** a training clip of the sign, chosen by `ClassBatchSampler`. Clips with fewer than k + 1 frames are skipped. A sign with none left gets no clips, with a warning.
 - **Opening:** its first k real frames.
-- **Rollout:** until the source length (`stop: "length"`) or until the end probability passes 0.5 (`stop: "end_signal"`). Either way, it is capped at `max_gen_len`, twice the longest real clip by default.
-- **Noise:** optional Gaussian noise on the class embedding (`noise_scale`).
+- **Rollout:** until the source length (`gen_stop: "length"`) or until the end probability passes 0.5 (`gen_stop: "end_signal"`). Either way, it is capped at `max_gen_len` frames (320 by default, twice the longest INCLUDE clip).
+- **Noise:** optional Gaussian noise on the class embedding, during generation only (`generation_noise`).
 
 A NaN in a rollout stops the generation with an error.
 
@@ -118,7 +120,7 @@ The opening frames are real, so the first frame keeps its nose at (0.5, 1/3) and
 
 ### Pretraining (fix S3)
 
-The synthetic `Dataset_` built for `-s_data` in `loader.py` gets every data option of the real one: normalization, pixel coordinates, coordinates, temporal sampling, speed, hand masking, augmentations, missing hands. The options are read from the same config section.
+The synthetic `Dataset_` built for `-s_data` in `loader.py` gets every data option of the real one: normalization, pixel coordinates, coordinates, temporal sampling, speed, hand masking, augmentations, missing hands. It also gets the class list and class indexes of the real training set: built on its own, a synthetic set missing a sign would number the classes differently. The keypoints it reads are `DATA.synth_poses`, set to the classifier's `poses` in the pretraining configs.
 
 ## Validation leak
 
@@ -140,11 +142,10 @@ New options:
 
 | Section | Options |
 |---|---|
-| `DATA` | `pred_frames` (x), `opening_frames` (k) |
-| `MODEL` | `context_frames` (w, MLP only), `noise_scale` |
-| `LOSS` | `vel_weight`, `end_weight`, `end_pos_weight` |
+| `DATA` | `pred_frames` (x), `opening_frames` (k), `gen_stop`, `max_gen_len` |
+| `MODEL` | `context_frames` (w, MLP only), `generation_noise` |
+| `LOSS` | `loss_type: "autoregressive"`, `vel_weight`, `end_weight`, `end_pos_weight` |
 | `OPTIMIZATION` | `rollout_steps` (r) |
-| `RUN` | `stop`, `n_per_class`, `max_gen_len` |
 
 They are documented in `doc/configuration.md`.
 
