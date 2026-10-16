@@ -9,9 +9,18 @@ import shutil
 
 import numpy as np
 import polars as pl
+import torch
+from torch.nn.utils.rnn import pad_sequence
 
 # number of keypoints of each part in the files of a real dataset (MediaPipe)
 PART_SIZES = {"pose": 33, "left_hand": 21, "right_hand": 21}
+
+
+def collate(batch):
+    """Batches clips of different lengths: (frames (B, T_max, F) padded with 0 at the end, lengths (B,), labels (B,))."""
+    frames, labels = zip(*batch, strict=True)
+    lengths = torch.tensor([len(f) for f in frames])
+    return pad_sequence(list(frames), batch_first=True), lengths, torch.stack(list(labels))
 
 
 def write_clip(base_dir, clip_id, frames, poses, coords=2):

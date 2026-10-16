@@ -855,6 +855,11 @@ class Dataset_(Dataset):
         value = torch.flatten(self.trsf(value), 1)
         return value[: -self.target_len], value[-self.target_len :], torch.tensor(label)
 
+    def get_autoregressive_item(self, index):
+        # generator A: the whole clip, without resampling or augmentation, (T, keypoints * coords)
+        value, label = self.load(index)
+        return torch.from_numpy(np.ascontiguousarray(value, dtype=np.float32)).flatten(1), torch.tensor(label)
+
     def __getitem__(self, index):
         if self.mode == "classification":
             return self.get_classification_item(index)
@@ -862,8 +867,26 @@ class Dataset_(Dataset):
             return self.get_prediction_item(index)
         elif self.mode == "cond_prediction":
             return self.get_cond_prediction_item(index)
+        elif self.mode == "autoregressive":
+            return self.get_autoregressive_item(index)
         else:
             raise NotImplementedError
+
+
+def synthetic_dataset(synth_dir, base_dataset, poses, mode, **options):
+    """
+    The synthetic dataset of a pretraining, read with the data options of the real one and its classes: built on its
+    own, a synthetic set missing a sign would number the classes differently from the real training set.
+    """
+    return Dataset_(
+        data_dir=synth_dir, train=True, poses=poses, mode=mode, filter_classes=base_dataset.classes, map_classes=base_dataset.map_classes, **options
+    )
+
+
+def missing_classes(synthetic, base_dataset):
+    """The classes of the real training set that have no clip in the synthetic one (for example after min_samples)."""
+    present = set(synthetic.data["sign"].to_list())
+    return [c for c in base_dataset.classes if c not in present]
 
 
 class SeededSampler(Sampler):

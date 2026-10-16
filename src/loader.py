@@ -20,7 +20,7 @@ import models.model as model_generator
 import utils.ckpt as ckpt
 import utils.log as log
 import utils.misc as misc
-from data.data_util import Dataset_, OversamplingWrapper, SeededDataset, SeededSampler, train_val_dataset
+from data.data_util import Dataset_, OversamplingWrapper, SeededDataset, SeededSampler, missing_classes, synthetic_dataset, train_val_dataset
 from worker import WORKER
 
 
@@ -81,11 +81,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     if local_rank == 0:
         logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-    base_train_dataset = Dataset_(
-        data_dir=cfgs.RUN.data_dir,
-        train=True,
+    # the data options of the real training set; the synthetic set of a pretraining is read with the same ones
+    data_options = dict(
         load_data_in_memory=cfgs.RUN.load_data_in_memory,
-        poses=cfgs.DATA.poses,
         max_len=cfgs.DATA.max_len,
         target_len=cfgs.DATA.target_len,
         pad_frames=cfgs.DATA.pad_frames,
@@ -112,8 +110,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         xflip_p=cfgs.DATA.xflip_p,
         missing_hand=cfgs.DATA.missing_hand,
         hand_mask_interp=cfgs.DATA.hand_mask_interp,
-        mode=cfgs.RUN.mode,
     )
+    base_train_dataset = Dataset_(data_dir=cfgs.RUN.data_dir, train=True, poses=cfgs.DATA.poses, mode=cfgs.RUN.mode, **data_options)
 
     cfgs.DATA.num_classes = len(base_train_dataset.classes)
 
@@ -141,28 +139,16 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
 
     if cfgs.RUN.synth_dir:
         if local_rank == 0:
-            logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-        synth_dataset = Dataset_(
-            data_dir=cfgs.RUN.synth_dir,
-            train=True,
-            load_data_in_memory=cfgs.RUN.load_data_in_memory,
-            poses=cfgs.DATA.synth_poses,
-            max_len=cfgs.DATA.max_len,
-            target_len=cfgs.DATA.target_len,
-            pad_frames=cfgs.DATA.pad_frames,
-            pad_mode=cfgs.DATA.pad_mode,
-            min_samples=cfgs.DATA.min_samples,
-            random_crop=cfgs.DATA.random_crop,
-            drop_frame=cfgs.DATA.drop_frame,
-            drop_keypoint=cfgs.DATA.drop_keypoint,
-            block_size=cfgs.DATA.block_size,
-            flip_p=cfgs.DATA.flip_p,
-            scale=cfgs.DATA.scale,
-            rot=cfgs.DATA.rot,
-            mode=cfgs.RUN.mode,
-        )
+            logger.info("Load the synthetic dataset {dir}.".format(dir=cfgs.RUN.synth_dir))
+        synth_dataset = synthetic_dataset(cfgs.RUN.synth_dir, base_train_dataset, cfgs.DATA.synth_poses, cfgs.RUN.mode, **data_options)
+        missing = missing_classes(synth_dataset, base_train_dataset)
         if local_rank == 0:
-            logger.info("Train dataset size: {dataset_size}".format(dataset_size=len(train_dataset)))
+            logger.info("Synthetic dataset size: {dataset_size}".format(dataset_size=len(synth_dataset)))
+            if missing:
+                # for example signs with fewer synthetic clips than min_samples
+                logger.warning(
+                    "{n} of {total} classes have no synthetic clip: {classes}".format(n=len(missing), total=len(base_train_dataset.classes), classes=missing)
+                )
     else:
         synth_dataset = None
 
