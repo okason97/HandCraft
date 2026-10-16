@@ -4,6 +4,7 @@ Clips are in the box space of the classifier (pixel_coords and norm "box"), one 
 """
 
 import json
+import math
 import os
 import shutil
 
@@ -13,6 +14,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import Subset
 
 # number of keypoints of each part in the files of a real dataset (MediaPipe)
 PART_SIZES = {"pose": 33, "left_hand": 21, "right_hand": 21}
@@ -124,3 +126,92 @@ def write_metadata(base_dir, sign_to_index, metadata, video_sizes):
     if video_sizes:
         n = len(metadata["id"])
         pl.DataFrame({"id": metadata["id"], "width": [1] * n, "height": [1] * n}).write_csv(os.path.join(metadata_dir, "video_sizes.csv"))
+
+
+def random_cut(lengths, opening_frames):
+    """The frame a training rollout starts from: after opening_frames when the clips are long enough, and before the last frame of the shortest clip."""
+    last = int(lengths.min()) - 1
+    if last < 1:
+        raise ValueError("every clip of a rollout batch needs at least 2 frames")
+    first = min(opening_frames, last)
+    return int(torch.randint(first, last + 1, (1,)))
+
+
+def rollout(model, context, labels, steps):
+    """
+    Appends `steps` predictions of x frames to `context` (B, t, F), each from every frame so far. Returns the new
+    frames (B, steps*x, F) and the end logit of each step (B, steps).
+    """
+    frames, ends = context, []
+    for _ in range(steps):
+        drift, end = model(frames, labels, last_only=True)
+        frames = torch.cat([frames, frames[:, -1:] + drift[:, 0]], dim=1)
+        ends.append(end[:, 0])
+    return frames[:, context.shape[1] :], torch.stack(ends, dim=1)
+
+
+@torch.no_grad()
+def rollout_metrics(model, frames, lengths, labels, opening_frames, pred_frames, coords=2):
+    """
+    Rolls every clip of a batch out from its first k frames to the length of the longest one. Returns the per-keypoint
+    error of every generated frame (B, T - k), the mask of the frames inside clips longer than k, the number of correct
+    end-of-sign decisions (logit above 0 at the step that reaches the clip's last frame, below 0 before) and the number
+    of decisions.
+    """
+    k, T = opening_frames, frames.shape[1]
+    lengths = lengths.to(frames.device)
+    longer = lengths > k
+    if T <= k:
+        return frames.new_zeros(len(frames), 0), torch.zeros(len(frames), 0, dtype=torch.bool, device=frames.device), 0, 0
+    steps = math.ceil((T - k) / pred_frames)
+    generated, end_logits = rollout(model, frames[:, :k], labels, steps)
+    error = joint_error(generated[:, : T - k].float(), frames[:, k:].float(), coords)
+    valid = (torch.arange(k, T, device=frames.device)[None] < lengths[:, None]) & longer[:, None]
+    position = k - 1 + torch.arange(steps, device=frames.device) * pred_frames
+    decided = (position[None] < lengths[:, None] - 1) & longer[:, None]
+    ends = position[None] + pred_frames >= lengths[:, None] - 1
+    correct = ((end_logits > 0) == ends) & decided
+    return error, valid, int(correct.sum()), int(decided.sum())
+
+
+@torch.no_grad()
+def generate(model, openings, labels, source_lengths, stop, max_len):
+    """
+    Generates a clip from each opening (B, k, F). With stop "length" a clip reaches the length of its source clip,
+    with "end_signal" it stops after the step whose end probability passes 0.5; both stop at max_len frames. Returns
+    the clips, openings included, as a list of (T_b, F) tensors on the CPU.
+    """
+    if stop not in ("length", "end_signal"):
+        raise ValueError("gen_stop must be 'length' or 'end_signal', not '{}'".format(stop))
+    frames = openings
+    B = len(frames)
+    if stop == "length":
+        lengths = source_lengths.to(frames.device).clamp(max=max_len)
+    else:
+        lengths = torch.full((B,), max_len, device=frames.device)
+    done = torch.zeros(B, dtype=torch.bool, device=frames.device)
+    while True:
+        remaining = lengths[~done]
+        if len(remaining) == 0 or frames.shape[1] >= int(remaining.max()):
+            break
+        drift, end = model(frames, labels, last_only=True)
+        new = frames[:, -1:] + drift[:, 0]
+        if not torch.isfinite(new).all():
+            raise FloatingPointError("the generator produced a non-finite frame")
+        frames = torch.cat([frames, new], dim=1)
+        if stop == "end_signal":
+            ended = (torch.sigmoid(end[:, 0].float()) > 0.5) & ~done
+            lengths = torch.where(ended, torch.full_like(lengths, min(frames.shape[1], max_len)), lengths)
+            done |= ended
+    return [frames[b, : int(lengths[b])].float().cpu() for b in range(B)]
+
+
+def usable_openings(dataset, labels, classes, opening_frames):
+    """
+    The source clips that can open a generated clip, those longer than opening_frames, as a Subset with their labels;
+    the classes that still have one, and those left without any.
+    """
+    keep = [i for i in range(len(dataset)) if len(dataset[i][0]) > opening_frames]
+    kept_labels = [labels[i] for i in keep]
+    present = set(kept_labels)
+    return Subset(dataset, keep), kept_labels, [c for c in classes if c in present], [c for c in classes if c not in present]
