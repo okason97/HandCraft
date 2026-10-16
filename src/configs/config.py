@@ -257,6 +257,8 @@ class Configurations(object):
         # the total number of steps for training
         self.OPTIMIZATION.total_steps = 10
         self.OPTIMIZATION.synth_total_steps = 1
+        # generator A: steps of x frames a training rollout continues on the model output (1 = real context only)
+        self.OPTIMIZATION.rollout_steps = 1
 
         # -----------------------------------------------------------------------------
         # preprocessing settings

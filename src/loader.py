@@ -16,6 +16,7 @@ from torch.backends import cudnn
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
 
+import generation.autoregressive as ar
 import models.model as model_generator
 import utils.ckpt as ckpt
 import utils.log as log
@@ -209,6 +210,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             return {"num_workers": 0}
         return {"num_workers": num_workers, "prefetch_factor": cfgs.RUN.prefetch_factor, "persistent_workers": True}
 
+    # generator A batches whole clips of different lengths
+    collate = ar.collate if cfgs.RUN.mode == "autoregressive" else None
+
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size=cfgs.OPTIMIZATION.batch_size,
@@ -216,6 +220,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         pin_memory=True,
         sampler=train_sampler,
         drop_last=True,
+        collate_fn=collate,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         **worker_options(cfgs.RUN.num_workers),
         # the loaders draw their workers' seeds from their own generator, not from the one of the training
@@ -227,6 +232,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         shuffle=False,
         pin_memory=True,
         sampler=valid_sampler,
+        collate_fn=collate,
         **worker_options(cfgs.RUN.eval_workers),
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         drop_last=False,
@@ -259,6 +265,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         shuffle=False,
         pin_memory=True,
         sampler=test_sampler,
+        collate_fn=collate,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         drop_last=cfgs.DATA.test_drop_last,
         **worker_options(cfgs.RUN.eval_workers),
@@ -504,15 +511,29 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         # workers for every class took about 35 s per class on Windows)
         gen_dataset, gen_labels = misc.generation_dataset(train_dataset.dataset if isinstance(train_dataset, SeededDataset) else train_dataset)
         classes = [base_train_dataset.map_classes[sign] for sign in base_train_dataset.classes]
+        if cfgs.RUN.mode == "autoregressive":
+            # a generated clip opens with real frames: its source clip must be longer than them
+            gen_dataset, gen_labels, classes, dropped = ar.usable_openings(gen_dataset, gen_labels, classes, cfgs.DATA.opening_frames)
+            if dropped and global_rank == 0:
+                logger.warning(
+                    "{n} classes have no clip longer than {k} frames and get no generated clips: {c}".format(
+                        n=len(dropped), k=cfgs.DATA.opening_frames, c=dropped
+                    )
+                )
         gen_dataloader = DataLoader(
             dataset=gen_dataset,
             batch_sampler=misc.ClassBatchSampler(gen_labels, classes, cfgs.OPTIMIZATION.batch_size, cfgs.RUN.sd_num, cfgs.RUN.seed),
             pin_memory=True,
+            collate_fn=collate,
             **worker_options(cfgs.RUN.num_workers),
             generator=torch.Generator().manual_seed(cfgs.RUN.seed),
         )
         worker.prepare_generation()
-        worker.save_dataset(gen_dataloader, {base_train_dataset.map_classes[sign]: sign for sign in base_train_dataset.classes})
+        signs = {base_train_dataset.map_classes[sign]: sign for sign in base_train_dataset.classes}
+        if cfgs.RUN.mode == "autoregressive":
+            worker.save_autoregressive_dataset(gen_dataloader, signs)
+        else:
+            worker.save_dataset(gen_dataloader, signs)
         worker.save_metadata()
 
     if global_rank == 0:
