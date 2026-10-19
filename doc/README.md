@@ -9,6 +9,7 @@
 | [configuration.md](configuration.md) | Every config file option and command line flag |
 | [models.md](models.md) | The available backbones |
 | [results-include.md](results-include.md) | Experiments on the official INCLUDE split and comparison with published results |
+| [results-lsfb.md](results-lsfb.md) | Experiments on LSFB: ST-GCN, HWGAT, the Transformer and Mamba-SL |
 | [reproducibility.md](reproducibility.md) | Seeds, what is deterministic, and known issues in the data and in earlier results |
 | [development.md](development.md) | Linting, type checking, and how changes are checked for regressions |
 | [roadmap.md](roadmap.md) | Plans for the classifier and the generator, and every test that has not been run yet |

@@ -1,0 +1,60 @@
+# LSFB/mamba/hwgat-data-lr5e-3-e80 with a backbone of the size of ST-GCN's (3.1M parameters, against 0.07M): hidden size 256,
+# 7 layers. mamba_scan "log" makes a training step about 3.6 times faster at this size (see doc/configuration.md).
+DATA:
+  name: "LSFB"
+  poses: [["pose",[0,2,5,11,12,13,14,15,16]],["left_hand",[0,4,5,8,9,12,13,16,17,20]],["right_hand",[0,4,5,8,9,12,13,16,17,20]]]
+  num_keypoints: 29
+  num_classes: 610
+  min_samples: 20
+  oversample: False
+  max_len: 64
+  pad_frames: True
+  pad_mode: "pad"
+  input_size: [64, 29, 2]
+  drop_frame: 0.0
+  drop_keypoint: 0.0
+  block_size: 9
+  flip_p: 0.0
+  scale: 0.0
+  rot: 0
+  transform: "none"
+  coords: 2
+  temporal_sampling: "pad"
+  speed_range: [0.5, 1.5]
+  hand_mask_p: 0.2
+  hand_mask_interp: "spline"
+  norm: "box"
+  shear_std: 0.1
+  rot_std: 0.1
+  aug_pivot: [0.5, 0.1]
+  xflip_p: 0.5
+  pixel_coords: True
+  missing_hand: "wrist"
+  test_drop_last: False
+MODEL:
+  backbone: "mamba"
+  input_norm: True
+  mamba_scan: "log"
+  hidden_dim: 256
+  representation_size: 1024
+  depth: 7
+  dropout: 0.2
+  drop_path: 0.0
+  late_dropout: 0.0
+  late_drop_path: 0.0
+  late_dropout_step: 0
+  late_drop_path_step: 0
+LOSS:
+  loss_type: "CCE"
+  label_smoothing: 0.1
+OPTIMIZATION:
+  type_: "RAdam"
+  batch_size: 16
+  lr: 0.005
+  weight_decay: 0.0001
+  beta1: 0.9
+  beta2: 0.999
+  total_steps: 80
+  lrscheduler: "OneCycle"
+  max_lr: 0.005
+  pct_start: 0.1

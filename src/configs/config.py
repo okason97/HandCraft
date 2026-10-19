@@ -111,6 +111,12 @@ class Configurations(object):
         self.MODEL.act_fn = "ReLU"
         # feature normalization method \in ["batchnorm", "layernorm", "slayernorm", "tlayernorm", None]
         self.MODEL.feature_norm = "batchnorm"
+        # mamba and ViT: normalize each input feature with batch normalization before the embedding, as ST-GCN does; needed for
+        # inputs that are not centred, such as the [0, 1] coordinates of norm "box"
+        self.MODEL.input_norm = False
+        # mamba without mamba-ssm: the selective scan of mamba_ref.py \in ["chunked", "log"]; "log" is about 4 times faster
+        # for large models and less exact
+        self.MODEL.mamba_scan = "chunked"
         # whether to apply transformer layers
         self.MODEL.apply_attn = True
         # use exponential moving average
