@@ -35,16 +35,18 @@ To keep the environment (about 6 GB) and uv's download cache outside the reposit
 
 Training, testing, dataset generation and keypoint extraction run on Windows. The run scripts are bash scripts: run them from Git Bash, or call `python src/main.py` directly. Two things differ from Linux:
 
-- The `mamba` backbone is not available: `mamba-ssm` builds only on Linux.
+- `mamba-ssm` builds only on Linux, so the `mamba` backbone uses its pure PyTorch version (see below).
 - Distributed training (`-DDP`) needs `--backend gloo`; the default `nccl` backend does not exist on Windows. A single GPU does not use either.
 
 ### Mamba
 
-The `mamba` backbone needs `mamba-ssm`, which is compiled against the local CUDA toolkit and is not in the lock file. Install it into the environment when needed:
+The `mamba` backbone uses `mamba-ssm` when it is installed. It is compiled against the local CUDA toolkit and is not in the lock file; install it into the environment when needed:
 
 ```bash
 uv pip install mamba-ssm
 ```
+
+Without it, the same model is built from [mamba_ref.py](../src/models/mamba_ref.py), a pure PyTorch copy of the parts of `mamba-ssm` it uses, with the same parameters and initialization. Only the selective scan differs: it is computed in PyTorch instead of with the fused CUDA kernel: it is slower, and its rounding differs slightly. The model printed at the start of a run shows which one is used (`mamba_ssm` or `mamba_ref` layers).
 
 ## Paths
 

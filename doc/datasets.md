@@ -78,7 +78,7 @@ uv run python scripts/data/DiSPLaY/format.py -data_dir $HANDCRAFT_DATA/DiSPLaY -
 
 MediaPipe processes the frames of a clip one by one, so a clip uses only part of the CPU. `-workers N` runs N clips at the same time, each in its own process with its own landmarkers; every clip is still processed in order by one process, so the keypoints are identical to a single-worker run. On a 12-core machine, 6 workers extracted about 3.5 times more clips per minute than 1 worker; each worker uses about 200 to 300 MB of memory. The MediaPipe GPU delegate is not an alternative: the Windows wheels are built without it, and under WSL2 it ran about 5 times slower than the CPU.
 
-Re-extracting an INCLUDE video with the pinned MediaPipe models reproduces the published keypoints: the pose is identical and the hands and face differ by less than 0.002.
+Re-extracting one INCLUDE video with the pinned MediaPipe models gave the keypoints used for the published results (the pose identical, the hands and face within 0.002). The complete dataset extracted again in October 2026 nevertheless gives clearly better results than the earlier one (see [results-include.md](results-include.md#current-baseline-october-2026)), so the two differ in more than that video showed. The earlier keypoint files are not available to compare.
 
 ## Differences from the data used for the published results
 

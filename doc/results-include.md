@@ -1,8 +1,88 @@
 # Results on the official INCLUDE split
 
+The current baseline is in the first section, [Current baseline](#current-baseline-october-2026): ST-GCN at 97.2%. The Transformer and Mamba-SL reach 95.0% on the same data ([The Transformer and Mamba-SL](#the-transformer-and-mamba-sl)). The results on LSFB are in [results-lsfb.md](results-lsfb.md). The sections after it are earlier experiments on an older extraction of the dataset; their numbers are lower and only comparable with each other.
+
 All numbers are top-1 accuracy on the official test set, mean of seeds 42 and 43 unless stated. How the official split differs from the random split of the HandCraft paper, and which one is harder, is analysed in [scripts/data/INCLUDE/README.md](../scripts/data/INCLUDE/README.md).
 
-These runs were made before the class list was sorted (see [reproducibility.md](reproducibility.md#class-indexes)). Their accuracy is not affected by that, but rerunning a config with the same seed will not give exactly the same number.
+The runs of the earlier sections were made before the class list was sorted (see [reproducibility.md](reproducibility.md#class-indexes)). Their accuracy is not affected by that, but rerunning a config with the same seed will not give exactly the same number.
+
+## Current baseline (October 2026)
+
+The dataset was downloaded and its keypoints extracted again in October 2026, and the training code changed (see [reproducibility.md](reproducibility.md)). The runs of this section use that data and commit `0776df9`. **Every other section of this page was measured on the earlier extraction and is not comparable with this one**: the same config, `stgcn/official-lr5`, went from 94.3% there to 96.7% here.
+
+| Config | Data pipeline | Training settings | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|---|---|
+| **`stgcn/hwgat-data`** | HWGAT's | ours | **97.55** | **96.81** | **97.2** |
+| `stgcn/hwgat-data-linear` | HWGAT's, hand masking refilled linearly instead of with a spline | ours | 97.30 | 97.43 | 97.4 |
+| `stgcn/official-lr5` | ours | ours | 96.19 | 97.17 | 96.7 |
+| `stgcn/official-lr5-augval` | ours, validation clips augmented | ours | 96.81 | 97.17 | 97.0 |
+| `stgcn/hwgat-full` | HWGAT's | the defaults of HWGAT's code | 94.98 | 94.61 | 94.8 |
+
+Test top-1 accuracy (%) on the official test set, of the checkpoint with the lowest validation loss. Published results on the same split: HWGAT 97.7, HWGAT's ST-GCN 96.7, SL-GCN (OpenHands) 93.5.
+
+- **ST-GCN with HWGAT's data pipeline and our training settings reaches 97.2%**, above HWGAT's own ST-GCN result (96.7%) and 0.5 points below HWGAT (97.7%). `stgcn/hwgat-data` is the baseline classifier.
+- **HWGAT's data pipeline is worth about half a point** over ours (97.2 against 96.7). With two seeds, whose results differ by up to 1 point, this is within the noise.
+- **The default training settings of HWGAT's code are worse for this model**: 94.8% with AdamW at 5e-4, batch size 4, a repeating cosine schedule and 500 epochs, against 97.2% with RAdam and Lookahead at 5e-3, batch size 16, a one-cycle schedule and 400 epochs, on the same data. This is not a reproduction of their ST-GCN result (96.7%): their paper gives a learning rate of 1e-4 and up to 4,000 epochs with early stopping, their schedule is stepped once per epoch and ours every batch, they train in full precision, and their keypoints are extracted differently.
+- **Spline or linear hand masking makes no measurable difference** (97.2 against 97.4).
+- **Augmenting the validation clips makes no measurable difference** (97.0 against 96.7). With seed 43 both runs selected the same epoch, so they tested the same checkpoint.
+
+What is and is not the same between these configs:
+
+- `hwgat-*` configs keep all 262 signs and score the 816 test clips. `official-lr5` drops the signs with fewer than 5 training clips (`min_samples: 5`, 253 signs) and scores 814 clips. The other 2 clips could change its accuracy by at most 0.25 points.
+- HWGAT's keypoints come from MediaPipe Holistic without smoothing, ours from separate pose and hand models with interpolation and smoothing. The validation split also differs (ours is 10% of the official train and validation lists).
+- The Zenodo copy of INCLUDE lacks the 8 videos of one sign, one of them in the test set.
+
+Each run is on Weights & Biases in the project `handcraft-stgcn-INCLUDE`, with its config.
+
+### The HWGAT model
+
+`backbone: "hwgat"` is the HWGAT model ported from its code (see [models.md](models.md#hwgat)), with the data pipeline and the training settings of `stgcn/hwgat-data` (commits `e7dd17c` and `35b3146`).
+
+| Config | Peak learning rate | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|---|
+| `hwgat/hwgat-data` | 5e-3 (as `stgcn/hwgat-data`) | 31.50 | 50.86 | 41.2 |
+| `hwgat/hwgat-data-lr5e-4` | 5e-4 (as HWGAT's code) | 97.30 | 95.59 | **96.4** |
+| `stgcn/hwgat-data` (for reference) | 5e-3 | 97.55 | 96.81 | **97.2** |
+
+- **HWGAT does not train at the learning rate of our ST-GCN settings**: above about 3.5e-3 its training loss rises again and the training accuracy stays below 35%.
+- **At 5e-4 it trains normally and reaches 96.4%**, 0.8 points below ST-GCN with the same data and settings and 1.3 below the 97.7% HWGAT reports. Its two seeds differ by 1.7 points, so this is not a reliable difference from ST-GCN. Its best validation epochs (300 and 287 of 400) came well before the end, and the learning rate was not tuned further.
+- HWGAT has 9.9M parameters and takes about twice as long per epoch as ST-GCN (3.2M).
+
+### HWGAT's training settings
+
+`stgcn/hwgat-full` used the defaults of HWGAT's code. Their paper reports other settings, tested here on the same data and model, each change on its own and both together. The runs with early stopping stop when the validation loss has not improved for 400 epochs, and test the best checkpoint (commit `d328546`).
+
+| Config | Learning rate, epochs | Schedule stepped | Seed 42 | Seed 43 | Mean | Training time |
+|---|---|---|---|---|---|---|
+| `stgcn/hwgat-full` | 5e-4, 500 | every batch | 94.98 | 94.61 | 94.8 | 3.5 h |
+| `stgcn/hwgat-full-epochsched` | 5e-4, 500 | every epoch | 95.10 | 94.24 | 94.7 | 4 h |
+| `stgcn/hwgat-full-lr1e-4` | 1e-4, up to 4000, early stopping | every batch | 96.69 | 95.71 | **96.2** | 13 to 14 h |
+| `stgcn/hwgat-paper` | 1e-4, up to 4000, early stopping | every epoch | 95.59 | 95.34 | 95.5 | 11 to 21 h |
+| `stgcn/hwgat-data` (ours, for reference) | 5e-3 with one cycle, 400 | every batch | 97.55 | 96.81 | **97.2** | 1 h |
+
+- **The paper's learning rate and longer training are what matters: +1.4 points** (96.2 against 94.8). The runs stopped after 1,900 to 2,100 epochs, with the best checkpoints at epochs 1,510 and 1,690. Seed 42 matches the 96.7% that HWGAT reports for ST-GCN.
+- **Stepping the schedule once per epoch makes no difference** on its own (94.7 against 94.8), and both together are below the learning rate change alone (95.5 against 96.2). With two seeds this difference is within the noise.
+- **Our training settings stay the best: 97.2%**, one point above the best of HWGAT's settings, in about 1 hour instead of 13 to 21.
+
+### The Transformer and Mamba-SL
+
+The two models of the HandCraft paper on the data pipeline of `stgcn/hwgat-data`, with their size from the paper (commits `a6bc38b` to `a46f5a6`). These runs compute the loss in float32 (commit `ff138e7`), unlike the runs above. Mamba-SL runs on Windows with `mamba_ref.py`, a pure PyTorch copy of the parts of `mamba-ssm` it uses (see [installation.md](installation.md#mamba)).
+
+| Config | Model | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|---|
+| `ViT/hwgat-data` | Transformer-SL | 75.12 | – | – |
+| **`ViT/hwgat-data-inorm`** | Transformer-SL with `input_norm` | **95.83** | **94.24** | **95.0** |
+| `ViT/official-nm-nodct` | Transformer-SL on its own data pipeline (rerun on the current keypoints) | 94.59 | 94.84 | 94.7 |
+| **`mamba/hwgat-data-lr3e-3`** | Mamba-SL with `input_norm`, peak learning rate 3e-3 | **95.47** | **94.61** | **95.0** |
+| `mamba/hwgat-data-lr1e-3` | the same at 1e-3 | 94.61 | 92.52 | 93.6 |
+| `stgcn/hwgat-data` (for reference) | ST-GCN | 97.55 | 96.81 | 97.2 |
+
+The HandCraft paper reports 86.4 (Transformer-SL) and 81.9 (Mamba-SL) on its own split, as validation accuracies.
+
+- **Both models need their input normalized on this pipeline.** Its coordinates are in [0, 1], not centred, and both models embed each frame with a single linear layer; ST-GCN starts with a batch normalization. Without it, the Transformer underfits (training top-1 49% at epoch 140, 75.1% on test), and Mamba-SL does not learn at all: its training loss stays at ln(262) for 400 epochs. `input_norm` adds the same batch normalization to both ([configuration.md](configuration.md)).
+- **With it, both reach 95.0%**, 0.3 points above the Transformer on its own pipeline and 2.2 below ST-GCN.
+- **Mamba-SL diverges at the paper's learning rate of 1e-2.** In the runs the loss scaler of mixed precision skipped the steps with infinite gradients, so the training looked stuck instead of failing; 3e-3 is the best of the rates tried.
+- Seed 43 of `ViT/hwgat-data` was not run.
 
 ## Setting up the official split
 
@@ -24,6 +104,8 @@ Train and evaluate with `scripts/run/test.sh`. It takes the same arguments as `s
 Each run writes its own numbered log, `logs/INCLUDE/<model>-<config>/testN.out`.
 
 ## Evaluation protocol
+
+This describes the earlier experiments. Since October 2026 every validation and test clip is scored, and the logs name validation and test separately (see [training.md](training.md#validation)).
 
 - The pipeline carves a stratified 10% validation set out of `train.json`; it doesn't use the official validation list.
 - Signs with fewer than 5 training videos are dropped (`min_samples: 5`), and the test loader drops the last incomplete batch. Together this leaves out 16 of the 816 official test videos, so 800 are evaluated.
@@ -119,6 +201,8 @@ Test top-1 accuracy (%) on the official test set.
 - These were tested one at a time on our pipeline. They might still help in combination, or with HWGAT's longer schedule, which weren't tested.
 
 ## ST-GCN
+
+These are the earlier experiments on the older extraction; the current numbers are in [Current baseline](#current-baseline-october-2026).
 
 [stgcn.py](../src/models/stgcn.py) is the ST-GCN implementation from the [sl-hwgat](https://github.com/suvajit-patra/sl-hwgat) repository (MIT), wrapped to fit our model interface (`backbone: "stgcn"`). It uses HWGAT's 29-keypoint skeleton: nose, eyes, shoulders, elbows and wrists, plus 10 keypoints per hand (wrist, fingertips and finger bases). The configs are in `src/configs/INCLUDE/stgcn/` and use the same data pipeline as `official-nm-nodct`.
 

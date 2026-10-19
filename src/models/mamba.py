@@ -7,15 +7,24 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# mamba-ssm is an optional dependency, built against the local CUDA toolkit
-from mamba_ssm.models.config_mamba import MambaConfig  # ty: ignore[unresolved-import]
-from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights  # ty: ignore[unresolved-import]
-from mamba_ssm.utils.generation import GenerationMixin  # ty: ignore[unresolved-import]
-
 import utils.misc as misc
 
+# mamba-ssm is an optional dependency, built against the local CUDA toolkit; without it the same model is built from
+# the pure PyTorch copy in mamba_ref.py, with a slower selective scan
+try:
+    from mamba_ssm.models.config_mamba import MambaConfig  # ty: ignore[unresolved-import]
+    from mamba_ssm.models.mixer_seq_simple import MixerModel, _init_weights  # ty: ignore[unresolved-import]
 
-class Model(nn.Module, GenerationMixin):
+    MAMBA_REF = False
+except ImportError:
+    from models.mamba_ref import MambaConfig, MixerModel, _init_weights
+
+    MAMBA_REF = True
+
+
+class Model(nn.Module):
+    class_mask: torch.Tensor
+
     def __init__(
         self,
         DATA: Any,
@@ -33,7 +42,8 @@ class Model(nn.Module, GenerationMixin):
             d_model=MODEL.hidden_dim,
             n_layer=MODEL.depth,
             vocab_size=1,  # placeholder value, we replace the embedding layer later
-            ssm_cfg=dict(layer="Mamba1"),
+            # MODEL.mamba_scan selects the scan of mamba_ref; mamba-ssm has its own kernel
+            ssm_cfg=dict(layer="Mamba1", **({"scan": getattr(MODEL, "mamba_scan", "chunked")} if MAMBA_REF else {})),
             rms_norm=True,
             residual_in_fp32=True,
             fused_add_norm=True,
@@ -56,6 +66,7 @@ class Model(nn.Module, GenerationMixin):
             **factory_kwargs,
         )
         f_input_size = DATA.input_size[1] * DATA.input_size[2]
+        self.input_norm = nn.BatchNorm1d(f_input_size) if getattr(MODEL, "input_norm", False) else None
         self.backbone.embedding = MODULES.linear(f_input_size, config.d_model, bias=True)
         self.lm_head = MODULES.linear(config.d_model, DATA.num_classes, bias=False)
         self.class_token = nn.Parameter(torch.zeros(1, 1, f_input_size))
@@ -99,6 +110,8 @@ class Model(nn.Module, GenerationMixin):
         num_last_tokens: if > 0, only return the logits for the last n tokens
         """
         n = x.shape[0]
+        if self.input_norm is not None:
+            x = self.input_norm(x.transpose(1, 2)).transpose(1, 2)
 
         # mixed precision is applied by the worker, which runs the model inside torch.autocast
 

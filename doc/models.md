@@ -7,9 +7,10 @@
 | Backbone | Description | Notes |
 |---|---|---|
 | `ViT` | Transformer-SL: each frame is embedded with a linear layer, a class token is added, and a Transformer encoder classifies the sequence | The model of the HandCraft paper. Size is set by `depth`, `nheads`, `hidden_dim`, `mlp_dim` and `representation_size` |
-| `mamba` | Mamba-SL: the same tokenization with a Mamba state space model, the class token at the end of the sequence | Needs `mamba-ssm` (see [installation.md](installation.md#mamba)) |
-| `minimamba` | A pure PyTorch Mamba implementation | No extra dependency, slower |
+| `mamba` | Mamba-SL: the same tokenization with a Mamba state space model, the class token at the end of the sequence | Uses `mamba-ssm` when installed, otherwise its pure PyTorch copy `mamba_ref.py` (see [installation.md](installation.md#mamba)) |
+| `minimamba` | A different pure PyTorch Mamba model ([mamba-minimal](https://github.com/johnma2006/mamba-minimal)), not Mamba-SL | No extra dependency, slower |
 | `stgcn` | ST-GCN: spatio-temporal graph convolutions over the skeleton | Adapted from [sl-hwgat](https://github.com/suvajit-patra/sl-hwgat). Requires the 29 keypoints and raw frames; see below |
+| `hwgat` | HWGAT: graph attention inside 4 overlapping windows of 16 keypoints (head, one arm, one hand), over blocks of 2 frames, in 3 stages | Adapted from [sl-hwgat](https://github.com/suvajit-patra/sl-hwgat). Same requirements as `stgcn`; see below |
 | `conv1d` | 1D convolutional blocks over time, optionally followed by Transformer layers (`apply_attn`) | The ConvAtt family |
 | `seccon` | A variant of `conv1d` | |
 
@@ -32,6 +33,10 @@ MODEL:
 ```
 
 The keypoints are the nose, eyes, shoulders, elbows and wrists, plus the wrist, fingertips and finger bases of each hand. `src/configs/INCLUDE/stgcn/` has working configs.
+
+### HWGAT
+
+`hwgat` uses the same 29 keypoints and the same requirements as `stgcn`; the number of frames must be divisible by `hwgat_temporal_patch_size` squared (64 with the defaults). The model builds its 4 windows from the 29 keypoints itself. Its size is set by `hwgat_embed_dim`, `hwgat_temporal_patch_size`, `hwgat_depths`, `hwgat_heads`, `hwgat_ff_ratio`, `hwgat_attn_dropout` and `hwgat_pe`, which default to the values of HWGAT's code (9.9M parameters), and its dropout by `dropout`. With the same weights it gives the same outputs as the original model. `src/configs/INCLUDE/hwgat/` has a working config.
 
 ## Sign generation (`--mode cond_prediction` and `prediction`)
 
