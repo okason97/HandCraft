@@ -179,7 +179,12 @@ class WORKER(object):
             self.scaler.update()
         else:
             self.OPTIMIZATION.optimizer.step()
-        if self.OPTIMIZATION.scheduler:
+        if self.OPTIMIZATION.scheduler and self.OPTIMIZATION.scheduler_step == "batch":
+            self.OPTIMIZATION.scheduler.step()
+
+    def epoch_scheduler_step(self):
+        # with scheduler_step "epoch" the learning rate changes once per epoch, after the training and before the validation
+        if self.OPTIMIZATION.scheduler and self.OPTIMIZATION.scheduler_step == "epoch":
             self.OPTIMIZATION.scheduler.step()
 
     def reset_optimizer(self, OPTIMIZATION):
@@ -223,7 +228,9 @@ class WORKER(object):
                 # get model output for the current batch
                 outputs = self.model(values, masks)
 
-            loss = self.loss(outputs, labels)
+            # in float32: in half precision the label smoothed cross entropy over many classes overflows to inf
+
+            loss = self.loss(outputs.float(), labels)
 
             # accumulate gradients of the model
             if self.RUN.mixed_precision:
@@ -281,7 +288,8 @@ class WORKER(object):
                 outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
 
             # calculate Loss
-            loss = self.loss(outputs, targets)
+            # in float32: in half precision the label smoothed cross entropy over many classes overflows to inf
+            loss = self.loss(outputs.float(), targets)
 
             # accumulate gradients of the model
             if self.RUN.mixed_precision:
@@ -328,7 +336,8 @@ class WORKER(object):
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             # calculate Loss
-            loss = self.loss(outputs, targets)
+            # in float32: in half precision the label smoothed cross entropy over many classes overflows to inf
+            loss = self.loss(outputs.float(), targets)
 
             # accumulate gradients of the model
             if self.RUN.mixed_precision:
@@ -376,6 +385,18 @@ class WORKER(object):
         """
         return step + 1 + (self.wandb_offset if self.phase == "train" else 0)
 
+    def wandb_log(self, data, step=None):
+        """wandb.log that cannot stop the training: if the local wandb service fails (its connection is sometimes lost on
+        Windows), the run goes on without wandb. The log file and the checkpoints have everything wandb receives."""
+        if getattr(self, "wandb_failed", False):
+            return
+        try:
+            wandb.log(data, step=step)
+        except Exception as error:
+            self.wandb_failed = True
+            if self.logger:
+                self.logger.warning("wandb logging failed, the run continues without it: {error!r}".format(error=error))
+
     def log_train_statistics(self, current_step, loss, top1=None, top10=None):
         pretrain = self.phase == "pretrain"
         epoch = current_step + 1
@@ -397,7 +418,7 @@ class WORKER(object):
 
         # on wandb the pretraining on synthetic data has its own keys
         prefix = "pretrain_" if pretrain else ""
-        wandb.log({**{prefix + name: value for name, value in dict.items()}, prefix + "epoch": epoch, "lr": lr}, step=self.wandb_step)
+        self.wandb_log({**{prefix + name: value for name, value in dict.items()}, prefix + "epoch": epoch, "lr": lr}, step=self.wandb_step)
 
         if not pretrain:
             save_dict = misc.accm_values_convert_dict(list_dict=self.loss_list_dict, value_dict=dict, step=epoch, interval=self.RUN.print_every)
@@ -464,7 +485,7 @@ class WORKER(object):
 
             if writing:
                 # validation goes to the wandb step of its epoch, the test to the last step of the run
-                wandb.log(wandb_dict, step=self.wandb_step_of(step) if training else self.wandb_step)
+                self.wandb_log(wandb_dict, step=self.wandb_step_of(step) if training else self.wandb_step)
 
             if training and not pretrain:
                 # the index of this validation among those of the run: every save_every epochs, and the last epoch
@@ -539,7 +560,7 @@ class WORKER(object):
                 outputs = self.model(values, masks)
 
             # calculate Cross Entropy Loss
-            batch_loss = self.loss(outputs, labels)
+            batch_loss = self.loss(outputs.float(), labels)
 
             # calculate topk
             acc1, acc10 = misc.accuracy(outputs.data, labels, topk=(1, 10))
@@ -575,7 +596,7 @@ class WORKER(object):
                 outputs = misc.generate_poses(self.model, values, self.transform, self.DATA.target_len)
 
             # calculate Loss
-            batch_loss = self.loss(outputs, targets)
+            batch_loss = self.loss(outputs.float(), targets)
 
             # accumulate loss
             loss.update(batch_loss.item(), values.size(0))
@@ -608,7 +629,7 @@ class WORKER(object):
                 outputs = misc.cond_generate_poses(self.model, values, labels, self.transform, self.DATA.target_len)
 
             # calculate Cross Entropy Loss
-            batch_loss = self.loss(outputs, targets)
+            batch_loss = self.loss(outputs.float(), targets)
 
             # accumulate loss
             loss.update(batch_loss.item(), values.size(0))
@@ -746,9 +767,9 @@ class WORKER(object):
         misc.save_gif(ani=ani, save_path=save_path, logger=self.logger, logging=self.global_rank == 0 and self.logger)
 
         if self.wandb_step:
-            wandb.log({"{mode}_poses".format(mode=mode): wandb.Video(save_path, format='gif')}, step=self.wandb_step)
+            self.wandb_log({"{mode}_poses".format(mode=mode): wandb.Video(save_path, format='gif')}, step=self.wandb_step)
         else:
-            wandb.log({"{mode}_poses".format(mode=mode): wandb.Video(save_path, format='gif')})
+            self.wandb_log({"{mode}_poses".format(mode=mode): wandb.Video(save_path, format='gif')})
 
     # -----------------------------------------------------------------------------
     # visualize real poses for monitoring purpose.
