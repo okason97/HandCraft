@@ -44,9 +44,17 @@ uv lock --upgrade                   # update the pinned versions
 
 `polars` is held below 1.0: the data loader maps signs to classes with `Expr.replace`, whose behaviour changed in 1.0.
 
+## Tests
+
+```bash
+uv run pytest       # or F:/ciencia/HandCraft-venv/Scripts/python -m pytest
+```
+
+`tests/` covers generator A and the synthetic dataset: the writer, the dataset mode, the loss, the two models and the rollouts. They run on the CPU in a few seconds, on small datasets written to a temporary directory. The tests import the code from `src/` as `python src/main.py` does (`pythonpath` in `pyproject.toml`).
+
 ## Checking a change for regressions
 
-There are no unit tests. Because seeded runs are deterministic (see [reproducibility.md](reproducibility.md)), a refactor can be checked by comparing the metrics of short runs before and after it:
+The rest of the code has no unit tests. Because seeded runs are deterministic (see [reproducibility.md](reproducibility.md)), a refactor can be checked by comparing the metrics of short runs before and after it:
 
 ```bash
 ./scripts/dev/regression_check.sh /tmp/before     # on the base commit

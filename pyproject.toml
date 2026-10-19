@@ -31,6 +31,7 @@ extract = ["mediapipe>=0.10,<0.11", "opencv-python>=4.6", "scipy>=1.11", "wget>=
 [dependency-groups]
 dev = [
     "pre-commit>=4",
+    "pytest>=9.1.1",
     "ruff>=0.8",
     "ty",
 ]
@@ -64,7 +65,7 @@ select = ["E", "F", "I", "B"]
 "src/models/minimamba.py" = ["E741"]
 
 [tool.ty.environment]
-root = ["src", "scripts/data"]
+root = ["src", "scripts/data", "tests"]
 
 [tool.ty.src]
 # vendored third-party code (https://github.com/vacancy/Synchronized-BatchNorm-PyTorch)
@@ -74,3 +75,8 @@ exclude = ["src/sync_batchnorm"]
 quote-style = "preserve"
 # vendored third-party code (https://github.com/vacancy/Synchronized-BatchNorm-PyTorch)
 exclude = ["src/sync_batchnorm/*.py"]
+
+[tool.pytest.ini_options]
+# the code is run as scripts from src/ (python src/main.py), so the tests import it the same way
+pythonpath = ["src"]
+testpaths = ["tests"]

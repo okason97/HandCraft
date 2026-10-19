@@ -16,11 +16,12 @@ from torch.backends import cudnn
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
 
+import generation.autoregressive as ar
 import models.model as model_generator
 import utils.ckpt as ckpt
 import utils.log as log
 import utils.misc as misc
-from data.data_util import Dataset_, OversamplingWrapper, SeededDataset, SeededSampler, train_val_dataset
+from data.data_util import Dataset_, OversamplingWrapper, SeededDataset, SeededSampler, missing_classes, synthetic_dataset, train_val_dataset
 from worker import WORKER
 
 
@@ -81,11 +82,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
     # -----------------------------------------------------------------------------
     if local_rank == 0:
         logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-    base_train_dataset = Dataset_(
-        data_dir=cfgs.RUN.data_dir,
-        train=True,
+    # the data options of the real training set; the synthetic set of a pretraining is read with the same ones
+    data_options = dict(
         load_data_in_memory=cfgs.RUN.load_data_in_memory,
-        poses=cfgs.DATA.poses,
         max_len=cfgs.DATA.max_len,
         target_len=cfgs.DATA.target_len,
         pad_frames=cfgs.DATA.pad_frames,
@@ -112,8 +111,8 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         xflip_p=cfgs.DATA.xflip_p,
         missing_hand=cfgs.DATA.missing_hand,
         hand_mask_interp=cfgs.DATA.hand_mask_interp,
-        mode=cfgs.RUN.mode,
     )
+    base_train_dataset = Dataset_(data_dir=cfgs.RUN.data_dir, train=True, poses=cfgs.DATA.poses, mode=cfgs.RUN.mode, **data_options)
 
     cfgs.DATA.num_classes = len(base_train_dataset.classes)
 
@@ -141,28 +140,16 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
 
     if cfgs.RUN.synth_dir:
         if local_rank == 0:
-            logger.info("Load {name} train dataset.".format(name=cfgs.DATA.name))
-        synth_dataset = Dataset_(
-            data_dir=cfgs.RUN.synth_dir,
-            train=True,
-            load_data_in_memory=cfgs.RUN.load_data_in_memory,
-            poses=cfgs.DATA.synth_poses,
-            max_len=cfgs.DATA.max_len,
-            target_len=cfgs.DATA.target_len,
-            pad_frames=cfgs.DATA.pad_frames,
-            pad_mode=cfgs.DATA.pad_mode,
-            min_samples=cfgs.DATA.min_samples,
-            random_crop=cfgs.DATA.random_crop,
-            drop_frame=cfgs.DATA.drop_frame,
-            drop_keypoint=cfgs.DATA.drop_keypoint,
-            block_size=cfgs.DATA.block_size,
-            flip_p=cfgs.DATA.flip_p,
-            scale=cfgs.DATA.scale,
-            rot=cfgs.DATA.rot,
-            mode=cfgs.RUN.mode,
-        )
+            logger.info("Load the synthetic dataset {dir}.".format(dir=cfgs.RUN.synth_dir))
+        synth_dataset = synthetic_dataset(cfgs.RUN.synth_dir, base_train_dataset, cfgs.DATA.synth_poses, cfgs.RUN.mode, **data_options)
+        missing = missing_classes(synth_dataset, base_train_dataset)
         if local_rank == 0:
-            logger.info("Train dataset size: {dataset_size}".format(dataset_size=len(train_dataset)))
+            logger.info("Synthetic dataset size: {dataset_size}".format(dataset_size=len(synth_dataset)))
+            if missing:
+                # for example signs with fewer synthetic clips than min_samples
+                logger.warning(
+                    "{n} of {total} classes have no synthetic clip: {classes}".format(n=len(missing), total=len(base_train_dataset.classes), classes=missing)
+                )
     else:
         synth_dataset = None
 
@@ -223,6 +210,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
             return {"num_workers": 0}
         return {"num_workers": num_workers, "prefetch_factor": cfgs.RUN.prefetch_factor, "persistent_workers": True}
 
+    # generator A batches whole clips of different lengths
+    collate = ar.collate if cfgs.RUN.mode == "autoregressive" else None
+
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size=cfgs.OPTIMIZATION.batch_size,
@@ -230,6 +220,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         pin_memory=True,
         sampler=train_sampler,
         drop_last=True,
+        collate_fn=collate,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         **worker_options(cfgs.RUN.num_workers),
         # the loaders draw their workers' seeds from their own generator, not from the one of the training
@@ -241,6 +232,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         shuffle=False,
         pin_memory=True,
         sampler=valid_sampler,
+        collate_fn=collate,
         **worker_options(cfgs.RUN.eval_workers),
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         drop_last=False,
@@ -273,6 +265,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         shuffle=False,
         pin_memory=True,
         sampler=test_sampler,
+        collate_fn=collate,
         # collate_fn=None if cfgs.DATA.pad_frames else misc.collate_fn_nested,
         drop_last=cfgs.DATA.test_drop_last,
         **worker_options(cfgs.RUN.eval_workers),
@@ -518,15 +511,29 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name):
         # workers for every class took about 35 s per class on Windows)
         gen_dataset, gen_labels = misc.generation_dataset(train_dataset.dataset if isinstance(train_dataset, SeededDataset) else train_dataset)
         classes = [base_train_dataset.map_classes[sign] for sign in base_train_dataset.classes]
+        if cfgs.RUN.mode == "autoregressive":
+            # a generated clip opens with real frames: its source clip must be longer than them
+            gen_dataset, gen_labels, classes, dropped = ar.usable_openings(gen_dataset, gen_labels, classes, cfgs.DATA.opening_frames)
+            if dropped and global_rank == 0:
+                logger.warning(
+                    "{n} classes have no clip longer than {k} frames and get no generated clips: {c}".format(
+                        n=len(dropped), k=cfgs.DATA.opening_frames, c=dropped
+                    )
+                )
         gen_dataloader = DataLoader(
             dataset=gen_dataset,
             batch_sampler=misc.ClassBatchSampler(gen_labels, classes, cfgs.OPTIMIZATION.batch_size, cfgs.RUN.sd_num, cfgs.RUN.seed),
             pin_memory=True,
+            collate_fn=collate,
             **worker_options(cfgs.RUN.num_workers),
             generator=torch.Generator().manual_seed(cfgs.RUN.seed),
         )
         worker.prepare_generation()
-        worker.save_dataset(gen_dataloader, {base_train_dataset.map_classes[sign]: sign for sign in base_train_dataset.classes})
+        signs = {base_train_dataset.map_classes[sign]: sign for sign in base_train_dataset.classes}
+        if cfgs.RUN.mode == "autoregressive":
+            worker.save_autoregressive_dataset(gen_dataloader, signs)
+        else:
+            worker.save_dataset(gen_dataloader, signs)
         worker.save_metadata()
 
     if global_rank == 0:

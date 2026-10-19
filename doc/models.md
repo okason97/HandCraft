@@ -47,6 +47,15 @@ The keypoints are the nose, eyes, shoulders, elbows and wrists, plus the wrist, 
 
 Both predict the last `DATA.target_len` frames of a clip from the frames before them, or the first ones from the frames after them with `--reverse`.
 
+## Generator A (`--mode autoregressive`)
+
+Both models predict, from the frames so far and the sign, the drift of the next `DATA.pred_frames` frames from the last one and the logit that the sign ends within them. They start by predicting no motion. The design is in [specs/2026-10-16-generator-a-design.md](specs/2026-10-16-generator-a-design.md).
+
+| Backbone | Description |
+|---|---|
+| `argen_tf` | A causal Transformer (`torch.nn.TransformerEncoder`) over every frame so far, with the sign as a class token. Size: `hidden_dim`, `nheads`, `mlp_dim`, `depth` |
+| `argen_mlp` | The CsiMLPe blocks on the last `context_frames` frames, with the sign added to the features of every frame and given to the blocks. Size: `hidden_dim`, `depth` |
+
 ## Adding a backbone
 
 Add `src/models/<name>.py` with a `Model` class with the signature above and a `forward(x, masks=None)` method (`forward(x, labels)` for conditional generation), and set `MODEL.backbone: "<name>"`. New config options have to be added to `src/configs/config.py` first.

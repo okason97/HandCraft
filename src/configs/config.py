@@ -12,6 +12,7 @@ import utils.losses as losses
 import utils.misc as misc
 import utils.ops as ops
 import utils.optimizers as optimizers
+from generation.autoregressive import AutoregressiveLoss
 
 
 class make_empty_object(object):
@@ -95,6 +96,13 @@ class Configurations(object):
         self.DATA.coords = 3
         # encode the data by applying a transformation ["DCT","DWT",None]
         self.DATA.transform = None
+        # generator A (--mode autoregressive): frames predicted per step (x), real frames that open a generated clip (k),
+        # when a generated clip stops ("length": the length of its source clip, "end_signal": the learned end of the sign)
+        # and the most frames a clip can have
+        self.DATA.pred_frames = 4
+        self.DATA.opening_frames = 8
+        self.DATA.gen_stop = "length"
+        self.DATA.max_gen_len = 320
         self.DATA.batch_size = 128
 
         # -----------------------------------------------------------------------------
@@ -172,6 +180,9 @@ class Configurations(object):
         self.MODEL.apply_dw_conv = False
         # generator noise value
         self.MODEL.noise_scale = 0.0
+        # generator A: frames seen by argen_mlp (w), and the noise on the class embedding during generation
+        self.MODEL.context_frames = 8
+        self.MODEL.generation_noise = 0.0
         # representation size for ViT output layers
         self.MODEL.representation_size = None
         # hwgat backbone (defaults of HWGAT's code); its dropout is MODEL.dropout
@@ -193,7 +204,7 @@ class Configurations(object):
         # -----------------------------------------------------------------------------
         self.LOSS = misc.make_empty_object()
 
-        # type of loss \in ["CCE", "motion"]
+        # type of loss \in ["CCE", "motion", "autoregressive"]
         self.LOSS.loss_type = "CCE"
         # start iteration for EMALosses in src/utils/EMALosses
         self.LOSS.lecam_ema_start_iter = "N/A"
@@ -203,6 +214,11 @@ class Configurations(object):
         self.LOSS.relative_motion = True
         # label smoothing for the CCE loss
         self.LOSS.label_smoothing = 0.0
+        # generator A (loss_type "autoregressive"): weights of the velocity and end-of-sign terms, and the weight of the
+        # positive end labels, about one position in ten
+        self.LOSS.vel_weight = 1.0
+        self.LOSS.end_weight = 0.1
+        self.LOSS.end_pos_weight = 10.0
 
         # -----------------------------------------------------------------------------
         # optimizer settings
@@ -241,6 +257,8 @@ class Configurations(object):
         # the total number of steps for training
         self.OPTIMIZATION.total_steps = 10
         self.OPTIMIZATION.synth_total_steps = 1
+        # generator A: steps of x frames a training rollout continues on the model output (1 = real context only)
+        self.OPTIMIZATION.rollout_steps = 1
 
         # -----------------------------------------------------------------------------
         # preprocessing settings
@@ -303,6 +321,9 @@ class Configurations(object):
         losses_dic = {
             "CCE": nn.CrossEntropyLoss(label_smoothing=self.LOSS.label_smoothing),
             "motion": losses.MotionLoss(relative_motion=self.LOSS.relative_motion),
+            "autoregressive": AutoregressiveLoss(
+                coords=self.DATA.coords, vel_weight=self.LOSS.vel_weight, end_weight=self.LOSS.end_weight, end_pos_weight=self.LOSS.end_pos_weight
+            ),
         }
 
         self.LOSS.loss = losses_dic[self.LOSS.loss_type]

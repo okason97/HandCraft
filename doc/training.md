@@ -17,7 +17,7 @@ They are in `scripts/run/` and are run from the root of the repository. All four
 
 | Argument | Values |
 |---|---|
-| `mode` | `classification` (sign recognition), `cond_prediction` (sign generation conditioned on the sign), `prediction` (unconditional motion prediction) |
+| `mode` | `classification` (sign recognition), `cond_prediction` (sign generation conditioned on the sign), `prediction` (unconditional motion prediction), `autoregressive` (generator A, see [synthetic-data.md](synthetic-data.md#generator-a)) |
 | `model` | a folder of `src/configs/<dataset>/`: `ViT`, `mamba`, `stgcn`, `conv1d`, `seccon`, `CsiMLPe`, `siMLPe` |
 | `config` | a file of `src/configs/<dataset>/<model>/`, without `.yaml` |
 | `dataset` | `LSFB`, `INCLUDE` or `DiSPLaY` |
@@ -77,6 +77,8 @@ The generator is a conditional motion predictor: given the first frames of a cli
 During training, animations of generated clips are saved to `figures/` every validation.
 
 Producing a full synthetic dataset needs a second generator trained backwards in time; the whole pipeline is in [synthetic-data.md](synthetic-data.md).
+
+Generator A (`--mode autoregressive`) is validated by rolling every validation clip out from its first `opening_frames` frames to its real length. The validation loss, which selects the best checkpoint, is the mean per-keypoint error of the generated frames. The log also gives the error per rollout step and the accuracy of the end-of-sign signal.
 
 ## Validation
 

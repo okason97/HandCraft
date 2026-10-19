@@ -4,11 +4,9 @@
 
 # src/worker.py
 
-import json
 import math
 import os
 import random
-import shutil
 from datetime import datetime
 from os.path import join
 
@@ -16,8 +14,10 @@ import numpy as np
 import polars as pl
 import torch
 import torch.distributed as dist
+import torch.nn.functional as F
 import wandb
 
+import generation.autoregressive as ar
 import utils.misc as misc
 
 
@@ -81,6 +81,9 @@ class WORKER(object):
         elif cfgs.RUN.mode == "cond_prediction":
             self.train_step = self.cond_prediction_train_step
             self.evaluate_step = self.cond_prediction_evaluate_step
+        elif cfgs.RUN.mode == "autoregressive":
+            self.train_step = self.autoregressive_train_step
+            self.evaluate_step = self.autoregressive_evaluate_step
         else:
             raise NotImplementedError
 
@@ -357,6 +360,45 @@ class WORKER(object):
         if self.RUN.empty_cache:
             torch.cuda.empty_cache()
 
+        return None, None, valid_loss.avg
+
+    def autoregressive_train_step(self, step):
+        """
+        One epoch of generator A. With rollout_steps 1 every position of the real clips predicts its next frames in one
+        pass; with more, the model continues from a random cut on its own frames, and the loss covers every step.
+        """
+        self.model.train()
+        misc.toggle_grad(model=self.model, grad=True)
+        x, r = self.DATA.pred_frames, self.OPTIMIZATION.rollout_steps
+        valid_loss = misc.AverageMeter()
+        for frames, lengths, labels in self.train_iter:
+            self.OPTIMIZATION.optimizer.zero_grad()
+            frames = frames.to(self.local_rank, non_blocking=True).float()
+            lengths = lengths.to(self.local_rank, non_blocking=True)
+            labels = labels.to(self.local_rank, non_blocking=True)
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
+                if r == 1:
+                    drift, end_logit = self.model(frames, labels)
+                    targets, frame_mask, position_mask, end = ar.next_frame_targets(frames, lengths, x)
+                    pred, last = frames[:, :, None] + drift, frames
+                else:
+                    cut = ar.random_cut(lengths, self.DATA.opening_frames)
+                    generated, end_logit = ar.rollout(self.model, frames[:, :cut], labels, r)
+                    targets, frame_mask, position_mask, end = ar.rollout_targets(frames, lengths, cut, r, x)
+                    pred = generated.unflatten(1, (r, x))
+                    # the frame before each step: the last real one, then the last generated one of the previous step
+                    last = torch.cat([frames[:, cut - 1 : cut], generated[:, x - 1 : (r - 1) * x : x]], dim=1)
+            # in float32: the loss sums over many frames
+            loss, _ = self.loss(pred.float(), targets, last.float(), frame_mask, end_logit.float(), end, position_mask)
+            if self.RUN.mixed_precision:
+                self.scaler.scale(loss).backward()
+            else:
+                loss.backward()
+            self.optimizer_step()
+            valid_loss.update(loss.item(), frames.size(0))
+
+        if self.RUN.empty_cache:
+            torch.cuda.empty_cache()
         return None, None, valid_loss.avg
 
     def apply_l_drop(self, step):
@@ -642,6 +684,43 @@ class WORKER(object):
 
         return None, None, mpjpe.avg, loss.avg
 
+    @torch.no_grad()
+    def autoregressive_evaluate_step(self, dataloader):
+        """
+        Rolls every clip out from its first opening_frames frames to its real length. The loss, which selects the best
+        checkpoint, is the mean per-keypoint error of the generated frames; the error per rollout step and the accuracy
+        of the end signal are logged.
+        """
+        self.model.eval()
+        x, k = self.DATA.pred_frames, self.DATA.opening_frames
+        error_sum = torch.zeros(0, dtype=torch.float64)
+        error_count = torch.zeros(0, dtype=torch.float64)
+        correct = decided = too_short = 0
+        for frames, lengths, labels in dataloader:
+            frames = frames.to(self.local_rank).float()
+            labels = labels.to(self.local_rank)
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
+                error, valid, c, d = ar.rollout_metrics(self.model, frames, lengths, labels, k, x, self.DATA.coords)
+            correct, decided, too_short = correct + c, decided + d, too_short + int((lengths <= k).sum())
+            # sums per rollout step: generated frame j belongs to step j // x
+            step_index = (torch.arange(error.shape[1]) // x).repeat(error.shape[0])
+            weights = valid.cpu().flatten().double()
+            sums = torch.bincount(step_index, weights=error.cpu().flatten().double() * weights)
+            counts = torch.bincount(step_index, weights=weights)
+            n = max(len(sums), len(error_sum))
+            error_sum = F.pad(error_sum, (0, n - len(error_sum))) + F.pad(sums, (0, n - len(sums)))
+            error_count = F.pad(error_count, (0, n - len(error_count))) + F.pad(counts, (0, n - len(counts)))
+
+        mean = float(error_sum.sum() / error_count.sum().clamp(min=1))
+        if self.logger:
+            per_step = (error_sum / error_count.clamp(min=1)).tolist()
+            self.logger.info(
+                "Rollout error per step: {steps} | end accuracy {acc:.2f} | clips not longer than the opening: {short}".format(
+                    steps=" ".join("{:.4f}".format(e) for e in per_step[:12]), acc=100 * correct / max(decided, 1), short=too_short
+                )
+            )
+        return None, None, mean, mean
+
     # -----------------------------------------------------------------------------
     # visualize fake poses for monitoring purpose.
     # -----------------------------------------------------------------------------
@@ -832,13 +911,53 @@ class WORKER(object):
         if self.global_rank == 0:
             self.logger.info("Dataset saved: {n} poses.".format(n=self.gen_curr_id))
 
-    def update_metadata(self, ids, sign):
+    @torch.no_grad()
+    def save_autoregressive_dataset(self, dataloader, signs):
+        """
+        Generator A: a clip from the opening frames of every clip of `dataloader`, whose batches each hold clips of one
+        class (misc.ClassBatchSampler), saved in the layout of a real dataset. `signs` maps a class index to its sign.
+        """
+        if self.global_rank == 0:
+            self.logger.info(
+                "Generate {n} clips per class for {c} classes.".format(
+                    n=self.RUN.sd_num * self.OPTIMIZATION.batch_size, c=len(dataloader.batch_sampler.classes)
+                )
+            )
+        self.model.eval()
+        model = misc.peel_model(self.model)
+        model.generation_noise = self.MODEL.generation_noise
+        k = self.DATA.opening_frames
+        ids, lengths_out, current = [], [], None
+        for frames, lengths, labels in dataloader:
+            label = int(labels[0])
+            if label != current:
+                if current is not None:
+                    self.update_metadata(ids, signs[current], lengths_out)
+                    ids, lengths_out = [], []
+                current = label
+            frames = frames.to(self.local_rank).float()
+            labels = labels.to(self.local_rank)
+            with torch.autocast("cuda", enabled=self.RUN.mixed_precision):
+                clips = ar.generate(self.model, frames[:, :k], labels, lengths, self.DATA.gen_stop, self.DATA.max_gen_len)
+            for clip in clips:
+                ar.write_clip(self.base_save_dir, self.gen_curr_id, clip.numpy(), self.DATA.poses, self.DATA.coords)
+                ids.append(str(self.gen_curr_id))
+                lengths_out.append(len(clip))
+                self.gen_curr_id += 1
+        if current is not None:
+            self.update_metadata(ids, signs[current], lengths_out)
+        model.generation_noise = 0.0
+        if self.global_rank == 0:
+            self.logger.info("Dataset saved: {n} clips.".format(n=self.gen_curr_id))
+
+    def update_metadata(self, ids, sign, lengths=None):
+        # `lengths`: the number of frames of each clip; the clips of the CsiMLPe generator all have input_size[0]
         sti = pl.read_csv(os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv'))
         self.metadata['id'] = self.metadata['id'] + ids
         self.metadata['sign'] = self.metadata['sign'] + [sti.filter(sti['class'] == sign)['sign'].item() for _ in ids]
         self.metadata['signer'] = self.metadata['signer'] + ['Bender' for _ in ids]
         self.metadata['start'] = self.metadata['start'] + [0 for _ in ids]
-        self.metadata['end'] = self.metadata['end'] + [self.DATA.input_size[0] for _ in ids]
+        self.metadata['end'] = self.metadata['end'] + (list(lengths) if lengths is not None else [self.DATA.input_size[0] for _ in ids])
 
     def save_keypoints(self, value_kp, output_kp):
         value_body_kp, value_rhand_kp, value_lhand_kp, value_face_kp = self.split_keypoints(value_kp)
@@ -854,20 +973,10 @@ class WORKER(object):
             np.save(f, torch.cat((value_face_kp, output_face_kp), dim=0))
 
     def save_metadata(self):
-        # copy sign_to_index from original dataset
-        src = os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv')
-        dst_dir = os.path.join(self.base_save_dir, 'metadata')
-        dst = os.path.join(dst_dir, 'sign_to_index.csv')
-
-        os.makedirs(dst_dir, exist_ok=True)
-        shutil.copyfile(src, dst)
-
-        # save metadata
-        df = pl.DataFrame(self.metadata)
-        df.write_csv(os.path.join(self.base_save_dir, 'instances.csv'), separator=",")
-
-        # save ids to root_ids .json
-        splits_dir = os.path.join(dst_dir, 'splits')
-        os.makedirs(splits_dir, exist_ok=True)
-        with open(os.path.join(splits_dir, 'train.json'), "w") as file:
-            json.dump(self.metadata['id'], file)
+        # generator A saves box-space values, which pixel_coords must leave unchanged (video size 1x1)
+        ar.write_metadata(
+            self.base_save_dir,
+            os.path.join(self.RUN.data_dir, 'metadata', 'sign_to_index.csv'),
+            self.metadata,
+            video_sizes=self.RUN.mode == "autoregressive",
+        )

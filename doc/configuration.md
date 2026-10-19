@@ -18,7 +18,7 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | `pad_mode` | `'wrap'` | `"pad"` marks padded frames so attention masks them; `"wrap"`, `"edge"` and `"mean"` are numpy padding modes |
 | `oversample` | `False` | Repeat clips so every sign has as many training clips as the most frequent one |
 | `poses` | `[]` | List of `[part, keypoints]`, with part in `pose`, `right_hand`, `left_hand`, `face` and keypoints a list of MediaPipe indexes or `"all"` |
-| `synth_poses` | `[["pose","all"],["right_hand","all"],["left_hand","all"], ["face","all"]]` | Keypoints read from a synthetic dataset (`-s_data`) |
+| `synth_poses` | `[["pose","all"],["right_hand","all"],["left_hand","all"], ["face","all"]]` | Keypoints read from a synthetic dataset (`-s_data`). The synthetic dataset is read with every other data option of `DATA` (normalization, sampling, augmentation) and the class indexes of the real training set. For a dataset of generator A, set it to the classifier's `poses` |
 | `num_keypoints` | `91` | Total number of keypoints selected by `poses` |
 | `flip_p` | `0.0` | Probability of negating x. It does not swap left and right keypoints; prefer `mirror_p` |
 | `scale` | `0.0` | Random scaling of ±`scale` |
@@ -42,13 +42,17 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | `missing_hand` | `None` | For norm "box": `"wrist"` places a hand that was not detected in any frame of the clip at its wrist |
 | `test_drop_last` | `True` | Drop the last incomplete batch of the test set. `False` evaluates every test clip |
 | `transform` | `None` | `"DCT"` applies a discrete cosine transform over the frames; anything else leaves the frames unchanged |
+| `pred_frames` | `4` | Generator A: frames predicted per step (x) |
+| `opening_frames` | `8` | Generator A: real frames that open a generated clip and a validation rollout (k). Clips not longer than this cannot open a clip and are left out of the validation error |
+| `gen_stop` | `"length"` | Generator A: when a generated clip stops, `"length"` (the length of its source clip) or `"end_signal"` (the step whose end-of-sign probability passes 0.5) |
+| `max_gen_len` | `320` | Generator A: most frames of a generated clip, and the size of the Transformer's position table |
 | `batch_size` | `128` | Set from `OPTIMIZATION.batch_size` |
 
 ## MODEL: Model
 
 | Option | Default | Description |
 |---|---|---|
-| `backbone` | `"conv1d"` | File of `src/models/` to use: `ViT`, `mamba`, `minimamba`, `stgcn`, `conv1d`, `seccon`, `CsiMLPe`, `siMLPe` |
+| `backbone` | `"conv1d"` | File of `src/models/` to use: `ViT`, `mamba`, `minimamba`, `stgcn`, `hwgat`, `conv1d`, `seccon`, `CsiMLPe`, `siMLPe`, `argen_tf`, `argen_mlp` |
 | `apply_sn` | `False` | Whether to apply spectral normalization |
 | `act_fn` | `"ReLU"` | Type of activation function in ["ReLU", "Leaky_ReLU", "ELU", "GELU"] |
 | `feature_norm` | `"batchnorm"` | Feature normalization method in ["batchnorm", "layernorm", "slayernorm", "tlayernorm", None] |
@@ -84,7 +88,9 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | `temporal_fc_out` | `False` | Use temporal dimension for the output fully conected layer |
 | `use_spatial_fc` | `True` | SiMLPe: fully connected layers over the keypoints instead of over time |
 | `apply_dw_conv` | `False` | Use depthwise convolution |
-| `noise_scale` | `0.0` | Generator noise value |
+| `noise_scale` | `0.0` | Generator noise value. In the CsiMLPe blocks, also applied during training and validation |
+| `context_frames` | `8` | Generator A, `argen_mlp`: frames the model sees (w) |
+| `generation_noise` | `0.0` | Generator A: standard deviation of a Gaussian noise added to the class embedding during generation only |
 | `representation_size` | `None` | Size of the layer before the classifier (ViT), or of the output features (stgcn) |
 | `d_state` | `16` | MAMBA latent state dim |
 | `dt_rank` | `'auto'` | Mamba: rank of Δ |
@@ -93,7 +99,10 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 
 | Option | Default | Description |
 |---|---|---|
-| `loss_type` | `"CCE"` | `"CCE"` (cross entropy) for classification, `"motion"` for generation |
+| `loss_type` | `"CCE"` | `"CCE"` (cross entropy) for classification, `"motion"` for the CsiMLPe generator, `"autoregressive"` for generator A |
+| `vel_weight` | `1.0` | `autoregressive`: weight of the velocity error (per keypoint, like the position error) |
+| `end_weight` | `0.1` | `autoregressive`: weight of the end-of-sign binary cross entropy |
+| `end_pos_weight` | `10.0` | `autoregressive`: weight of the positive end labels, about one position in ten |
 | `lecam_ema_start_iter` | `"N/A"` | Unused |
 | `lecam_ema_decay` | `"N/A"` | Unused |
 | `relative_motion` | `True` | Use relative motion for motion loss |
@@ -121,6 +130,7 @@ In this code a "step" is one epoch: one pass over the training set followed, eve
 | `beta2` | `0.999` | Adam, RAdam and AdamW beta 2 |
 | `total_steps` | `10` | Number of training epochs |
 | `synth_total_steps` | `1` | Number of pretraining epochs on the synthetic dataset (`-s_data`) |
+| `rollout_steps` | `1` | Generator A: steps of x frames a training rollout continues on the model output. `1` trains every position on real context in one pass |
 
 ## Command line flags
 
@@ -140,7 +150,7 @@ Flags of `src/main.py`. The run scripts set `--mode`, `-t`, `-data`, `-cfg`, `-s
 | `--seed` | `-1` | Random seed; `-1` picks a random one |
 | `-DDP, --distributed_data_parallel` | `off` | Distributed training over the visible GPUs |
 | `--backend` | `"nccl"` | Backend for distributed training: `nccl` or `gloo` |
-| `--mode` | `"classification"` | `classification`, `prediction` or `cond_prediction` |
+| `--mode` | `"classification"` | `classification`, `prediction`, `cond_prediction` or `autoregressive` (generator A) |
 | `--reverse` | `off` | Generation: predict backwards in time |
 | `-tn, --total_nodes` | `1` | Distributed training: number of nodes |
 | `-cn, --current_node` | `0` | Distributed training: rank of this node |
