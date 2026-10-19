@@ -10,6 +10,7 @@
 | [models.md](models.md) | The available backbones |
 | [results-include.md](results-include.md) | Experiments on the official INCLUDE split and comparison with published results |
 | [results-lsfb.md](results-lsfb.md) | Experiments on LSFB: ST-GCN, HWGAT, the Transformer and Mamba-SL |
+| [results-generator.md](results-generator.md) | Generator A: rollout error by model, frames per step and rollout training |
 | [reproducibility.md](reproducibility.md) | Seeds, what is deterministic, and known issues in the data and in earlier results |
 | [development.md](development.md) | Linting, type checking, and how changes are checked for regressions |
 | [roadmap.md](roadmap.md) | Plans for the classifier and the generator, and every test that has not been run yet |

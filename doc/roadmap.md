@@ -124,10 +124,10 @@ Not covered by 1.1 to 1.7. Each was tested at most on the Transformer and one at
 |---|---|---|---|
 | 2.1 | Current generator (CsiMLPe, forward and reversed), regenerated with the fixed class numbering, then pretraining the paper's Transformer config: does synthetic pretraining still help? | planned | train both generators, generate, pretrain |
 | 2.2 | The same on the official split and the baseline classifier | planned | the generated clips are 32 frames in the old input format, which the `official-*` and `stgcn` configs cannot read; needs generator A or a format conversion |
-| 2.3 | Generator A: number of frames predicted per step (x) | next | – |
-| 2.4 | Generator A: training on its own rollouts against real context only | next | – |
+| 2.3 | Generator A: number of frames predicted per step (x) | done: 8 frames per step is best for both models; the Transformer at 0.045 rollout error, the siMLPe at 0.061 ([results-generator.md](results-generator.md)) | – |
+| 2.4 | Generator A: training on its own rollouts against real context only | running: `tf-x8` with 2 and 4 rollout steps | – |
 | 2.5 | Generator A: stopping at the source clip's length against the learned end-of-sign signal | next | – |
-| 2.6 | Generator A: error per rollout step (how fast the quality decays), for each x | next | – |
+| 2.6 | Generator A: error per rollout step (how fast the quality decays), for each x | done: the siMLPe is better over the first 8 frames, the Transformer after 16 ([results-generator.md](results-generator.md#error-along-the-rollout-test-26)) | – |
 | 2.7 | Generator B against generator A | planned | generator B |
 | 2.8 | Baseline classifier pretrained on each synthetic dataset against no pretraining, on INCLUDE | planned | 2.3 to 2.7, section 1 |
 | 2.9 | The same on LSFB | planned | 2.8, section 3 |
