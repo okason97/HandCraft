@@ -151,6 +151,7 @@ class Model(nn.Module):
         seq_length = DATA.input_size[0]
         f_input_size = DATA.input_size[1] * DATA.input_size[2]
 
+        self.input_norm = nn.BatchNorm1d(f_input_size) if getattr(MODEL, "input_norm", False) else None
         self.embeding = MODULES.linear(f_input_size, MODEL.hidden_dim, bias=False)
 
         # Add a class token
@@ -203,6 +204,8 @@ class Model(nn.Module):
                 masks = torch.cat([batch_class_mask, masks], dim=1)
                 masks = masks.any(dim=-1)
 
+            if self.input_norm is not None:
+                x = self.input_norm(x.transpose(1, 2)).transpose(1, 2)
             x = self.embeding(x)
 
             # Expand the class token to the full batch
