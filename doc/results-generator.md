@@ -90,3 +90,38 @@ The baseline is rerun on the current code: its runs in [results-include.md](resu
 
 The writing and reading of the clips is not the cause: real clips passed through the same path are recognized at 99.9%. The generated continuation adds little to what the opening frames alone carry: 5% against 1%. A rollout error of 0.045 is small on average, but it does not keep what tells one sign from another. A deterministic predictor trained on the mean error moves toward the average motion that follows similar openings.
 
+## Why the generated clips lose the sign
+
+Two checks on the 816 INCLUDE test openings, with the seed 42 generators (`tf-x8` and `mlp-w8-x8`) and the seed 42 baseline classifier.
+
+**The model uses its sign label.** Each opening was continued twice, with its true sign and with a random other sign:
+
+| | `tf-x8` | `mlp-w8-x8` |
+|---|---|---|
+| Error of the true-sign continuation against the real frames | 0.045 | 0.061 |
+| Distance between the true-sign and the swapped-sign continuations | 0.065 | 0.054 |
+| Swapped-sign clips recognized as the swapped sign | 1.7% | 2.6% |
+
+The label changes the motion more than the generator's error, but the motion it gives a sign is not recognized as that sign (chance is 0.4%). The conditioning is not ignored, so strengthening it (classifier-free guidance) is unlikely to help.
+
+**Both the hands and the body are flattened.** Error and mean motion per frame of each part, in the generated frames (`tf-x8`; `mlp-w8-x8` is similar):
+
+| Part | Error | Real motion per frame | Generated motion per frame | Generated / real |
+|---|---|---|---|---|
+| Body (9 pose keypoints) | 0.018 | 0.0029 | 0.0020 | 0.69 |
+| Hand positions (the wrist of each hand) | 0.048 | 0.0089 | 0.0074 | 0.83 |
+| Hand shapes (relative to the hand's wrist) | 0.019 | 0.0030 | 0.0020 | 0.65 |
+
+Clips spliced from real and generated parts, classified by the baseline:
+
+| Clips | `tf-x8` | `mlp-w8-x8` |
+|---|---|---|
+| Real | 97.3 | 97.3 |
+| Real body and hand positions, generated hand shapes | 52.9 | 62.1 |
+| Generated body and hand positions, real hand shapes | 57.7 | 47.6 |
+| Generated | 4.3 | 7.0 |
+
+- **Every part moves less than in real clips**: 65 to 83% of the real motion per frame. A deterministic predictor trained on the mean error damps the motion towards the average of the continuations it has seen.
+- **Neither the hands nor the trajectories alone explain the loss.** Either generated part on its own takes the accuracy from 97 to about 50 to 60%; both together take it to 5%.
+- The fix has to restore the sign's motion as a whole: a stochastic generator that samples a continuation instead of averaging them, a loss that rewards recognizable clips, or a real reference clip to follow (generator B).
+
