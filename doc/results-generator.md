@@ -38,3 +38,55 @@ Test rollout error of the frame that comes a given number of frames after the op
 - **The siMLPe predicts the first frames best, the Transformer the long run.** Over the first 8 frames the siMLPe with an 8-frame window has the lowest error. After 16 frames the Transformer is better, and its error grows much more slowly: 0.060 at frame +32, against 0.077 to 0.108 for the siMLPe.
 - The errors grow fastest over the first 16 frames, about the length of a movement of the sign.
 - `mlp-w4-x1` is the exception: it drifts away within the first steps, and its error is already 0.11 at frame +8.
+
+## Training on its own rollouts (test 2.4)
+
+`argen/tf-x8` trained on 2 and 4 rollout steps of its own frames from a random cut (commit `fe3f136`), against training on real frames only:
+
+| Training | Test rollout error | Validation |
+|---|---|---|
+| **Real frames only** (`tf-x8`) | **0.0449** | 0.0442 |
+| 2 rollout steps (`tf-x8-r2`) | 0.0486 | 0.0472 |
+| 4 rollout steps (`tf-x8-r4`) | 0.0485 | 0.0472 |
+
+Training on its own rollouts does not reduce the rollout error: both are 8% worse. The rest of the tests use `tf-x8`.
+
+## Stop rule and synthetic pretraining (tests 2.5 and 2.8)
+
+For each seed, `argen/tf-x8` was trained with that seed, so its openings come only from the training part of the classifier's split of the same seed. Its test rollout error is 0.0449 for seed 42 and 0.0450 for seed 43. Each seed generated two datasets of 32 clips per sign (8,384 clips), one per stop rule (`tf-x8` and `tf-x8-endsig`; commit `75f4c00`, script `run_argen_pretrain.sh`).
+
+**Clip lengths** (seed 42, frames):
+
+| Clips | Min | 10% | Median | 90% | Max | Mean |
+|---|---|---|---|---|---|---|
+| Real training clips | 33 | 48 | 62 | 83 | 154 | 64.2 |
+| Stop at the source length | 33 | 48 | 62 | 83 | 154 | 64.3 |
+| Stop at the end signal | 40 | 48 | 64 | 80 | 320 | 62.8 |
+
+The learned end of the sign gives realistic lengths. Only 11 of 8,384 clips reached the 320-frame cap. Its clips are 8 + 8n frames long, since the model predicts 8 frames per step.
+
+**Pretraining.** Test top-1 of `stgcn/hwgat-data`, pretrained for 40 epochs on the synthetic clips with `stgcn/hwgat-data-pretrain`, then trained on the real data:
+
+| Pretraining | Seed 42 | Seed 43 | Mean |
+|---|---|---|---|
+| **None** | **97.30** | **97.30** | **97.3** |
+| Synthetic, stop at the source length | 96.20 | 96.45 | 96.3 |
+| Synthetic, stop at the end signal | 95.96 | 96.57 | 96.3 |
+
+The baseline is rerun on the current code: its runs in [results-include.md](results-include.md#current-baseline-october-2026) (97.55 and 96.81) were made before the loss was computed in float32.
+
+- **Pretraining on generator A's clips costs one point**, with both stop rules and both seeds.
+- After the 40 pretraining epochs, the classifier reaches 55 to 57% top-1 on the synthetic clips but only 5 to 7% on the real validation clips.
+
+**The generated clips lose the sign.** The baseline classifier recognizes 97.3% of the real test clips but only 5% of the synthetic clips:
+
+| Clips classified by the baseline (no pretraining, same seed) | Seed 42 | Seed 43 |
+|---|---|---|
+| Real test clips | 97.30 | 97.30 |
+| Synthetic, stop at the source length | 4.74 | 5.21 |
+| Synthetic, stop at the end signal | 4.68 | 5.34 |
+| Control: real training clips written and read back like the synthetic ones (a quarter of them) | 99.88 | – |
+| Control: the 8 opening frames, the last one held still to the end | 1.15 | – |
+
+The writing and reading of the clips is not the cause: real clips passed through the same path are recognized at 99.9%. The generated continuation adds little to what the opening frames alone carry: 5% against 1%. A rollout error of 0.045 is small on average, but it does not keep what tells one sign from another. A deterministic predictor trained on the mean error moves toward the average motion that follows similar openings.
+
